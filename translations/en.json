@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure AI Suggester",
+        "data": {
+          "api_key": "OpenAI API Key",
+          "scan_frequency": "Scan Frequency (hours)"
+        }
+      }
+    },
+    "error": {
+      "invalid_api_key": "Invalid API Key"
+    }
+  }
+}
