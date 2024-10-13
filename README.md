@@ -11,8 +11,7 @@ An AI-powered Home Assistant custom integration that suggests automations based 
 - Adds accepted automations to Home Assistant.
 
 ## Home Assistant Add
-[![Open your Home Assistant instance and add this repository](https://my.home-assistant.io/badges/supervisor_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_addon_repository/?repository_url=https://github.com/ITSpecialist111/ai_suggester)
-
+[![Open your Home Assistant instance and add this add-on](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=ai_suggester&repository_url=https://github.com/ITSpecialist111/ai_suggester)
 
 ## Manual Installation
 
