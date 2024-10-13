@@ -1,6 +1,6 @@
 # AI Automation Suggester
 
-An AI-powered Home Assistant custom integration that suggests automations based on your entities.
+An AI-powered Home Assistant custom integration that suggests automations based on your entities. The Ultimate "Matt" mode.
 
 ## Features
 
