@@ -35,26 +35,9 @@ An AI-powered Home Assistant custom integration that suggests automations based 
 1. In Home Assistant, go to **Overview** > **Edit Dashboard**.
 2. Click **Add Card** and choose **Manual**.
 3. Add the following configuration:
+4. To Add another card:
+   type: 'custom:ai-suggester-card'
 
 ```yaml
 type: module
 url: /local/ai_suggester/ai-suggester-card.js
-
-
-ai_suggester/
-├── custom_components/
-│   └── ai_suggester/
-│       ├── __init__.py
-│       ├── manifest.json
-│       ├── config_flow.py
-│       ├── ai_suggester.py
-│       ├── services.yaml
-│       ├── strings.json
-│       └── translations/
-│           └── en.json
-├── www/
-│   └── ai_suggester/
-│       └── ai-suggester-card.js
-├── README.md
-├── LICENSE
-└── .gitignore
