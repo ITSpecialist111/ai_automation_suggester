@@ -5,7 +5,7 @@ An AI-powered Home Assistant custom integration that suggests automations based 
 ## Features
 
 - Scans entities periodically to detect new devices.
-- Uses AI (e.g., OpenAI's GPT-3) to generate automation suggestions.
+- Uses AI (e.g., OpenAI's GPT-4o) to generate automation suggestions.
 - Provides a frontend interface for users to review and accept suggestions.
 - Allows users to map placeholders to actual entities upon acceptance.
 - Adds accepted automations to Home Assistant.
@@ -39,3 +39,22 @@ An AI-powered Home Assistant custom integration that suggests automations based 
 ```yaml
 type: module
 url: /local/ai_suggester/ai-suggester-card.js
+
+
+ai_suggester/
+├── custom_components/
+│   └── ai_suggester/
+│       ├── __init__.py
+│       ├── manifest.json
+│       ├── config_flow.py
+│       ├── ai_suggester.py
+│       ├── services.yaml
+│       ├── strings.json
+│       └── translations/
+│           └── en.json
+├── www/
+│   └── ai_suggester/
+│       └── ai-suggester-card.js
+├── README.md
+├── LICENSE
+└── .gitignore
