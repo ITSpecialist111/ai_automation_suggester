@@ -3,7 +3,7 @@
   "name": "AI Automation Suggester",
   "version": "1.0.0",
   "documentation": "https://github.com/ITSpecialist111/ai_suggester",
-  "requirements": ["openai"],  // For OpenAI API integration
+  "requirements": ["openai"],
   "dependencies": [],
   "codeowners": ["@ITSpecialist111"],
   "config_flow": true,
