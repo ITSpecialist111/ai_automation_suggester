@@ -13,6 +13,7 @@ An AI-powered Home Assistant custom integration that suggests automations based 
 ## Home Assistant Addon
 [![Open your Home Assistant instance and add this add-on](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=ai_suggester&repository_url=https%3A%2F%2Fgithub.com%2FITSpecialist111%2Fai_suggester)
 
+
 ## Manual Installation
 
 1. Copy the `ai_suggester` folder to your `custom_components` directory.
