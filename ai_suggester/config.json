@@ -1,14 +1,11 @@
 {
-    "name": "AI Suggester",
-    "version": "1.0",
-    "slug": "ai_suggester",
-    "description": "Custom AI-powered automation suggester for Home Assistant",
-    "arch": ["armv7", "amd64"],
-    "startup": "application",
-    "boot": "auto",
-    "ports": {},
-    "map": ["config", "ssl"],
-    "options": {},
-    "schema": {}
-  }
-  
+  "name": "AI Suggester",
+  "version": "1.0",
+  "slug": "ai_suggester",
+  "description": "Custom AI-powered automation suggester for Home Assistant",
+  "arch": ["armv7", "amd64"],
+  "startup": "application",
+  "boot": "auto",
+  "options": {},
+  "schema": {}
+}
