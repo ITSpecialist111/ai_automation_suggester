@@ -10,7 +10,10 @@ An AI-powered Home Assistant custom integration that suggests automations based 
 - Allows users to map placeholders to actual entities upon acceptance.
 - Adds accepted automations to Home Assistant.
 
-## Installation
+## Home Assistant Add
+[![Open your Home Assistant instance and add this add-on](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=ai_suggester&repository_url=https://github.com/ITSpecialist111/ai_suggester)
+
+## Manual Installation
 
 1. Copy the `ai_suggester` folder to your `custom_components` directory.
 2. Copy the `ai-suggester-card.js` file to `www/ai_suggester/` directory.
