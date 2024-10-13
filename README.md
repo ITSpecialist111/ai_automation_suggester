@@ -40,7 +40,7 @@ An AI-powered Home Assistant custom integration that suggests automations based 
 2. Click **Add Card** and choose **Manual**.
 3. Add the following configuration:
 4. To Add another card:
-   type: 'custom:ai-suggester-card'
+   type: custom:ai-suggester-card
 
 ```yaml
 type: module

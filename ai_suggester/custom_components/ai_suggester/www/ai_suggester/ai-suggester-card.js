@@ -1,5 +1,22 @@
 class AISuggesterCard extends HTMLElement {
+  
+  // Proper implementation of setConfig
+  setConfig(config) {
+    if (!config) {
+      throw new Error("Invalid configuration");
+    }
+    this.config = config;
+    this.renderCard();
+  }
+
   set hass(hass) {
+    this._hass = hass;
+    if (this.config) {
+      this.renderCard();
+    }
+  }
+
+  renderCard() {
     if (!this.content) {
       const card = document.createElement('ha-card');
       card.header = 'AI Automation Suggestions';
@@ -8,10 +25,11 @@ class AISuggesterCard extends HTMLElement {
       card.appendChild(this.content);
       this.appendChild(card);
     }
-
-    hass.callApi('GET', 'ai_suggester/suggestions').then((suggestions) => {
-      this.renderSuggestions(suggestions);
-    });
+    if (this._hass) {
+      this._hass.callApi('GET', 'ai_suggester/suggestions').then((suggestions) => {
+        this.renderSuggestions(suggestions);
+      });
+    }
   }
 
   renderSuggestions(suggestions) {
@@ -39,14 +57,11 @@ class AISuggesterCard extends HTMLElement {
   }
 
   acceptSuggestion(index) {
-    // Handle accepting the suggestion
-    // You can call a Home Assistant service or open a dialog for entity mapping
-    this.hass.callService('ai_suggester', 'accept_suggestion', { index: index });
+    this._hass.callService('ai_suggester', 'accept_suggestion', { index });
   }
 
   rejectSuggestion(index) {
-    // Handle rejecting the suggestion
-    this.hass.callService('ai_suggester', 'reject_suggestion', { index: index });
+    this._hass.callService('ai_suggester', 'reject_suggestion', { index });
   }
 }
 
