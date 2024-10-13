@@ -1,11 +1,11 @@
 # AI Automation Suggester
 
-An AI-powered Home Assistant custom integration that suggests automations based on your entities.
+An AI-powered Home Assistant custom integration that suggests automations based on your entities. The Ultimate "Matt" mode.
 
 ## Features
 
 - Scans entities periodically to detect new devices.
-- Uses AI (e.g., OpenAI's GPT-3) to generate automation suggestions.
+- Uses AI (e.g., OpenAI's GPT-4o) to generate automation suggestions.
 - Provides a frontend interface for users to review and accept suggestions.
 - Allows users to map placeholders to actual entities upon acceptance.
 - Adds accepted automations to Home Assistant.
@@ -35,6 +35,8 @@ An AI-powered Home Assistant custom integration that suggests automations based 
 1. In Home Assistant, go to **Overview** > **Edit Dashboard**.
 2. Click **Add Card** and choose **Manual**.
 3. Add the following configuration:
+4. To Add another card:
+   type: 'custom:ai-suggester-card'
 
 ```yaml
 type: module

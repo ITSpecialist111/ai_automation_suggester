@@ -1,0 +1,2 @@
+scan_entities:
+  description: "Scan all entities and process AI suggestions."
