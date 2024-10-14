@@ -1,9 +1,5 @@
 # AI Automation Suggester
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/ITSpecialist111/ai_automation_suggester)](https://github.com/ITSpecialist111/ai_automation_suggester/releases)
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![License](https://img.shields.io/github/license/ITSpecialist111/ai_automation_suggester)](LICENSE)
-
 An integration for Home Assistant that uses OpenAI's GPT models to analyze your newly added entities and suggest potential automations.
 
 ---
