@@ -211,6 +211,51 @@ Managing and automating devices in a smart home can be complex, especially as th
   ```
 
 - View logs under **Settings** > **System** > **Logs**.
+---
+
+### **Example Outputs**
+
+```yaml
+AI Automation Suggestions
+Based on the new entities added to your Home Assistant setup, here are some potential automations you could implement:
+
+Media Player Power On/Off Automation:
+
+Trigger: When any media_player entity changes to "on."
+Action: Send a notification to your phone or turn on the corresponding lights in the room where the media player is located (e.g., office, living room).
+Scheduled Speaker Activation:
+
+Trigger: Time-based trigger (e.g., 7:00 AM).
+Condition: Check if media_player.office_speaker is off.
+Action: Turn on the media_player.office_speaker to play morning news or music.
+Media Player Status Notification:
+
+Trigger: When any media_player changes to "off."
+Action: Send a notification to inform you that a specific media player has turned off (e.g., "The living room speaker is now off").
+Object Detection Alert:
+
+Trigger: When image_processing.front_door_object_detection or image_processing.rear_door_object_detection detects motion.
+Action: Send a notification or trigger a camera to start recording.
+Object Detection with Speaker Announcement:
+
+Trigger: When image_processing.front_door_object_detection detects a person.
+Action: Use a media player (e.g., media_player.office_speaker) to announce "Someone is at the front door".
+DeepStack Object Detection Alert:
+
+Trigger: When image_processing.deepstack_object_local_file detects an object.
+Action: Send a notification with details of the detected object.
+Home Security Status Check:
+
+Trigger: When image_processing.front_door_object_detection or image_processing.rear_door_object_detection detects an unknown object.
+Action: Turn on all media players in the house to deter intruders.
+Presence-based Media Control:
+
+Trigger: When you arrive home (using presence detection).
+Action: Turn on media_player.sonos_2 or any other preferred media player and play a welcome playlist.
+Room Occupancy Automation:
+
+Trigger: When a specific media player (e.g., `media_player.denon
+
 
 ---
 
