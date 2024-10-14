@@ -2,15 +2,16 @@
   "config": {
     "step": {
       "user": {
-        "title": "Configure AI Suggester",
+        "title": "Configure AI Automation Suggester",
         "data": {
-          "api_key": "OpenAI API Key",
-          "scan_frequency": "Scan Frequency (hours)"
+          "scan_frequency": "Scan Frequency (hours)",
+          "use_local_ai": "Use Local AI",
+          "openai_api_key": "OpenAI API Key"
         }
       }
     },
     "error": {
-      "invalid_api_key": "Invalid API Key"
+      "required": "This field is required."
     }
   }
 }

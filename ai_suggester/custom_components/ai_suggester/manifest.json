@@ -2,10 +2,10 @@
   "domain": "ai_suggester",
   "name": "AI Automation Suggester",
   "version": "1.0.0",
-  "documentation": "https://github.com/ITSpecialist111/ai_suggester",
-  "requirements": ["openai"],
+  "documentation": "https://github.com/yourusername/ai_automation_suggester",
+  "requirements": ["openai>=1.0.0"],
   "dependencies": [],
-  "codeowners": ["@ITSpecialist111"],
-  "config_flow": true,
-  "iot_class": "cloud_polling"
+  "codeowners": ["@your_github_username"],
+  "iot_class": "cloud_polling",
+  "config_flow": true
 }
