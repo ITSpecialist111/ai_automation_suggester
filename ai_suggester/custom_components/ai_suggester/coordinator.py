@@ -95,7 +95,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         prompt = self.generate_prompt(ai_input_data)
         try:
             response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {
                         "role": "system",

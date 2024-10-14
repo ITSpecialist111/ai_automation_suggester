@@ -32,7 +32,7 @@ Managing and automating devices in a smart home can be complex, especially as th
 - **Persistent Notifications**: Suggestions are delivered via Home Assistant's persistent notifications.
 - **Sensor Entity**: Creates a sensor entity to display the status and suggestions.
 - **Configurable Scan Frequency**: Set how often the integration scans for new entities.
-- **Supports OpenAI GPT Models**: Uses OpenAI's `gpt-3.5-turbo` model for analysis.
+- **Supports OpenAI GPT Models**: Uses OpenAI's `gpt-4o` model for analysis.
 - **Local AI Option**: Placeholder for future local AI processing capabilities.
 
 ---
