@@ -7,7 +7,5 @@
   "dependencies": [],
   "codeowners": ["@yITSpecialist111"],
   "iot_class": "cloud_polling",
-  "config_flow": true,
-  "icon": "AI_Automation_Suggester.png",
-  "logo": "AI_Automation_Suggester.png"
+  "config_flow": true
 }
