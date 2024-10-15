@@ -1,0 +1,3 @@
+generate_suggestions:
+  description: "Manually trigger AI automation suggestions."
+  fields: {}
