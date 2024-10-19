@@ -1,3 +1,4 @@
 generate_suggestions:
+  name: Generate Suggestions
   description: "Manually trigger AI automation suggestions."
   fields: {}
