@@ -86,7 +86,7 @@ If you haven't installed HACS yet, follow the [official installation guide](http
 4. Click on the three-dot menu (⋮) in the top right corner.
 5. Select **Custom repositories**.
 
-   ![Custom Repositories](https://user-images.githubusercontent.com/xxxxxx/custom_repositories.png)
+   ![Custom Repositories](https://www.hacs.xyz/assets/images/screenshots/overview/menu/dark.png#only-dark)
 
 6. In the **Add custom repository URL** field, enter:
 
