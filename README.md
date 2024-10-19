@@ -25,6 +25,7 @@ An integration for Home Assistant that uses OpenAI's GPT models to analyze your 
 - [Acknowledgments](#acknowledgments)
 - [Contributions](#contributions)
 - [Disclaimer](#disclaimer)
+- [Support the Project](#support-the-project)
 
 ---
 
@@ -380,65 +381,10 @@ This integration is a third-party custom component and is not affiliated with or
 
 ---
 
-# Example Outputs
+## Support the Project
 
-```yaml
-AI Automation Suggestions
-Based on the new entities added to your Home Assistant setup, here are some potential automations you could implement:
+If you find this project helpful and would like to support its development, you can buy me a coffee!
 
-1. **Media Player Power On/Off Automation**
+[![Buy Me A Coffee](https://camo.githubusercontent.com/7b8f7343bfc6e3c65c7901846637b603fd812f1a5f768d8b0572558bde859eb9/68747470733a2f2f63646e2e6275796d6561636f666665652e636f6d2f627574746f6e732f76322f64656661756c742d79656c6c6f772e706e67)](https://buymeacoffee.com/itspecialist)
 
-   - **Trigger**: When any `media_player` entity changes to "on."
-   - **Action**: Send a notification to your phone or turn on the corresponding lights in the room where the media player is located (e.g., office, living room).
-
-2. **Scheduled Speaker Activation**
-
-   - **Trigger**: Time-based trigger (e.g., 7:00 AM).
-   - **Condition**: Check if `media_player.office_speaker` is off.
-   - **Action**: Turn on the `media_player.office_speaker` to play morning news or music.
-
-3. **Media Player Status Notification**
-
-   - **Trigger**: When any `media_player` changes to "off."
-   - **Action**: Send a notification to inform you that a specific media player has turned off (e.g., "The living room speaker is now off").
-
-4. **Object Detection Alert**
-
-   - **Trigger**: When `image_processing.front_door_object_detection` or `image_processing.rear_door_object_detection` detects motion.
-   - **Action**: Send a notification or trigger a camera to start recording.
-
-5. **Object Detection with Speaker Announcement**
-
-   - **Trigger**: When `image_processing.front_door_object_detection` detects a person.
-   - **Action**: Use a media player (e.g., `media_player.office_speaker`) to announce "Someone is at the front door".
-
-6. **DeepStack Object Detection Alert**
-
-   - **Trigger**: When `image_processing.deepstack_object_local_file` detects an object.
-   - **Action**: Send a notification with details of the detected object.
-
-7. **Home Security Status Check**
-
-   - **Trigger**: When `image_processing.front_door_object_detection` or `image_processing.rear_door_object_detection` detects an unknown object.
-   - **Action**: Turn on all media players in the house to deter intruders.
-
-8. **Presence-based Media Control**
-
-   - **Trigger**: When you arrive home (using presence detection).
-   - **Action**: Turn on `media_player.sonos_2` or any other preferred media player and play a welcome playlist.
-
-9. **Room Occupancy Automation**
-
-   - **Trigger**: When a specific media player (e.g., `media_player.denon_avr_x2600h`) turns on.
-   - **Action**: Adjust lighting and temperature settings in the corresponding room.
-
-10. **Energy Saving Automation**
-
-    - **Trigger**: When media players have been idle for a certain period.
-    - **Action**: Turn them off to save energy.
-
-Feel free to implement these automations to enhance your Home Assistant experience!
-
-```
-
-If you have any questions or need assistance with implementing these suggestions, please feel free to reach out!
+Your support is greatly appreciated and helps maintain and improve this project!
