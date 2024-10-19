@@ -56,37 +56,49 @@ Managing and automating devices in a smart home can be complex, especially as th
 
 ## Installation
 
-### 1. **Download the Integration**
+### Method 1: Add-on Repository (Recommended)
 
-- Clone or download the `ai_automation_suggester` repository from GitHub.
+You can easily add this integration to your Home Assistant instance by clicking the button below:
 
-### 2. **Copy to Home Assistant**
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://camo.githubusercontent.com/30d41447c8fdefec56880fcce608c09f79c1aaae8f38af261f7817ac0392e421/68747470733a2f2f6d792e686f6d652d617373697374616e742e696f2f6261646765732f73757065727669736f725f6164645f6164646f6e5f7265706f7369746f72792e737667)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FITSpecialist111%2Fai_automation_suggester)
 
-- Place the `ai_suggester` directory inside the `custom_components` directory of your Home Assistant configuration folder.
-  - Your directory structure should look like this:
+1. Click the button above to open the add-on repository dialog in your Home Assistant instance.
+2. Click "Add" to add the repository.
+3. Find the "AI Automation Suggester" add-on in the list and click "Install".
+4. Follow the configuration steps in the "Configuration" section below.
 
-    ```
-    └── config/
-        ├── configuration.yaml
-        └── custom_components/
-            └── ai_suggester/
-                ├── __init__.py
-                ├── config_flow.py
-                ├── const.py
-                ├── coordinator.py
-                ├── manifest.json
-                ├── sensor.py
-                ├── services.yaml
-                ├── strings.json
-                └── translations/
-                    └── en.json
-    ```
+### Method 2: Manual Installation (Optional)
 
-- If the `custom_components` directory doesn't exist, create it.
+If you prefer to install the integration manually, follow these steps:
 
-### 3. **Restart Home Assistant**
+1. **Download the Integration**
+   - Clone or download the `ai_automation_suggester` repository from GitHub.
 
-- After copying the files, restart Home Assistant to recognize the new integration.
+2. **Copy to Home Assistant**
+   - Place the `ai_suggester` directory inside the `custom_components` directory of your Home Assistant configuration folder.
+   - Your directory structure should look like this:
+
+     ```
+     └── config/
+         ├── configuration.yaml
+         └── custom_components/
+             └── ai_suggester/
+                 ├── __init__.py
+                 ├── config_flow.py
+                 ├── const.py
+                 ├── coordinator.py
+                 ├── manifest.json
+                 ├── sensor.py
+                 ├── services.yaml
+                 ├── strings.json
+                 └── translations/
+                     └── en.json
+     ```
+
+   - If the `custom_components` directory doesn't exist, create it.
+
+3. **Restart Home Assistant**
+   - After copying the files, restart Home Assistant to recognize the new integration.
 
 ---
 
