@@ -4,6 +4,16 @@ An integration for Home Assistant that uses OpenAI's GPT models to analyze your 
 
 ---
 
+## Support the Project
+
+If you find this project helpful and would like to support its development, you can buy me a coffee!
+
+[![Buy Me A Coffee](https://camo.githubusercontent.com/7b8f7343bfc6e3c65c7901846637b603fd812f1a5f768d8b0572558bde859eb9/68747470733a2f2f63646e2e6275796d6561636f666665652e636f6d2f627574746f6e732f76322f64656661756c742d79656c6c6f772e706e67)](https://buymeacoffee.com/itspecialist)
+
+Your support is greatly appreciated and helps maintain and improve this project!
+
+---
+
 ## Table of Contents
 
 - [Background and Purpose](#background-and-purpose)
@@ -378,13 +388,3 @@ Contributions are welcome! Please open an issue or submit a pull request on GitH
 ## Disclaimer
 
 This integration is a third-party custom component and is not affiliated with or endorsed by Home Assistant or OpenAI.
-
----
-
-## Support the Project
-
-If you find this project helpful and would like to support its development, you can buy me a coffee!
-
-[![Buy Me A Coffee](https://camo.githubusercontent.com/7b8f7343bfc6e3c65c7901846637b603fd812f1a5f768d8b0572558bde859eb9/68747470733a2f2f63646e2e6275796d6561636f666665652e636f6d2f627574746f6e732f76322f64656661756c742d79656c6c6f772e706e67)](https://buymeacoffee.com/itspecialist)
-
-Your support is greatly appreciated and helps maintain and improve this project!
