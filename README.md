@@ -69,18 +69,7 @@ Managing and automating devices in a smart home can be complex, especially as th
 
 ## Installation
 
-### Method 1: Add-on Repository (Recommended)
-
-You can easily add this integration to your Home Assistant instance by clicking the button below:
-
-[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://camo.githubusercontent.com/30d41447c8fdefec56880fcce608c09f79c1aaae8f38af261f7817ac0392e421/68747470733a2f2f6d792e686f6d652d617373697374616e742e696f2f6261646765732f73757065727669736f725f6164645f6164646f6e5f7265706f7369746f72792e737667)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FITSpecialist111%2Fai_automation_suggester)
-
-1. Click the button above to open the add-on repository dialog in your Home Assistant instance.
-2. Click "Add" to add the repository.
-3. Find the "AI Automation Suggester" add-on in the list and click "Install".
-4. Follow the configuration steps in the "Configuration" section below.
-
-### Method 2: Manual Installation (Optional)
+### Method 1: Manual Installation (Recommended)
 
 If you prefer to install the integration manually, follow these steps:
 
