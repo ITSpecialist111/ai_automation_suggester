@@ -94,7 +94,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
         prompt = self.generate_prompt(ai_input_data)
         try:
-            response = openai.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="gpt-4o-mini",
                 messages=[
                     {
@@ -107,6 +107,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 n=1,
                 temperature=0.7,
             )
+
             suggestions = response.choices[0].message.content.strip()
             return suggestions
         except Exception as e:
