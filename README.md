@@ -2,6 +2,8 @@
 
 ![Validate with hassfest](https://github.com/ITSpecialist111/AI_AUTOMATION_SUGGESTER/actions/workflows/hassfest.yaml/badge.svg)
 ![HACS Validation](https://github.com/ITSpecialist111/AI_AUTOMATION_SUGGESTER/actions/workflows/hacs.yaml/badge.svg)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/ITSpecialist111/AI_AUTOMATION_SUGGESTER)](https://github.com/ITSpecialist111/AI_AUTOMATION_SUGGESTER/releases)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 
 An integration for Home Assistant that uses OpenAI's GPT models to analyze your newly added entities and suggest potential automations.
 
