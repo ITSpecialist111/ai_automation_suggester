@@ -22,6 +22,8 @@ Your support is greatly appreciated and helps maintain and improve this project!
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+  - [Installing via HACS (Recommended)](#installing-via-hacs-recommended)
+  - [Manual Installation](#manual-installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Important Notes](#important-notes)
@@ -43,7 +45,7 @@ Your support is greatly appreciated and helps maintain and improve this project!
 
 ## Background and Purpose
 
-Managing and automating devices in a smart home can be complex, especially as the number of devices grows. The **AI Automation Suggester** integration aims to simplify this process by leveraging OpenAI's GPT models to analyze newly added entities in your Home Assistant setup and provide intelligent automation suggestions. We call it the ultimate 'Matt' mode (only because he's the one who asked for it)
+Managing and automating devices in a smart home can be complex, especially as the number of devices grows. The **AI Automation Suggester** integration aims to simplify this process by leveraging OpenAI's GPT models to analyze newly added entities in your Home Assistant setup and provide intelligent automation suggestions.
 
 ---
 
@@ -56,27 +58,68 @@ Managing and automating devices in a smart home can be complex, especially as th
 - **Sensor Entity**: Creates a sensor entity to display the status and suggestions.
 - **Configurable Scan Frequency**: Set how often the integration scans for new entities.
 - **Supports OpenAI GPT Models**: Uses OpenAI's GPT models for analysis.
-- **Local AI Option**: Placeholder for future local AI processing capabilities.
 
 ---
 
 ## Prerequisites
 
 - **Home Assistant**: Version 2023.5 or later.
-- **OpenAI API Key**: You need an OpenAI API key to use the cloud AI processing.
+- **OpenAI API Key**: You need an OpenAI API key to use the AI processing.
 
 ---
 
 ## Installation
 
-### Method 1: Manual Installation (Recommended)
+### Installing via HACS (Recommended)
+
+The easiest way to install the **AI Automation Suggester** is through [HACS (Home Assistant Community Store)](https://hacs.xyz/).
+
+#### **Step 1: Install HACS**
+
+If you haven't installed HACS yet, follow the [official installation guide](https://hacs.xyz/docs/setup/download) to set it up.
+
+#### **Step 2: Add Custom Repository**
+
+1. Open your Home Assistant instance.
+2. Navigate to **HACS** in the sidebar.
+3. Click on the **Integrations** tab.
+4. Click on the three-dot menu (⋮) in the top right corner.
+5. Select **Custom repositories**.
+
+   ![Custom Repositories](https://user-images.githubusercontent.com/xxxxxx/custom_repositories.png)
+
+6. In the **Add custom repository URL** field, enter:
+
+   ```
+   https://github.com/ITSpecialist111/ai_automation_suggester
+   ```
+
+7. In the **Category** dropdown, select **Integration**.
+8. Click **Add**.
+
+#### **Step 3: Install the Integration**
+
+1. After adding the repository, search for **AI Automation Suggester** in HACS.
+2. Click on the integration to view details.
+3. Click **Download** to install the integration.
+
+#### **Step 4: Restart Home Assistant**
+
+After installation, you need to restart Home Assistant for the integration to be recognized.
+
+1. Go to **Settings** > **System** > **Restart**.
+2. Click **Restart** and wait for Home Assistant to restart.
+
+### Manual Installation
 
 If you prefer to install the integration manually, follow these steps:
 
 1. **Download the Integration**
+
    - Clone or download the `ai_automation_suggester` repository from GitHub.
 
 2. **Copy to Home Assistant**
+
    - Place the `ai_suggester` directory inside the `custom_components` directory of your Home Assistant configuration folder.
    - Your directory structure should look like this:
 
@@ -100,6 +143,7 @@ If you prefer to install the integration manually, follow these steps:
    - If the `custom_components` directory doesn't exist, create it.
 
 3. **Restart Home Assistant**
+
    - After copying the files, restart Home Assistant to recognize the new integration.
 
 ---
@@ -115,17 +159,7 @@ If you prefer to install the integration manually, follow these steps:
 ### 2. **Configure the Integration**
 
 - **Scan Frequency (hours)**: Set how often (in hours) the integration scans for new entities. Default is `24` hours.
-- **Use Local AI**: Option to use local AI processing (currently not implemented).
-- **OpenAI API Key**: Enter your OpenAI API key. This is required if not using local AI.
-- **AI Model**: Select your preferred AI model from the dropdown. Options include:
-
-  - **gpt-3.5-turbo**: Cheap
-  - **gpt-4o**: High Quality
-  - **o1-mini**: Expensive
-  - **gpt-4o-mini**: Recommended
-  - **o1-preview**: Very Expensive
-
-  **Note**: The choice of AI model affects the cost and quality of the suggestions. Higher-end models like `gpt-4o-mini` may provide better suggestions but at a higher cost.
+- **OpenAI API Key**: Enter your OpenAI API key.
 
 ### 3. **Obtain an OpenAI API Key**
 
@@ -188,11 +222,6 @@ If you prefer to install the integration manually, follow these steps:
 
 - **Data Sent to OpenAI**: The integration sends entity information to OpenAI's API for analysis.
 - **User Consent**: By using this integration, you consent to this data being sent to OpenAI.
-
-### **Local AI Processing**
-
-- **Not Yet Implemented**: The option to use local AI is currently a placeholder and not functional.
-- **Future Updates**: Stay tuned for updates that may include local AI processing capabilities.
 
 ---
 
@@ -343,7 +372,7 @@ We have an ambitious roadmap for the **AI Automation Suggester** integration to 
 
 ## Contributing to the Roadmap
 
-We welcome contributions and feedback from the community to help shape the future of the **AI Automation Suggester** integration. If you have ideas, feature requests, or would like to contribute to the development, please open an issue or submit a pull request on our [GitHub repository](https://github.com/yourusername/ai_automation_suggester).
+We welcome contributions and feedback from the community to help shape the future of the **AI Automation Suggester** integration. If you have ideas, feature requests, or would like to contribute to the development, please open an issue or submit a pull request on our [GitHub repository](https://github.com/ITSpecialist111/ai_automation_suggester).
 
 ---
 
@@ -372,10 +401,61 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contributions
 
-Contributions are welcome! Please open an issue or submit a pull request on GitHub.
+Contributions are welcome! Please open an issue or submit a pull request on [GitHub](https://github.com/ITSpecialist111/ai_automation_suggester).
 
 ---
 
 ## Disclaimer
 
 This integration is a third-party custom component and is not affiliated with or endorsed by Home Assistant or OpenAI.
+
+---
+
+## Support the Project
+
+If you find this project helpful and would like to support its development, you can buy me a coffee!
+
+<a href="https://buymeacoffee.com/itspecialist">
+  <img src="https://camo.githubusercontent.com/7b8f7343bfc6e3c65c7901846637b603fd812f1a5f768d8b0572558bde859eb9/68747470733a2f2f63646e2e6275796d6561636f666665652e636f6d2f627574746f6e732f76322f64656661756c742d79656c6c6f772e706e67" alt="Buy Me A Coffee" width="200">
+</a>
+
+Your support is greatly appreciated and helps maintain and improve this project!
+
+---
+
+# Additional Information
+
+For any questions or support, please open an issue on [GitHub](https://github.com/ITSpecialist111/ai_automation_suggester/issues).
+
+---
+
+# Frequently Asked Questions (FAQ)
+
+### **1. How do I update the integration when a new version is released?**
+
+- If installed via HACS, you can update the integration through the HACS interface:
+  - Navigate to **HACS** > **Integrations**.
+  - Find **AI Automation Suggester** in the list.
+  - If an update is available, click **Update**.
+
+### **2. Can I use this integration without an OpenAI API key?**
+
+- No, an OpenAI API key is required for the integration to function, as it uses OpenAI's GPT models to generate suggestions.
+
+### **3. Is my data safe when using this integration?**
+
+- The integration sends entity information to OpenAI's API for analysis. While OpenAI has robust privacy and security measures, you should review their [privacy policy](https://openai.com/policies/privacy-policy) to understand how your data is handled.
+
+### **4. I found a bug or have a feature request. How can I contribute?**
+
+- Please open an issue on the [GitHub repository](https://github.com/ITSpecialist111/ai_automation_suggester/issues) with details about the bug or your feature request.
+
+### **5. Does the integration support local AI processing?**
+
+- Currently, the integration only supports cloud-based AI processing using OpenAI's API. Local AI processing is planned for future updates.
+
+---
+
+# End of README
+
+Feel free to reach out if you need further assistance or have any other questions!

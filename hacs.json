@@ -1,5 +1,7 @@
 {
     "name": "AI Automation Suggester",
     "content_in_root": false,
+    "domains": ["ai_suggester"],
+    "iot_class": "cloud_polling",
     "homeassistant": "2024.10.2"
   }
