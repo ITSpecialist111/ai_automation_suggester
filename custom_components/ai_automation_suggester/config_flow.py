@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for AI Automation Suggester."""
 
-    VERSION = 1
+    VERSION = 1.02
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
