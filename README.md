@@ -30,7 +30,7 @@ Your support is greatly appreciated and helps maintain and improve this project!
   - [Installing via HACS (Recommended)](#installing-via-hacs-recommended)
   - [Manual Installation](#manual-installation)
 - [Configuration](#configuration)
-- [Known Issues]#known-Issues
+- [Known Issues](#known-Issues)
 - [Usage](#usage)
 - [Important Notes](#important-notes)
 - [Troubleshooting](#troubleshooting)
