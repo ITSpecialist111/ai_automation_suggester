@@ -11,8 +11,6 @@ from .coordinator import AIAutomationCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-CONFIG_SCHEMA = cv.config_entry_only_config_schema
-
 async def async_setup(hass: HomeAssistant, config: dict):
     """Set up the AI Automation Suggester component."""
     hass.data.setdefault(DOMAIN, {})
