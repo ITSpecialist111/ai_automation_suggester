@@ -94,7 +94,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
         prompt = self.generate_prompt(ai_input_data)
         try:
-            response = openai.ChatCompletion.create(
+            response = openai.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {
