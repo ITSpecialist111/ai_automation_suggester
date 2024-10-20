@@ -30,6 +30,7 @@ Your support is greatly appreciated and helps maintain and improve this project!
   - [Installing via HACS (Recommended)](#installing-via-hacs-recommended)
   - [Manual Installation](#manual-installation)
 - [Configuration](#configuration)
+- [Known Issues]]#known-Issues
 - [Usage](#usage)
 - [Important Notes](#important-notes)
 - [Troubleshooting](#troubleshooting)
@@ -172,6 +173,15 @@ If you prefer to install the integration manually, follow these steps:
 - Navigate to the [API Keys page](https://platform.openai.com/account/api-keys).
 - Click on **Create new secret key** and copy the key.
 - **Important**: Keep your API key secure and do not share it publicly.
+
+---
+## Known Issues
+
+### 1. **Generic Suggestions on Initial Setup**
+
+After the initial setup of the integration, the suggester will create a new persistent notification in Home Assistant. The initial suggestions are a generic list; however, you can manually trigger new suggestions that will look at your specific entities (or wait for the schedule to run).
+
+You can manually trigger this by going to Developer Tools -> Actions -> AI Automation Suggester: Generate Suggestions -> Perform Action.
 
 ---
 
