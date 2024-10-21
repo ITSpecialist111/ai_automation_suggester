@@ -5,6 +5,7 @@
         "title": "Configure AI Automation Suggester",
         "data": {
           "scan_frequency": "Scan Frequency (hours)",
+          "initial_lag_time": "Initial Lag Time (minutes)",
           "use_local_ai": "Use Local AI",
           "openai_api_key": "OpenAI API Key"
         }

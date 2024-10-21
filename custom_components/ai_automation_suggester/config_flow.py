@@ -1,33 +1,29 @@
 """Config flow for AI Automation Suggester integration."""
 import logging
-
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.core import callback
-
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-
 class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for AI Automation Suggester."""
-
-    VERSION = 1.02
+    
+    VERSION = 1.04
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
         errors = {}
         if user_input is not None:
-            # Validate API key if using cloud AI
             if not user_input.get("use_local_ai") and not user_input.get("openai_api_key"):
                 errors["openai_api_key"] = "required"
             else:
                 return self.async_create_entry(title="AI Automation Suggester", data=user_input)
 
         data_schema = vol.Schema({
-            vol.Required("scan_frequency", default=24): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required("scan_frequency", default=24): vol.All(vol.Coerce(int), vol.Range(min=0)),
+            vol.Required("initial_lag_time", default=10): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
             vol.Required("use_local_ai", default=False): bool,
             vol.Optional("openai_api_key"): str,
         })
@@ -38,10 +34,9 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry):
         return AIAutomationOptionsFlowHandler(config_entry)
 
-
 class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow."""
-
+    
     def __init__(self, config_entry):
         """Initialize options flow."""
         self.config_entry = config_entry
@@ -53,7 +48,9 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
 
         data_schema = vol.Schema({
             vol.Required("scan_frequency", default=self.config_entry.options.get("scan_frequency", 24)):
-                vol.All(vol.Coerce(int), vol.Range(min=1)),
+                vol.All(vol.Coerce(int), vol.Range(min=0)),
+            vol.Required("initial_lag_time", default=self.config_entry.options.get("initial_lag_time", 10)):
+                vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
             vol.Required("use_local_ai", default=self.config_entry.options.get("use_local_ai", False)): bool,
             vol.Optional("openai_api_key", default=self.config_entry.options.get("openai_api_key", "")): str,
         })
