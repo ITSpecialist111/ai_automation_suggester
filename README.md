@@ -166,6 +166,9 @@ If you prefer to install the integration manually, follow these steps:
 
 - **Scan Frequency (hours)**: Set how often (in hours) the integration scans for new entities. Default is `24` hours.
 - **OpenAI API Key**: Enter your OpenAI API key.
+- **Scan Frequency (hours)**: Scan Frequency (hours): Set how often (in hours) the integration scans for new entities. Default is 24 hours. Set to 0 to disable automatic scanning.
+- **Initial Lag Time**: Initial Lag Time (minutes): Set a delay before initial suggestions are generated after setup. Default is 10 minutes.
+- **OpenAI API Key**: Enter your OpenAI API key.
 
 ### 3. **Obtain an OpenAI API Key**
 
