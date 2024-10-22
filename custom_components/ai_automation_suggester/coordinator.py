@@ -36,8 +36,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         """Fetch data from AI model."""
         current_time = datetime.now()
 
-        # Check if scan frequency has passed
-        if self.last_update and current_time - self.last_update < self.update_interval:
+        # Check if scan frequency has passed, but only if update_interval is not None
+        if self.update_interval is not None and self.last_update and current_time - self.last_update < self.update_interval:
             _LOGGER.debug("Skipping update, scan frequency interval not reached.")
             return self.previous_entities  # Return previous data without update
 
@@ -78,6 +78,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             )
 
         return suggestions
+
 
 
     def get_ai_suggestions(self, ai_input_data):
