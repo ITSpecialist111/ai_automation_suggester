@@ -127,7 +127,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=500,
+                max_tokens=16384,
                 n=1,
                 temperature=0.7,
             )
