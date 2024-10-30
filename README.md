@@ -190,6 +190,11 @@ You can manually trigger this by going to Developer Tools -> Actions -> AI Autom
 
 ## Usage
 
+### Video Tutorial via @BeardedTinker YouTube Channel **With Thanks!**
+
+[![Watch the video](https://img.youtube.com/vi/-jnM33xQ3OQ/0.jpg)](https://www.youtube.com/watch?v=-jnM33xQ3OQ)
+
+
 ### 1. **Automatic Suggestions**
 
 - The integration will automatically scan for new entities based on the configured scan frequency.
