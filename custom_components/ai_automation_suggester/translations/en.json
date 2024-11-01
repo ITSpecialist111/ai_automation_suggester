@@ -4,15 +4,48 @@
       "user": {
         "title": "Configure AI Automation Suggester",
         "data": {
-          "scan_frequency": "Scan Frequency (hours)",
-          "initial_lag_time": "Initial Lag Time (minutes)",
-          "use_local_ai": "Use Local AI",
-          "openai_api_key": "OpenAI API Key"
+          "provider": "AI Provider"
+        }
+      },
+      "provider_config": {
+        "title": "Provider Settings",
+        "data": {
+          "model": "Model Name",
+          "api_key": "API Key",
+          "ip_address": "IP Address",
+          "port": "Port",
+          "use_https": "Use HTTPS"
         }
       }
     },
     "error": {
-      "required": "This field is required."
+      "cannot_connect": "Failed to connect to service",
+      "invalid_auth": "Invalid authentication",
+      "invalid_config": "Invalid configuration",
+      "unknown": "Unexpected error",
+      "no_entities": "No new entities found",
+      "api_error": "API error occurred",
+      "required_field": "This field is required"
+    },
+    "abort": {
+      "already_configured": "Provider is already configured",
+      "provider_not_supported": "This provider is not currently supported"
+    }
+  },
+  "services": {
+    "generate_suggestions": {
+      "name": "Generate Suggestions",
+      "description": "Manually trigger AI automation suggestions",
+      "fields": {
+        "provider_config": {
+          "name": "Provider Configuration",
+          "description": "Which provider configuration to use (if you have multiple)"
+        },
+        "custom_prompt": {
+          "name": "Custom Prompt",
+          "description": "Optional custom prompt to override the default system prompt"
+        }
+      }
     }
   }
 }

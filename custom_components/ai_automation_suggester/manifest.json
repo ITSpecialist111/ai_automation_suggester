@@ -7,7 +7,12 @@
   "documentation": "https://github.com/ITSpecialist111/ai_automation_suggester",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/ITSpecialist111/ai_automation_suggester/issues",
-  "requirements": ["openai>=1.0.0,<2.0.0"],
-  "version": "1.06"
+  "requirements": [
+    "openai>=1.0.0,<2.0.0",
+    "anthropic>=0.8.0",
+    "aiohttp>=3.8.0",
+    "pyyaml>=6.0",
+    "voluptuous>=0.13.1"
+  ],
+  "version": "1.0.7"
 }
-

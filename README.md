@@ -5,7 +5,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/ITSpecialist111/AI_AUTOMATION_SUGGESTER)](https://github.com/ITSpecialist111/AI_AUTOMATION_SUGGESTER/releases)
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 
-An integration for Home Assistant that uses OpenAI's GPT models to analyze your newly added entities and suggest potential automations.
+An integration for Home Assistant that uses AI models to analyze your entities and suggest potential automations. Now supporting multiple providers including OpenAI, Google, and local models for enhanced privacy.
 
 ---
 
@@ -30,47 +30,43 @@ Your support is greatly appreciated and helps maintain and improve this project!
   - [Installing via HACS (Recommended)](#installing-via-hacs-recommended)
   - [Manual Installation](#manual-installation)
 - [Configuration](#configuration)
-- [Known Issues](#known-Issues)
 - [Usage](#usage)
 - [Important Notes](#important-notes)
 - [Troubleshooting](#troubleshooting)
 - [Roadmap](#roadmap)
-  - [Phase 1: Enhanced Entity Analysis](#phase-1-enhanced-entity-analysis)
-  - [Phase 2: Interactive Suggestion Management](#phase-2-interactive-suggestion-management)
-  - [Phase 3: Automated Automation Creation](#phase-3-automated-automation-creation)
   - [Future Enhancements](#future-enhancements)
-  - [Contributing to the Roadmap](#contributing-to-the-roadmap)
-  - [Timeline and Updates](#timeline-and-updates)
 - [License](#license)
 - [Acknowledgments](#acknowledgments)
 - [Contributions](#contributions)
 - [Disclaimer](#disclaimer)
 - [Support the Project](#support-the-project)
+- [Additional Information](#additional-information)
+- [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
 
 ---
 
 ## Background and Purpose
 
-Managing and automating devices in a smart home can be complex, especially as the number of devices grows. The **AI Automation Suggester** integration aims to simplify this process by leveraging OpenAI's GPT models to analyze newly added entities in your Home Assistant setup and provide intelligent automation suggestions.
+Managing and automating devices in a smart home can be complex, especially as the number of devices grows. The **AI Automation Suggester** integration aims to simplify this process by leveraging AI models to analyze your entities in Home Assistant and provide intelligent automation suggestions.
 
 ---
 
 ## Features
 
-- **Automatic Analysis**: Periodically scans for new entities and analyzes them using AI.
-- **Automation Suggestions**: Provides clear and concise suggestions for potential automations.
-- **Manual Trigger**: Allows you to manually trigger the AI analysis at any time.
+- **Manual Analysis Trigger**: Allows you to manually trigger the AI analysis at any time, providing flexibility to implement an automation trigger that suits your needs.
+- **Supports Multiple AI Providers**: Choose from a variety of AI models including OpenAI, Google, Groq, and local models like LocalAI and Ollama for privacy-focused users.
+- **Custom LLM Variants**: Users can select their preferred AI model variant, such as OpenAI's `o1-preview`.
 - **Persistent Notifications**: Suggestions are delivered via Home Assistant's persistent notifications.
 - **Sensor Entity**: Creates a sensor entity to display the status and suggestions.
-- **Configurable Scan Frequency**: Set how often the integration scans for new entities.
-- **Supports OpenAI GPT Models**: Uses OpenAI's GPT models for analysis.
+- **German Translation**: Added support for German language to reach a global audience.
 
 ---
 
 ## Prerequisites
 
 - **Home Assistant**: Version 2023.5 or later.
-- **OpenAI API Key**: You need an OpenAI API key to use the AI processing.
+- **API Keys**: Depending on the provider you choose, you may need API keys for OpenAI, Anthropic, Google, or Groq.
+- **Local AI Setup**: For LocalAI and Ollama, you need to have the respective servers running on your local network.
 
 ---
 
@@ -143,7 +139,8 @@ If you prefer to install the integration manually, follow these steps:
                  ├── services.yaml
                  ├── strings.json
                  └── translations/
-                     └── en.json
+                     ├── en.json
+                     └── de.json
      ```
 
    - If the `custom_components` directory doesn't exist, create it.
@@ -164,55 +161,43 @@ If you prefer to install the integration manually, follow these steps:
 
 ### 2. **Configure the Integration**
 
-- **Scan Frequency (hours)**: Set how often (in hours) the integration scans for new entities. Default is `24` hours.
-- **OpenAI API Key**: Enter your OpenAI API key.
-- **Scan Frequency (hours)**: Scan Frequency (hours): Set how often (in hours) the integration scans for new entities. Default is 24 hours. Set to 0 to disable automatic scanning.
-- **Initial Lag Time**: Initial Lag Time (minutes): Set a delay before initial suggestions are generated after setup. Default is 10 minutes.
-- **OpenAI API Key**: Enter your OpenAI API key.
+- **Provider**: Choose your preferred AI provider from the list (OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, or Custom OpenAI).
+- **API Key or Server Details**: Depending on the provider, you may need to enter an API key or provide server details for local models.
+- **Model Selection**: Choose the AI model variant you wish to use (e.g., OpenAI's `o1-preview`).
+- **Custom System Prompt**: (Optional) Override the built-in system prompt with your own for more granular control.
 
-### 3. **Obtain an OpenAI API Key**
+### 3. **Obtain API Keys or Set Up Local AI Servers**
 
-- Log in or sign up at the [OpenAI Platform](https://platform.openai.com/).
-- Navigate to the [API Keys page](https://platform.openai.com/account/api-keys).
-- Click on **Create new secret key** and copy the key.
-- **Important**: Keep your API key secure and do not share it publicly.
-
----
-## Known Issues
-
-### 1. **Generic Suggestions on Initial Setup**
-
-After the initial setup of the integration, the suggester will create a new persistent notification in Home Assistant. The initial suggestions are a generic list; however, you can manually trigger new suggestions that will look at your specific entities (or wait for the schedule to run).
-
-You can manually trigger this by going to Developer Tools -> Actions -> AI Automation Suggester: Generate Suggestions -> Perform Action.
+- **OpenAI**: Obtain an API key from the [OpenAI Dashboard](https://platform.openai.com/account/api-keys).
+- **Anthropic**: Sign up for an API key at [Anthropic](https://www.anthropic.com/).
+- **Google**: Get an API key from the [Google Cloud Console](https://console.cloud.google.com/).
+- **Groq**: Register and obtain an API key from [Groq](https://groq.com/).
+- **LocalAI/Ollama**: Set up the respective servers on your local network.
 
 ---
 
 ## Usage
 
-### Video Tutorial via @BeardedTinker YouTube Channel **With Thanks!**
+### 1. **Manual Trigger**
 
-[![Watch the video](https://img.youtube.com/vi/-jnM33xQ3OQ/0.jpg)](https://www.youtube.com/watch?v=-jnM33xQ3OQ)
+Since automatic scheduling has been removed for better flexibility and stability, you can now manually trigger the AI analysis:
 
+- Go to **Developer Tools** > **Services**.
+- Select `ai_suggester.generate_suggestions` from the list.
+- In the service data, you can specify:
 
-### 1. **Automatic Suggestions**
+  - **Provider**: Override the default provider if desired.
+  - **System Prompt**: Provide a custom prompt to tailor the suggestions.
+  - **Entities**: Specify a list of entities to analyze.
 
-- The integration will automatically scan for new entities based on the configured scan frequency.
-- When new entities are detected, it will analyze them and create automation suggestions.
+- Click **Call Service**.
 
-### 2. **Manual Trigger**
+### 2. **Implementing Automations**
 
-- You can manually trigger the AI analysis at any time:
-  - Go to **Developer Tools** > **Services**.
-  - Select `ai_suggester.generate_suggestions` from the list.
-  - Click **Call Service**.
+- The integration will generate suggestions and deliver them via persistent notifications.
+- Review the suggestions and implement the automations that suit your needs.
 
-### 3. **Viewing Suggestions**
-
-- Suggestions are delivered via Home Assistant's persistent notifications.
-- You can also view suggestions in the `sensor.ai_automation_suggestions` entity's attributes.
-
-### 4. **Adding to Lovelace Dashboard**
+### 3. **Adding to Lovelace Dashboard**
 
 - You can display the suggestions on your dashboard using an **Entities** card:
 
@@ -226,25 +211,25 @@ You can manually trigger this by going to Developer Tools -> Actions -> AI Autom
 
 ## Important Notes
 
-### **OpenAI API Key Security**
+### **AI Provider API Key Security**
 
-- **Do Not Share Your API Key**: Keep your OpenAI API key confidential.
+- **Do Not Share Your API Keys**: Keep your API keys confidential.
 - **Revoking Compromised Keys**: If you suspect your API key has been compromised, revoke it immediately and generate a new one.
 
-### **OpenAI API Usage**
+### **API Usage**
 
-- **Costs**: Using the OpenAI API may incur costs. Monitor your usage in the [OpenAI Dashboard](https://platform.openai.com/account/usage).
-- **Usage Limits**: Set usage limits in your OpenAI account to avoid unexpected charges.
+- **Costs**: Using AI provider APIs may incur costs. Monitor your usage in your provider's dashboard.
+- **Usage Limits**: Set usage limits in your account to avoid unexpected charges.
 
 ### **Compatibility**
 
-- **OpenAI Python Library**: The integration requires `openai>=1.0.0`. This is specified in the `manifest.json`.
 - **Home Assistant Version**: Ensure you are running Home Assistant version 2023.5 or later.
+- **Local AI Models**: If using local models, ensure your local servers are correctly set up and accessible.
 
 ### **Data Privacy**
 
-- **Data Sent to OpenAI**: The integration sends entity information to OpenAI's API for analysis.
-- **User Consent**: By using this integration, you consent to this data being sent to OpenAI.
+- **Data Sent to AI Providers**: The integration sends entity information to the selected AI provider's API for analysis.
+- **User Consent**: By using this integration, you consent to this data being sent to the chosen AI provider.
 
 ---
 
@@ -252,13 +237,14 @@ You can manually trigger this by going to Developer Tools -> Actions -> AI Autom
 
 ### **Common Issues**
 
-1. **OpenAI API Errors**
+1. **API Errors**
 
-   - **Symptom**: Error messages related to OpenAI API in notifications or logs.
+   - **Symptom**: Error messages related to AI provider APIs in notifications or logs.
    - **Solution**:
-     - Verify your OpenAI API key is correct.
+     - Verify your API key or server details are correct.
      - Ensure your API key has not expired or been revoked.
-     - Check your OpenAI account for any usage limits or account issues.
+     - Check your account for any usage limits or account issues.
+     - If using local models, ensure the server is running and accessible.
 
 2. **Integration Not Showing Up**
 
@@ -273,14 +259,14 @@ You can manually trigger this by going to Developer Tools -> Actions -> AI Autom
    - **Symptom**: The integration doesn't generate any suggestions.
    - **Solution**:
      - Manually trigger the service `ai_suggester.generate_suggestions`.
-     - Check if there are any new entities to analyze.
+     - Check if you have provided the necessary service data.
      - Review logs for any errors during the analysis.
 
 4. **Dependency Issues**
 
-   - **Symptom**: Errors related to the OpenAI Python library version.
+   - **Symptom**: Errors related to missing dependencies or incorrect versions.
    - **Solution**:
-     - Ensure that the OpenAI library version is `>=1.0.0`.
+     - Ensure all required libraries are installed.
      - Clear Home Assistant's cache by deleting the `deps` directory and restart.
 
 ### **Logging and Debugging**
@@ -292,7 +278,6 @@ You can manually trigger this by going to Developer Tools -> Actions -> AI Autom
     default: warning
     logs:
       custom_components.ai_suggester: debug
-      openai: debug
   ```
 
 - View logs under **Settings** > **System** > **Logs**.
@@ -301,111 +286,27 @@ You can manually trigger this by going to Developer Tools -> Actions -> AI Autom
 
 ## Roadmap
 
-We have an ambitious roadmap for the **AI Automation Suggester** integration to enhance its capabilities and provide even more value to Home Assistant users. Below is a list of planned features and improvements:
-
----
-
-### **Phase 1: Enhanced Entity Analysis**
-
-#### **1. Comprehensive Integration and Sensor Discovery**
-
-- **Objective**: Extend the integration to analyze all available integrations, sensors, and automations in the user's Home Assistant setup.
-- **Details**:
-  - Collect detailed information about existing entities and their states.
-  - Understand the relationships and dependencies between different entities.
-  - Identify potential areas where automations could enhance the smart home experience.
-
-#### **2. Advanced Automation Suggestions**
-
-- **Objective**: Provide more powerful and personalized automation suggestions based on the comprehensive analysis.
-- **Details**:
-  - Use AI to detect patterns and usage habits.
-  - Suggest automations that can improve efficiency, security, and convenience.
-  - Include suggestions for energy savings, routine automation, and proactive alerts.
-
----
-
-### **Phase 2: Interactive Suggestion Management**
-
-#### **1. User Feedback Mechanism**
-
-- **Objective**: Allow users to like or dislike the suggested automations to refine future suggestions.
-- **Details**:
-  - Implement a user interface where suggestions are listed with options to like or dislike.
-  - Use feedback to improve the AI model's understanding of user preferences.
-  - Store feedback securely and respect user privacy.
-
-#### **2. Detailed Implementation Guides**
-
-- **Objective**: For liked suggestions, provide concise and clear instructions on how to implement the automation.
-- **Details**:
-  - Break down the steps required to create the automation within Home Assistant.
-  - Include code snippets, configuration examples, and screenshots where applicable.
-  - Explain the desired outcome and how the automation enhances the user's smart home.
-
----
-
-### **Phase 3: Automated Automation Creation**
-
-#### **1. One-Click Automation Deployment**
-
-- **Objective**: Enable users to automatically implement the suggested automations directly from the integration.
-- **Details**:
-  - Integrate with Home Assistant's automation editor to create automations programmatically.
-  - Ensure automations are created following best practices and are easily editable by the user.
-  - Provide options for users to review and confirm automations before deployment.
-
-#### **2. Safety and Privacy Measures**
-
-- **Objective**: Implement safeguards to ensure that automations are created securely and do not compromise the user's system.
-- **Details**:
-  - Include confirmation dialogs and summaries before making changes.
-  - Ensure the integration adheres to Home Assistant's security guidelines.
-  - Provide options to rollback changes if needed.
-
----
-
 ### **Future Enhancements**
 
-#### **1. Local AI Processing**
+1. **Interactive Suggestion Management**
 
-- **Objective**: Develop local AI processing capabilities to reduce reliance on cloud services.
-- **Details**:
-  - Explore the use of local machine learning models compatible with Home Assistant's architecture.
-  - Improve response times and reduce costs associated with cloud AI usage.
-  - Enhance user privacy by keeping data processing local.
+   - **User Feedback Mechanism**: Allow users to provide feedback on suggestions to improve future results.
+   - **Detailed Implementation Guides**: Provide step-by-step instructions for implementing suggested automations.
 
-#### **2. Multi-Language Support**
+2. **Automated Automation Creation**
 
-- **Objective**: Support multiple languages to cater to a global user base.
-- **Details**:
-  - Translate the integration's interface and messages into other languages.
-  - Ensure AI-generated suggestions are provided in the user's preferred language.
-  - Collaborate with the community for translations and localization efforts.
+   - **One-Click Deployment**: Enable users to automatically implement suggested automations.
+   - **Safety Measures**: Implement safeguards to ensure automations are created securely.
 
-#### **3. Community Integration Sharing**
+3. **Enhanced Localization**
 
-- **Objective**: Allow users to share their automations and suggestions with the community.
-- **Details**:
-  - Create a platform or integrate with existing platforms to share and discover automations.
-  - Enable users to benefit from community-driven ideas and solutions.
-  - Implement moderation and quality control mechanisms.
+   - **Additional Language Support**: Expand language support beyond English and German.
+   - **Community Translations**: Collaborate with the community for translations and localization efforts.
 
----
+4. **Community Integration Sharing**
 
-## Contributing to the Roadmap
-
-We welcome contributions and feedback from the community to help shape the future of the **AI Automation Suggester** integration. If you have ideas, feature requests, or would like to contribute to the development, please open an issue or submit a pull request on our [GitHub repository](https://github.com/ITSpecialist111/ai_automation_suggester).
-
----
-
-## Timeline and Updates
-
-We aim to implement these features progressively, with regular updates provided through the repository. Please check back frequently for the latest news and release notes.
-
----
-
-**Note:** The features listed in this roadmap are subject to change based on feasibility, user feedback, and ongoing development efforts. Our goal is to provide the most valuable and user-friendly experience possible.
+   - **Platform for Sharing**: Allow users to share their automations and suggestions with the community.
+   - **Moderation and Quality Control**: Implement mechanisms to ensure shared content is valuable and safe.
 
 ---
 
@@ -418,7 +319,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - **Home Assistant Community**: For providing an amazing platform and community support.
-- **OpenAI**: For their powerful AI models and APIs.
+- **AI Providers**: OpenAI, Anthropic, Google, Groq, LocalAI, and Ollama for their AI models and APIs.
 
 ---
 
@@ -430,7 +331,7 @@ Contributions are welcome! Please open an issue or submit a pull request on [Git
 
 ## Disclaimer
 
-This integration is a third-party custom component and is not affiliated with or endorsed by Home Assistant or OpenAI.
+This integration is a third-party custom component and is not affiliated with or endorsed by Home Assistant or any of the AI providers.
 
 ---
 
@@ -446,13 +347,13 @@ Your support is greatly appreciated and helps maintain and improve this project!
 
 ---
 
-# Additional Information
+## Additional Information
 
 For any questions or support, please open an issue on [GitHub](https://github.com/ITSpecialist111/ai_automation_suggester/issues).
 
 ---
 
-# Frequently Asked Questions (FAQ)
+## Frequently Asked Questions (FAQ)
 
 ### **1. How do I update the integration when a new version is released?**
 
@@ -461,21 +362,25 @@ For any questions or support, please open an issue on [GitHub](https://github.co
   - Find **AI Automation Suggester** in the list.
   - If an update is available, click **Update**.
 
-### **2. Can I use this integration without an OpenAI API key?**
+### **2. Can I use this integration without an API key?**
 
-- No, an OpenAI API key is required for the integration to function, as it uses OpenAI's GPT models to generate suggestions.
+- Yes, if you choose to use local AI models like LocalAI or Ollama, you do not need an external API key. However, you need to have the local servers set up and running.
 
 ### **3. Is my data safe when using this integration?**
 
-- The integration sends entity information to OpenAI's API for analysis. While OpenAI has robust privacy and security measures, you should review their [privacy policy](https://openai.com/policies/privacy-policy) to understand how your data is handled.
+- The integration sends entity information to the selected AI provider's API for analysis. If you use local models, your data remains within your local network. For cloud providers, you should review their privacy policies to understand how your data is handled.
 
 ### **4. I found a bug or have a feature request. How can I contribute?**
 
 - Please open an issue on the [GitHub repository](https://github.com/ITSpecialist111/ai_automation_suggester/issues) with details about the bug or your feature request.
 
-### **5. Does the integration support local AI processing?**
+### **5. How can I add support for another language?**
 
-- Currently, the integration only supports cloud-based AI processing using OpenAI's API. Local AI processing is planned for future updates.
+- We welcome community contributions for translations. Please submit a pull request with the new language files in the `translations` directory.
+
+### **6. Why was automatic scheduling removed?**
+
+- Automatic scheduling was removed to provide more stability and flexibility. Users can now implement their own triggers for the AI analysis, allowing for a more customized experience.
 
 ---
 

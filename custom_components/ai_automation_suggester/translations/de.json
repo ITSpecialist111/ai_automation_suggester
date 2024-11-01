@@ -1,0 +1,56 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "AI Automation Suggester konfigurieren",
+                "description": "Wählen Sie Ihren KI-Anbieter und konfigurieren Sie die Einstellungen",
+                "data": {
+                    "provider": "KI-Anbieter",
+                    "scan_frequency": "Scan-Häufigkeit (Stunden)",
+                    "initial_lag_time": "Anfangsverzögerung (Minuten)"
+                }
+            },
+            "openai": {
+                "title": "OpenAI Konfiguration",
+                "data": {
+                    "api_key": "API-Schlüssel",
+                    "model": "Modell"
+                }
+            },
+            "anthropic": {
+                "title": "Anthropic Konfiguration",
+                "data": {
+                    "api_key": "API-Schlüssel",
+                    "model": "Modell"
+                }
+            },
+            "localai": {
+                "title": "LocalAI Konfiguration",
+                "data": {
+                    "ip_address": "IP-Adresse",
+                    "port": "Port",
+                    "https": "HTTPS verwenden",
+                    "model": "Modellname"
+                }
+            },
+            "ollama": {
+                "title": "Ollama Konfiguration",
+                "data": {
+                    "ip_address": "IP-Adresse",
+                    "port": "Port",
+                    "https": "HTTPS verwenden",
+                    "model": "Modellname"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Verbindung zum Dienst fehlgeschlagen",
+            "invalid_auth": "Ungültige Authentifizierung",
+            "invalid_config": "Ungültige Konfiguration",
+            "unknown": "Unerwarteter Fehler",
+            "no_entities": "Keine neuen Entitäten gefunden",
+            "api_error": "API-Fehler aufgetreten",
+            "required_field": "Dieses Feld ist erforderlich"
+        }
+    }
+}

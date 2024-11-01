@@ -1,5 +1,7 @@
 {
-    "name": "AI Automation Suggester",
-    "content_in_root": false,
-    "homeassistant": "2024.10.2"
-  }
+  "name": "AI Automation Suggester",
+  "content_in_root": false,
+  "render_readme": true,
+  "homeassistant": "2024.1.0",
+  "hacs": "1.26.0"
+}

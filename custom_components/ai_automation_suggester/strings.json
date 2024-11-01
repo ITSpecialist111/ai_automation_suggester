@@ -5,16 +5,13 @@
       "user": {
         "title": "Configure AI Automation Suggester",
         "data": {
-          "scan_frequency": "Scan Frequency (hours, set to 0 to disable)",
-          "initial_lag_time": "Initial Lag Time (minutes)",
-          "use_local_ai": "Use Local AI",
-          "openai_api_key": "OpenAI API Key"
+          "provider": "AI Provider"
         }
       }
     },
     "error": {
       "required": "This field is required.",
-      "invalid_api_key": "The OpenAI API key is invalid."
+      "invalid_api_key": "The API key is invalid."
     }
   },
   "services": {
