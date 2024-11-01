@@ -92,15 +92,21 @@ class ProviderValidator:
     async def validate_google(self, api_key: str) -> bool:
         """Validate Google configuration."""
         headers = {
-            'Authorization': f"Bearer {api_key}",
             'Content-Type': 'application/json',
         }
+        params = { 
+            "key": api_key
+        }
+        test_request = {"contents":[{"parts":[{"text":"Explain how AI works"}]}]}
         try:
             _LOGGER.debug("Validating Google API key")
             # Placeholder URL; replace with the actual Google API endpoint
-            response = await self.session.get(
-                "https://api.google.com/v1/models",
-                headers=headers
+            response = await self.session.post(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+                headers=headers,
+                json=test_request,
+                params=param
+
             )
             is_valid = response.status == 200
             _LOGGER.debug("Google validation result: %s", is_valid)
