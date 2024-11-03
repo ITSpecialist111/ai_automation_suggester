@@ -4,7 +4,8 @@
       "user": {
         "title": "Configure AI Automation Suggester",
         "data": {
-          "provider": "AI Provider"
+          "provider": "AI Provider",
+          "max_tokens": "Maximum Output Tokens"
         }
       },
       "provider_config": {
@@ -12,10 +13,12 @@
         "data": {
           "model": "Model Name",
           "api_key": "API Key",
+          "max_tokens": "Maximum Output Tokens",
           "ip_address": "IP Address",
           "port": "Port",
           "use_https": "Use HTTPS"
-        }
+        },
+        "description": "Maximum tokens controls the length of the AI's response. Default is 500. Increase if you need longer responses."
       }
     },
     "error": {

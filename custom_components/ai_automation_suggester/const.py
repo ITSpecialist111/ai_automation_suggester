@@ -45,9 +45,9 @@ CONF_CUSTOM_OPENAI_MODEL = "custom_openai_model"
 # Model Defaults
 DEFAULT_MODELS = {
     "OpenAI": "gpt-4o-mini",
-    "Anthropic": "claude-2",
-    "Google": "gemini-1.5",
-    "Groq": "groq-0.8",
+    "Anthropic": "claude-2.1",
+    "Google": "gemini-1.0-pro",
+    "Groq": "llama3-8b-8192",
     "LocalAI": "llama3",
     "Ollama": "llama2",
     "Custom OpenAI": "gpt-3.5-turbo"
@@ -57,6 +57,16 @@ DEFAULT_MODELS = {
 ERROR_INVALID_API_KEY = "Invalid API key"
 ERROR_CONNECTION_FAILED = "Could not connect to server"
 ERROR_INVALID_CONFIG = "Invalid configuration"
+ERROR_OPENAI_NOT_CONFIGURED = "OpenAI is not configured"
+ERROR_ANTHROPIC_NOT_CONFIGURED = "Anthropic is not configured"
+ERROR_GOOGLE_NOT_CONFIGURED = "Google is not configured"
+ERROR_GROQ_NOT_CONFIGURED = "Groq is not configured"
+ERROR_GROQ_MULTIPLE_IMAGES = "Groq does not support videos or streams"
+ERROR_LOCALAI_NOT_CONFIGURED = "LocalAI is not configured"
+ERROR_OLLAMA_NOT_CONFIGURED = "Ollama is not configured"
+ERROR_CUSTOM_OPENAI_NOT_CONFIGURED = "Custom OpenAI provider is not configured"
+ERROR_NO_IMAGE_INPUT = "No image input provided"
+ERROR_HANDSHAKE_FAILED = "Connection could not be established"
 
 # Service attributes
 ATTR_PROVIDER_CONFIG = "provider_config"
@@ -74,7 +84,8 @@ EVENT_NEW_SUGGESTION = f"{DOMAIN}_new_suggestion"
 EVENT_PROVIDER_STATUS_CHANGE = f"{DOMAIN}_provider_status_change"
 
 # Configuration defaults
-DEFAULT_MAX_TOKENS = 500
+CONF_MAX_TOKENS = "max_tokens"
+DEFAULT_MAX_TOKENS = 500  # Conservative default example from 500 to 16384 for gpt-4o-mini output limit, other models are different
 DEFAULT_TEMPERATURE = 0.7
 
 # API Endpoints
@@ -82,5 +93,5 @@ ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"
 ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages"
 ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta2/models/{model}:generateText?key={api_key}"
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
-ENDPOINT_LOCALAI = "{base_url}/v1/chat/completions"
-ENDPOINT_OLLAMA = "{base_url}/api/chat"
+ENDPOINT_LOCALAI = "{protocol}://{ip_address}:{port}/v1/chat/completions"
+ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"

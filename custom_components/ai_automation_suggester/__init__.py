@@ -19,6 +19,30 @@ from .coordinator import AIAutomationCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+
+async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+    """Migrate old entry."""
+    _LOGGER.debug("Migrating from version %s", config_entry.version)
+
+    if config_entry.version == 1.07:
+        # Already up to date
+        return True
+
+    # Handle migration from version 1.06 or earlier
+    if config_entry.version <= 1.07:
+        new_data = {**config_entry.data}
+        
+        # Add any new required fields with defaults
+        if "scan_frequency" not in new_data:
+            new_data["scan_frequency"] = DEFAULT_SCAN_FREQUENCY
+        if "initial_lag_time" not in new_data:
+            new_data["initial_lag_time"] = DEFAULT_INITIAL_LAG_TIME
+
+        config_entry.version = 1.08
+        hass.config_entries.async_update_entry(config_entry, data=new_data)
+
+    return True
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the AI Automation Suggester component."""
     hass.data.setdefault(DOMAIN, {})

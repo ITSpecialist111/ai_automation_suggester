@@ -14,6 +14,7 @@ from .const import (
     DOMAIN,
     CONF_PROVIDER,
     DEFAULT_MODELS,
+    CONF_MAX_TOKENS,
     CONF_OPENAI_API_KEY,
     CONF_OPENAI_MODEL,
     CONF_ANTHROPIC_API_KEY,
@@ -133,15 +134,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 if k not in self.previous_entities
             }
 
-            # Debug log the entities being processed
-            _LOGGER.debug("Found new entities: %s", list(new_entities.keys()))
-
             if not new_entities:
                 _LOGGER.debug("No new entities detected")
                 return self.data
-
-            # Log number of new entities found
-            _LOGGER.info("Found %d new entities", len(new_entities))
 
             # Limit processing to 10 entities if needed
             if len(new_entities) > 10:
@@ -150,21 +145,22 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             # Prepare AI input
             ai_input_data = self.prepare_ai_input(new_entities)
-            _LOGGER.debug("Prepared AI input: %s", ai_input_data)
-
+            
             # Get suggestions from AI
             suggestions = await self.get_ai_suggestions(ai_input_data)
             
             if suggestions:
                 _LOGGER.debug("Received suggestions: %s", suggestions)
                 try:
-                    await persistent_notification.async_create(
+                    # Create notification only if suggestions is not None
+                    notification = await persistent_notification.async_create(
                         self.hass,
                         message=suggestions,
                         title="AI Automation Suggestions",
                         notification_id=f"ai_automation_suggestions_{current_time.timestamp()}"
                     )
                     
+                    # Update data regardless of notification success
                     self.data = {
                         "suggestions": suggestions,
                         "last_update": current_time,
@@ -173,7 +169,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     }
                 except Exception as err:
                     _LOGGER.error("Error creating notification: %s", err)
-                    return self.data
+                    # Still update data even if notification fails
+                    self.data = {
+                        "suggestions": suggestions,
+                        "last_update": current_time,
+                        "entities_processed": list(new_entities.keys()),
+                        "provider": self.entry.data.get(CONF_PROVIDER, "unknown")
+                    }
             else:
                 _LOGGER.warning("No valid suggestions received from AI")
                 self.data = {
@@ -257,10 +259,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self.entry.data.get(CONF_OPENAI_API_KEY)
             model = self.entry.data.get(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"])
+            max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            
             if not api_key:
                 raise ValueError("OpenAI API key not configured")
 
-            _LOGGER.debug("Making OpenAI API request with model %s", model)
+            _LOGGER.debug("Making OpenAI API request with model %s and max_tokens %d", 
+                        model, max_tokens)
             
             headers = {
                 "Content-Type": "application/json",
@@ -272,7 +277,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "messages": [
                     {"role": "user", "content": prompt}
                 ],
-                "max_tokens": DEFAULT_MAX_TOKENS,
+                "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
             
@@ -298,10 +303,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self.entry.data.get(CONF_ANTHROPIC_API_KEY)
             model = self.entry.data.get(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"])
+            max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            
             if not api_key:
                 raise ValueError("Anthropic API key not configured")
 
-            _LOGGER.debug("Making Anthropic API request with model %s", model)
+            _LOGGER.debug("Making Anthropic API request with model %s and max_tokens %d", 
+                        model, max_tokens)
             
             headers = {
                 "Content-Type": "application/json",
@@ -314,7 +322,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "messages": [
                     {"role": "user", "content": prompt}
                 ],
-                "max_tokens": DEFAULT_MAX_TOKENS,
+                "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
             
@@ -340,10 +348,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self.entry.data.get(CONF_GOOGLE_API_KEY)
             model = self.entry.data.get(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"])
+            max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            
             if not api_key:
                 raise ValueError("Google API key not configured")
 
-            _LOGGER.debug("Making Google API request with model %s", model)
+            _LOGGER.debug("Making Google API request with model %s and max_tokens %d", 
+                        model, max_tokens)
             
             headers = {
                 "Content-Type": "application/json",
@@ -355,7 +366,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 },
                 "temperature": DEFAULT_TEMPERATURE,
                 "candidate_count": 1,
-                "max_output_tokens": DEFAULT_MAX_TOKENS
+                "max_output_tokens": max_tokens
             }
             
             endpoint = ENDPOINT_GOOGLE.format(model=model, api_key=api_key)
@@ -382,10 +393,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self.entry.data.get(CONF_GROQ_API_KEY)
             model = self.entry.data.get(CONF_GROQ_MODEL, DEFAULT_MODELS["Groq"])
+            max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            
             if not api_key:
                 raise ValueError("Groq API key not configured")
 
-            _LOGGER.debug("Making Groq API request with model %s", model)
+            _LOGGER.debug("Making Groq API request with model %s and max_tokens %d", 
+                        model, max_tokens)
             
             headers = {
                 "Content-Type": "application/json",
@@ -401,7 +415,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                         ]
                     }
                 ],
-                "model": model
+                "model": model,
+                "max_tokens": max_tokens,
+                "temperature": DEFAULT_TEMPERATURE
             }
             
             async with self.session.post(
@@ -428,22 +444,27 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             port = self.entry.data.get(CONF_LOCALAI_PORT)
             https = self.entry.data.get(CONF_LOCALAI_HTTPS, False)
             model = self.entry.data.get(CONF_LOCALAI_MODEL, DEFAULT_MODELS["LocalAI"])
+            max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
             
             if not ip_address or not port:
                 raise ValueError("LocalAI configuration incomplete")
 
             protocol = "https" if https else "http"
-            base_url = f"{protocol}://{ip_address}:{port}"
-            endpoint = ENDPOINT_LOCALAI.format(base_url=base_url)
+            endpoint = ENDPOINT_LOCALAI.format(
+                protocol=protocol,
+                ip_address=ip_address,
+                port=port
+            )
             
-            _LOGGER.debug("Making LocalAI API request to %s with model %s", endpoint, model)
+            _LOGGER.debug("Making LocalAI API request to %s with model %s and max_tokens %d", 
+                        endpoint, model, max_tokens)
             
             data = {
                 "model": model,
                 "messages": [
                     {"role": "user", "content": prompt}
                 ],
-                "max_tokens": DEFAULT_MAX_TOKENS,
+                "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
             
@@ -470,15 +491,20 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             port = self.entry.data.get(CONF_OLLAMA_PORT)
             https = self.entry.data.get(CONF_OLLAMA_HTTPS, False)
             model = self.entry.data.get(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"])
+            max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
             
             if not ip_address or not port:
                 raise ValueError("Ollama configuration incomplete")
 
             protocol = "https" if https else "http"
-            base_url = f"{protocol}://{ip_address}:{port}"
-            endpoint = ENDPOINT_OLLAMA.format(base_url=base_url)
+            endpoint = ENDPOINT_OLLAMA.format(
+                protocol=protocol,
+                ip_address=ip_address,
+                port=port
+            )
             
-            _LOGGER.debug("Making Ollama API request to %s with model %s", endpoint, model)
+            _LOGGER.debug("Making Ollama API request to %s with model %s and max_tokens %d", 
+                        endpoint, model, max_tokens)
             
             data = {
                 "model": model,
@@ -488,7 +514,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "stream": False,
                 "options": {
                     "temperature": DEFAULT_TEMPERATURE,
-                    "num_predict": DEFAULT_MAX_TOKENS
+                    "num_predict": max_tokens
                 }
             }
             
@@ -514,10 +540,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             endpoint = self.entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT)
             api_key = self.entry.data.get(CONF_CUSTOM_OPENAI_API_KEY)
             model = self.entry.data.get(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"])
+            max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            
             if not endpoint:
                 raise ValueError("Custom OpenAI endpoint not configured")
 
-            _LOGGER.debug("Making Custom OpenAI API request to %s with model %s", endpoint, model)
+            _LOGGER.debug("Making Custom OpenAI API request to %s with model %s and max_tokens %d", 
+                        endpoint, model, max_tokens)
             
             headers = {
                 "Content-Type": "application/json",
@@ -530,7 +559,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "messages": [
                     {"role": "user", "content": prompt}
                 ],
-                "max_tokens": DEFAULT_MAX_TOKENS,
+                "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
             

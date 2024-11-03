@@ -7,22 +7,27 @@
                 "data": {
                     "provider": "KI-Anbieter",
                     "scan_frequency": "Scan-Häufigkeit (Stunden)",
-                    "initial_lag_time": "Anfangsverzögerung (Minuten)"
+                    "initial_lag_time": "Anfangsverzögerung (Minuten)",
+                    "max_tokens": "Maximale Ausgabe-Token"
                 }
             },
             "openai": {
                 "title": "OpenAI Konfiguration",
                 "data": {
                     "api_key": "API-Schlüssel",
-                    "model": "Modell"
-                }
+                    "model": "Modell",
+                    "max_tokens": "Maximale Ausgabe-Token"
+                },
+                "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
             },
             "anthropic": {
                 "title": "Anthropic Konfiguration",
                 "data": {
                     "api_key": "API-Schlüssel",
-                    "model": "Modell"
-                }
+                    "model": "Modell",
+                    "max_tokens": "Maximale Ausgabe-Token"
+                },
+                "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
             },
             "localai": {
                 "title": "LocalAI Konfiguration",
@@ -30,8 +35,10 @@
                     "ip_address": "IP-Adresse",
                     "port": "Port",
                     "https": "HTTPS verwenden",
-                    "model": "Modellname"
-                }
+                    "model": "Modellname",
+                    "max_tokens": "Maximale Ausgabe-Token"
+                },
+                "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
             },
             "ollama": {
                 "title": "Ollama Konfiguration",
@@ -39,8 +46,10 @@
                     "ip_address": "IP-Adresse",
                     "port": "Port",
                     "https": "HTTPS verwenden",
-                    "model": "Modellname"
-                }
+                    "model": "Modellname",
+                    "max_tokens": "Maximale Ausgabe-Token"
+                },
+                "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
             }
         },
         "error": {

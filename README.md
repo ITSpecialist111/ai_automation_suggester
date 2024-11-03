@@ -5,7 +5,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/ITSpecialist111/AI_AUTOMATION_SUGGESTER)](https://github.com/ITSpecialist111/AI_AUTOMATION_SUGGESTER/releases)
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 
-An integration for Home Assistant that uses AI models to analyze your entities and suggest potential automations. Now supporting multiple providers including OpenAI, Google, and local models for enhanced privacy.
+An integration for Home Assistant that leverages AI models to analyze your entities and suggest potential automations. Now supporting multiple providers including OpenAI, Google, and local models for enhanced privacy.
 
 ---
 
@@ -31,6 +31,10 @@ Your support is greatly appreciated and helps maintain and improve this project!
   - [Manual Installation](#manual-installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
+  - [Automatic Suggestions](#automatic-suggestions)
+  - [Manual Trigger](#manual-trigger)
+  - [Implementing Automations](#implementing-automations)
+- [Sensors](#sensors)
 - [Important Notes](#important-notes)
 - [Troubleshooting](#troubleshooting)
 - [Roadmap](#roadmap)
@@ -53,11 +57,13 @@ Managing and automating devices in a smart home can be complex, especially as th
 
 ## Features
 
-- **Manual Analysis Trigger**: Allows you to manually trigger the AI analysis at any time, providing flexibility to implement an automation trigger that suits your needs.
-- **Supports Multiple AI Providers**: Choose from a variety of AI models including OpenAI, Google, Groq, and local models like LocalAI and Ollama for privacy-focused users.
-- **Custom LLM Variants**: Users can select their preferred AI model variant, such as OpenAI's `o1-preview`.
+- **Automatic Automation Suggestions**: Receive AI-generated automation ideas whenever new entities are added to your Home Assistant instance.
+- **Manual Analysis Trigger**: Allows you to manually trigger the AI analysis at any time, providing flexibility and control.
+- **Supports Multiple AI Providers**: Choose from a variety of AI models including OpenAI, Anthropic, Google, Groq, and local models like LocalAI and Ollama for privacy-focused users.
+- **Customizable Prompts**: Override the default system prompt to tailor the suggestions to your specific needs.
+- **Custom LLM Variants**: Users can select their preferred AI model variant, such as OpenAI's `gpt-3.5-turbo`.
 - **Persistent Notifications**: Suggestions are delivered via Home Assistant's persistent notifications.
-- **Sensor Entity**: Creates a sensor entity to display the status and suggestions.
+- **Sensor Entities**: Provides sensors to display the status of suggestions and provider connection status.
 - **German Translation**: Added support for German language to reach a global audience.
 
 ---
@@ -122,14 +128,14 @@ If you prefer to install the integration manually, follow these steps:
 
 2. **Copy to Home Assistant**
 
-   - Place the `ai_suggester` directory inside the `custom_components` directory of your Home Assistant configuration folder.
+   - Place the `ai_automation_suggester` directory inside the `custom_components` directory of your Home Assistant configuration folder.
    - Your directory structure should look like this:
 
      ```
      └── config/
          ├── configuration.yaml
          └── custom_components/
-             └── ai_suggester/
+             └── ai_automation_suggester/
                  ├── __init__.py
                  ├── config_flow.py
                  ├── const.py
@@ -163,7 +169,8 @@ If you prefer to install the integration manually, follow these steps:
 
 - **Provider**: Choose your preferred AI provider from the list (OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, or Custom OpenAI).
 - **API Key or Server Details**: Depending on the provider, you may need to enter an API key or provide server details for local models.
-- **Model Selection**: Choose the AI model variant you wish to use (e.g., OpenAI's `o1-preview`).
+- **Model Selection**: Choose the AI model variant you wish to use (e.g., OpenAI's `gpt-3.5-turbo`).
+- **Maximum Output Tokens**: Controls the length of the AI's response (default is 500). Increase if you need longer responses.
 - **Custom System Prompt**: (Optional) Override the built-in system prompt with your own for more granular control.
 
 ### 3. **Obtain API Keys or Set Up Local AI Servers**
@@ -178,34 +185,45 @@ If you prefer to install the integration manually, follow these steps:
 
 ## Usage
 
-### 1. **Manual Trigger**
+### Automatic Suggestions
 
-Since automatic scheduling has been removed for better flexibility and stability, you can now manually trigger the AI analysis:
+Once configured, the integration will automatically generate automation suggestions when new entities are added to your Home Assistant instance. Suggestions are sent as persistent notifications.
+
+### Manual Trigger
+
+You can manually trigger the AI analysis at any time:
 
 - Go to **Developer Tools** > **Services**.
-- Select `ai_suggester.generate_suggestions` from the list.
+- Select `ai_automation_suggester.generate_suggestions` from the list.
 - In the service data, you can specify:
-
-  - **Provider**: Override the default provider if desired.
-  - **System Prompt**: Provide a custom prompt to tailor the suggestions.
-  - **Entities**: Specify a list of entities to analyze.
-
+  - **Provider Configuration**: If you have multiple providers configured, select which one to use.
+  - **Custom Prompt**: Provide a custom prompt to tailor the suggestions.
 - Click **Call Service**.
 
-### 2. **Implementing Automations**
+### Implementing Automations
 
-- The integration will generate suggestions and deliver them via persistent notifications.
-- Review the suggestions and implement the automations that suit your needs.
+- Review the suggestions provided in the persistent notifications.
+- Implement the automations that suit your needs.
 
-### 3. **Adding to Lovelace Dashboard**
+---
 
-- You can display the suggestions on your dashboard using an **Entities** card:
+## Sensors
 
-  ```yaml
-  type: entities
-  entities:
-    - entity: sensor.ai_automation_suggestions
-  ```
+The integration provides two sensors:
+
+- **AI Automation Suggestions**: Displays the status of suggestions and stores the latest suggestions in its attributes.
+- **AI Provider Status**: Shows the connection status of the AI provider.
+
+### Adding to Lovelace Dashboard
+
+You can display the suggestions on your dashboard using an **Entities** card:
+
+```yaml
+type: entities
+entities:
+  - entity: sensor.ai_automation_suggestions
+  - entity: sensor.ai_provider_status
+```
 
 ---
 
@@ -250,7 +268,7 @@ Since automatic scheduling has been removed for better flexibility and stability
 
    - **Symptom**: After installation, the integration doesn't appear in Home Assistant.
    - **Solution**:
-     - Ensure the `ai_suggester` directory is in the correct location.
+     - Ensure the `ai_automation_suggester` directory is in the correct location.
      - Restart Home Assistant after adding the custom component.
      - Check the logs for any errors during startup.
 
@@ -258,7 +276,8 @@ Since automatic scheduling has been removed for better flexibility and stability
 
    - **Symptom**: The integration doesn't generate any suggestions.
    - **Solution**:
-     - Manually trigger the service `ai_suggester.generate_suggestions`.
+     - Ensure new entities have been added to trigger automatic suggestions.
+     - Manually trigger the service `ai_automation_suggester.generate_suggestions`.
      - Check if you have provided the necessary service data.
      - Review logs for any errors during the analysis.
 
@@ -277,7 +296,7 @@ Since automatic scheduling has been removed for better flexibility and stability
   logger:
     default: warning
     logs:
-      custom_components.ai_suggester: debug
+      custom_components.ai_automation_suggester: debug
   ```
 
 - View logs under **Settings** > **System** > **Logs**.
@@ -378,9 +397,9 @@ For any questions or support, please open an issue on [GitHub](https://github.co
 
 - We welcome community contributions for translations. Please submit a pull request with the new language files in the `translations` directory.
 
-### **6. Why was automatic scheduling removed?**
+### **6. How does the automatic suggestion generation work?**
 
-- Automatic scheduling was removed to provide more stability and flexibility. Users can now implement their own triggers for the AI analysis, allowing for a more customized experience.
+- The integration monitors for new entities added to your Home Assistant instance. When new entities are detected, it automatically generates automation suggestions using the configured AI provider.
 
 ---
 

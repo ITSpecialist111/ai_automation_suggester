@@ -76,10 +76,11 @@ class AISuggestionsSensor(CoordinatorEntity, SensorEntity):
             "name": f"AI Automation Suggester ({entry.data.get(CONF_PROVIDER, 'unknown')})",
             "manufacturer": "Community",
             "model": entry.data.get(CONF_PROVIDER, "unknown"),
-            "sw_version": "1.0.7",
+            "sw_version": "1.08",
         }
         self._entry = entry
         self._previous_suggestions = None
+        self._attr_native_value = "No Suggestions"
 
     @property
     def name(self) -> str:
@@ -90,26 +91,38 @@ class AISuggestionsSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> str:
         """Return the state of the sensor."""
-        if self.coordinator.data and self.coordinator.data.get("suggestions"):
-            if self.coordinator.data.get("suggestions") != self._previous_suggestions:
-                self._previous_suggestions = self.coordinator.data.get("suggestions")
-                return "New Suggestions Available"
-            return "Suggestions Available"
-        return "No Suggestions"
+        if not self.coordinator.data or not self.coordinator.data.get("suggestions"):
+            return "No Suggestions"
+            
+        suggestions = self.coordinator.data.get("suggestions")
+        if suggestions == "No suggestions available" or suggestions == "No suggestions yet":
+            return "No Suggestions"
+            
+        if suggestions != self._previous_suggestions:
+            return "New Suggestions Available"
+            
+        return "Suggestions Available"
 
     @property
     def extra_state_attributes(self) -> dict:
         """Return the state attributes."""
         if not self.coordinator.data:
             return {
-                "suggestions": "No suggestions yet",
+                "suggestions": "No suggestions available",
                 "last_update": None,
                 "entities_processed": [],
                 "provider": self._entry.data.get(CONF_PROVIDER, "unknown"),
             }
 
+        suggestions = self.coordinator.data.get("suggestions")
+        # Ensure consistency between state and attributes
+        if suggestions == "No suggestions available" or suggestions == "No suggestions yet":
+            display_suggestions = "No suggestions available"
+        else:
+            display_suggestions = suggestions
+
         return {
-            "suggestions": self.coordinator.data.get("suggestions", "No suggestions"),
+            "suggestions": display_suggestions,
             "last_update": self.coordinator.data.get("last_update", None),
             "entities_processed": self.coordinator.data.get("entities_processed", []),
             "provider": self._entry.data.get(CONF_PROVIDER, "unknown"),
@@ -123,12 +136,12 @@ class AISuggestionsSensor(CoordinatorEntity, SensorEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        if (
-            self.coordinator.data and 
-            self.coordinator.data.get("suggestions") != self._previous_suggestions
-        ):
-            self._previous_suggestions = self.coordinator.data.get("suggestions")
-            self._attr_native_value = "New Suggestions Available"
+        if self.coordinator.data:
+            suggestions = self.coordinator.data.get("suggestions")
+            if suggestions and suggestions != self._previous_suggestions:
+                self._previous_suggestions = suggestions
+                # Update native value based on new suggestions
+                self._attr_native_value = self.native_value
         self.async_write_ha_state()
 
     async def async_added_to_hass(self) -> None:
@@ -155,7 +168,7 @@ class AIProviderStatusSensor(CoordinatorEntity, SensorEntity):
             "name": f"AI Automation Suggester ({entry.data.get(CONF_PROVIDER, 'unknown')})",
             "manufacturer": "Community",
             "model": entry.data.get(CONF_PROVIDER, "unknown"),
-            "sw_version": "1.0.7",
+            "sw_version": "1.08",
         }
         self._entry = entry
         self._attr_native_value = STATE_UNKNOWN
