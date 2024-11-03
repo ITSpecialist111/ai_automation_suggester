@@ -350,12 +350,12 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             }
             
             data = {
-                "prompt": {
-                    "text": prompt
+                "contents": [{"parts": [{"text": prompt}]}],
+                "system_instruction": {"parts": {"text": SYSTEM_PROMPT}},
+                "generationConfig": {
+                    "temperature": DEFAULT_TEMPERATURE,
+                    "maxOutputTokens": DEFAULT_MAX_TOKENS,
                 },
-                "temperature": DEFAULT_TEMPERATURE,
-                "candidate_count": 1,
-                "max_output_tokens": DEFAULT_MAX_TOKENS
             }
             
             endpoint = ENDPOINT_GOOGLE.format(model=model, api_key=api_key)
@@ -371,7 +371,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     return None
                     
                 result = await response.json()
-                return result["candidates"][0]["output"]
+                return result["candidates"][0]["content"]["parts"][0]["text"]
 
         except Exception as err:
             _LOGGER.error("Error processing with Google: %s", err)

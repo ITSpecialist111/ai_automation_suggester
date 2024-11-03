@@ -46,7 +46,7 @@ CONF_CUSTOM_OPENAI_MODEL = "custom_openai_model"
 DEFAULT_MODELS = {
     "OpenAI": "gpt-4o-mini",
     "Anthropic": "claude-2",
-    "Google": "gemini-1.5",
+    "Google": "gemini-1.5-pro",
     "Groq": "groq-0.8",
     "LocalAI": "llama3",
     "Ollama": "llama2",
@@ -80,7 +80,7 @@ DEFAULT_TEMPERATURE = 0.7
 # API Endpoints
 ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"
 ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages"
-ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta2/models/{model}:generateText?key={api_key}"
+ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
 ENDPOINT_LOCALAI = "{base_url}/v1/chat/completions"
 ENDPOINT_OLLAMA = "{base_url}/api/chat"
