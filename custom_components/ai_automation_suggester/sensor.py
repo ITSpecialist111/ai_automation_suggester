@@ -76,7 +76,7 @@ class AISuggestionsSensor(CoordinatorEntity, SensorEntity):
             "name": f"AI Automation Suggester ({entry.data.get(CONF_PROVIDER, 'unknown')})",
             "manufacturer": "Community",
             "model": entry.data.get(CONF_PROVIDER, "unknown"),
-            "sw_version": "1.08",
+            "sw_version": "1.1.0",
         }
         self._entry = entry
         self._previous_suggestions = None

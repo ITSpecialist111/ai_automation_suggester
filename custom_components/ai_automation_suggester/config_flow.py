@@ -256,7 +256,7 @@ class ProviderValidator:
 class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for AI Automation Suggester."""
     
-    VERSION = 1.1.0
+    VERSION = "1.1.0"
 
     def __init__(self):
         """Initialize config flow."""
