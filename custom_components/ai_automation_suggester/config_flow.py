@@ -116,16 +116,27 @@ class ProviderValidator:
         headers = {
             'Content-Type': 'application/json',
         }
-        try:
-            _LOGGER.debug("Validating Google API key")
-            url = f"https://generativelanguage.googleapis.com/v1beta2/{model}:generateText?key={api_key}"
-            payload = {
-                "prompt": {
-                    "text": "Hello"
-                },
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": "Hello"
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
                 "temperature": 0.5,
-                "candidate_count": 1
+                "maxOutputTokens": 100,
+                "topK": 40,
+                "topP": 0.95,
             }
+        }
+        
+        try:
+            _LOGGER.debug(f"Validating Google API key with model: {model}")
             response = await self.session.post(
                 url,
                 headers=headers,
@@ -145,6 +156,8 @@ class ProviderValidator:
         except Exception as err:
             _LOGGER.error(f"Google validation exception: {err}")
             return str(err)
+
+
 
     async def validate_groq(self, api_key: str) -> Optional[str]:
         """Validate Groq configuration."""
@@ -243,7 +256,7 @@ class ProviderValidator:
 class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for AI Automation Suggester."""
     
-    VERSION = 1.08
+    VERSION = 1.1.0
 
     def __init__(self):
         """Initialize config flow."""

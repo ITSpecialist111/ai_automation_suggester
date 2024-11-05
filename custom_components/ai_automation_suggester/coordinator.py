@@ -353,23 +353,31 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             if not api_key:
                 raise ValueError("Google API key not configured")
 
-            _LOGGER.debug("Making Google API request with model %s and max_tokens %d", 
-                        model, max_tokens)
+            _LOGGER.debug("Making Google API request with model %s", model)
             
             headers = {
                 "Content-Type": "application/json",
             }
             
             data = {
-                "prompt": {
-                    "text": prompt
-                },
-                "temperature": DEFAULT_TEMPERATURE,
-                "candidate_count": 1,
-                "max_output_tokens": max_tokens
+                "contents": [
+                    {
+                        "parts": [
+                            {
+                                "text": prompt
+                            }
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": DEFAULT_TEMPERATURE,
+                    "maxOutputTokens": max_tokens,
+                    "topK": 40,
+                    "topP": 0.95,
+                }
             }
             
-            endpoint = ENDPOINT_GOOGLE.format(model=model, api_key=api_key)
+            endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
             
             async with self.session.post(
                 endpoint,
@@ -382,7 +390,11 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     return None
                     
                 result = await response.json()
-                return result["candidates"][0]["output"]
+                try:
+                    return result["candidates"][0]["content"]["parts"][0]["text"]
+                except (KeyError, IndexError) as err:
+                    _LOGGER.error("Error parsing Google API response: %s", err)
+                    return None
 
         except Exception as err:
             _LOGGER.error("Error processing with Google: %s", err)

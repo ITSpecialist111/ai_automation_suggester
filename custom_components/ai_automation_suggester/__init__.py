@@ -17,7 +17,7 @@ from .coordinator import AIAutomationCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-CURRENT_VERSION = 2  # Internal version number (1.0.9 = version 2)
+CURRENT_VERSION = 2  # Internal version number (1.1.0 = version 2)
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Migrate old entry."""
