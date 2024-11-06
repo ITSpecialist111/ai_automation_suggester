@@ -12,37 +12,47 @@ from .const import (
     SERVICE_GENERATE_SUGGESTIONS,
     ATTR_PROVIDER_CONFIG,
     ATTR_CUSTOM_PROMPT,
+    CONFIG_VERSION
 )
 from .coordinator import AIAutomationCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-CURRENT_VERSION = 2  # Internal version number (1.1.0 = version 2)
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Migrate old entry."""
-    _LOGGER.debug("Migrating from version %s", config_entry.version)
+    _LOGGER.debug(f"async_migrate_entry {config_entry.version}")
+    if config_entry.version > CONFIG_VERSION:
+        # This means the user has downgraded from a future version
+        # Need to add scheduling fields back in
+        _LOGGER.debug("Downgrading config entry from version %s to version %s", config_entry.version, CONFIG_VERSION)
 
-    # Convert old decimal versions to new integer version
-    if isinstance(config_entry.version, float):
-        old_version = config_entry.version
-        if old_version <= 1.08:
-            config_entry.version = 1
-        _LOGGER.debug("Converted decimal version %s to integer version %s", 
-                     old_version, config_entry.version)
-
-    if config_entry.version == 1:
-        _LOGGER.debug("Migrating config entry from version 1 to version 2")
         new_data = {**config_entry.data}
-        
+        new_data['scan_frequency'] = config_entry.data.get('scan_frequency')
+        new_data['initial_lag_time'] = config_entry.data.get('initial_lag_time')
+
+        config_entry.version = 1
+        hass.config_entries.async_update_entry(config_entry, data=new_data)
+
+        _LOGGER.debug("Downgrade migration to version %s successful", config_entry.version)
+        return False
+
+    if config_entry.version == CONFIG_VERSION:
+        # This means the major version still matches. We don't currently use minor versions for config.
+        return True
+
+    if config_entry.version < CONFIG_VERSION:
+        _LOGGER.debug(f"Migrating config entry from version {config_entry.version} to version {CONFIG_VERSION}")
+        new_data = {**config_entry.data}
+
         # Remove old scheduling fields that are no longer used
         new_data.pop('scan_frequency', None)
         new_data.pop('initial_lag_time', None)
-        
+
         # Update to current version
-        config_entry.version = CURRENT_VERSION
+        config_entry.version = CONFIG_VERSION
         hass.config_entries.async_update_entry(config_entry, data=new_data)
-        
+
         _LOGGER.debug("Migration to version %s successful", config_entry.version)
         return True
 
