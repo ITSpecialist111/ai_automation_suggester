@@ -5,6 +5,9 @@
 DOMAIN = "ai_automation_suggester"
 PLATFORMS = ["sensor"]
 
+# Config version
+CONFIG_VERSION = 2
+
 # Provider configuration
 CONF_PROVIDER = "provider"
 
