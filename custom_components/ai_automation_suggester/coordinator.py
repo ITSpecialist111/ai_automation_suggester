@@ -153,7 +153,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("Received suggestions: %s", suggestions)
                 try:
                     # Create notification only if suggestions is not None
-                    notification = await persistent_notification.async_create(
+                    persistent_notification.async_create(
                         self.hass,
                         message=suggestions,
                         title="AI Automation Suggestions",
