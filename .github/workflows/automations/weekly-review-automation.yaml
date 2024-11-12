@@ -1,0 +1,39 @@
+########################################################################################
+# AI Suggestions - Weekly System Review
+########################################################################################
+# This automation performs a comprehensive weekly review of your Home Assistant setup
+# to suggest new automation opportunities and improvements.
+#
+# CUSTOMIZATION OPTIONS:
+# 1. Schedule:
+#    - Currently runs at 3 AM on Sundays
+#    - Modify the 'at' field to change the time
+#    - Change the weekday condition to run on different days
+########################################################################################
+
+alias: "AI Suggestions - Weekly Review"
+description: "Performs a weekly scan of all entities to suggest new automation opportunities"
+
+trigger:
+  # Runs at 3 AM
+  - platform: time
+    at: "03:00:00"
+
+condition:
+  # Only runs on Sundays
+  - condition: time
+    weekday:
+      - sun
+
+action:
+  # Generate suggestions using the configured provider(s)
+  - service: ai_automation_suggester.generate_suggestions
+    target: {}
+    data: {}
+
+  # Create a notification
+  - service: persistent_notification.create
+    data:
+      title: "Weekly Automation Review"
+      message: "The AI Automation Suggester has completed its weekly review. Check the suggestions sensor for new automation ideas!"
+      notification_id: "weekly_automation_review"

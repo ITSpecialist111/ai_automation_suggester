@@ -33,6 +33,7 @@ Your support is greatly appreciated and helps maintain and improve this project!
 - [Usage](#usage)
   - [Automatic Suggestions](#automatic-suggestions)
   - [Manual Trigger](#manual-trigger)
+  - [Example Automations](Example-Automations)
   - [Implementing Automations](#implementing-automations)
 - [Sensors](#sensors)
 - [Important Notes](#important-notes)
@@ -206,7 +207,138 @@ You can manually trigger the AI analysis at any time:
 - Implement the automations that suit your needs.
 
 ---
+## Example Automations
 
+To help you get started, we provide two example automation files that demonstrate how to effectively use the AI Automation Suggester in your Home Assistant setup:
+
+1. **[New Entity Detection Automation](automations/ai_suggestions_new_entity.yaml)**
+   ```yaml
+   alias: "AI Suggestions - New Entity Detection"
+   description: "Generates automation suggestions whenever new entities are registered in Home Assistant"
+   
+   trigger:
+     - platform: event
+       event_type: entity_registry_updated
+       event_data:
+         action: create
+   
+     # Optional: Trigger when an entity is updated
+     - platform: event
+       event_type: entity_registry_updated
+       event_data:
+         action: update
+   
+   condition:
+     - condition: template
+       value_template: >
+         {% set last_triggered = state_attr('automation.ai_suggestions_new_entity_detection', 'last_triggered') %}
+         {% if last_triggered %}
+           {% set hours_since = ((now() - as_datetime(last_triggered)) | as_timedelta).total_seconds() / 3600 %}
+           {{ hours_since > 1 }}
+         {% else %}
+           true
+         {% endif %}
+   
+   action:
+     - service: ai_automation_suggester.generate_suggestions
+       target: {}
+       data: {}
+   ```
+
+2. **[Weekly System Review Automation](automations/ai_suggestions_weekly_review.yaml)**
+   ```yaml
+   alias: "AI Suggestions - Weekly Review"
+   description: "Performs a weekly scan of all entities to suggest new automation opportunities"
+   
+   trigger:
+     - platform: time
+       at: "03:00:00"
+   
+   condition:
+     - condition: time
+       weekday:
+         - sun
+   
+   action:
+     - service: ai_automation_suggester.generate_suggestions
+       target: {}
+       data: {}
+   
+     - service: persistent_notification.create
+       data:
+         title: "Weekly Automation Review"
+         message: "The AI Automation Suggester has completed its weekly review. Check the suggestions sensor for new automation ideas!"
+         notification_id: "weekly_automation_review"
+   ```
+
+### Key Features of the Automations
+
+#### New Entity Detection
+- Automatically triggers when new entities are added to Home Assistant
+- Includes optional trigger for entity updates
+- Built-in hour-long cooldown to prevent excessive API calls
+- Works with any configured AI provider
+- Simple and reliable implementation
+
+#### Weekly Review
+- Runs automatically every Sunday at 3 AM
+- Performs a comprehensive system review
+- Creates a notification when complete
+- Easy to customize schedule and frequency
+
+### Implementation Guide
+
+1. **Download the Automations**
+   - Download both YAML files from the [automations folder](automations/)
+   - Save them to your Home Assistant's automations directory
+
+2. **Installation Methods**
+   
+   **Option 1: Using automation.yaml**
+   ```yaml
+   # In your automation.yaml
+   - !include automations/ai_suggestions_new_entity.yaml
+   - !include automations/ai_suggestions_weekly_review.yaml
+   ```
+
+   **Option 2: Through the UI**
+   - Go to Configuration → Automations
+   - Click "+ Add Automation"
+   - Choose "Import YAML"
+   - Paste the content of each automation
+
+3. **Customization**
+   
+   New Entity Detection:
+   - Remove the update trigger if you only want notifications for new entities
+   - Adjust the cooldown period by changing the `hours_since > 1` value
+
+   Weekly Review:
+   - Change the `at` time to your preferred schedule
+   - Modify the `weekday` condition to run on different days
+
+4. **Validation**
+   - Check that the automations appear in your automations list
+   - Verify they show as enabled
+   - Test trigger conditions manually if desired
+
+### Notes
+
+- These automations are designed to work with any configured AI provider
+- They include built-in throttling to prevent excessive API usage
+- No custom prompts are required - the integration handles all the AI interaction
+- Notifications will appear in your Home Assistant interface
+- Monitor the automation status through the Home Assistant automations page
+
+### Troubleshooting
+
+If the automations aren't working as expected:
+1. Check that the AI Automation Suggester integration is properly configured
+2. Verify that the automation names match your configuration
+3. Ensure the services are available in your Home Assistant instance
+4. Check the Home Assistant logs for any error messages
+
+---
 ## Sensors
 
 The integration provides two sensors:

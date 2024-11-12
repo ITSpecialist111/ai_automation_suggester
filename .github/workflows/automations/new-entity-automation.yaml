@@ -1,0 +1,48 @@
+########################################################################################
+# AI Suggestions - New Entity Detection
+########################################################################################
+# This automation triggers the AI Automation Suggester whenever new entities are added to
+# your Home Assistant instance.
+#
+# CUSTOMIZATION OPTIONS:
+# 1. Trigger Events:
+#    - Currently monitors both 'create' and 'update' events
+#    - Remove the second trigger if you only want new entity detection
+#
+# 2. Throttling:
+#    - Uses a cooldown of 1 hour to prevent excessive API calls
+#    - Adjust the hours value in the condition template if needed
+########################################################################################
+
+alias: "AI Suggestions - New Entity Detection"
+description: "Generates automation suggestions whenever new entities are registered in Home Assistant"
+
+trigger:
+  # Trigger when a new entity is created
+  - platform: event
+    event_type: entity_registry_updated
+    event_data:
+      action: create
+
+  # Optional: Trigger when an entity is updated
+  - platform: event
+    event_type: entity_registry_updated
+    event_data:
+      action: update
+
+condition:
+  # Simple throttling based on last trigger time
+  - condition: template
+    value_template: >
+      {% set last_triggered = state_attr('automation.ai_suggestions_new_entity_detection', 'last_triggered') %}
+      {% if last_triggered %}
+        {% set hours_since = ((now() - as_datetime(last_triggered)) | as_timedelta).total_seconds() / 3600 %}
+        {{ hours_since > 1 }}
+      {% else %}
+        true
+      {% endif %}
+
+action:
+  - service: ai_automation_suggester.generate_suggestions
+    target: {}
+    data: {}
