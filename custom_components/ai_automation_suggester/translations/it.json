@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurazione AI Automation Suggester",
+        "data": {
+          "provider": "AI Provider",
+          "max_tokens": "Numero Massimo di Richieste"
+        }
+      },
+      "provider_config": {
+        "title": "Impostazioni Provider",
+        "data": {
+          "model": "Modello",
+          "api_key": "API Key",
+          "max_tokens": "Numero Massimo di Richieste",
+          "ip_address": "Indirizzo IP",
+          "port": "Porta",
+          "use_https": "Utilizza HTTPS"
+        },
+        "description": "Il numero massimo di richieste controlla la lunghezza delle risposta di AI. Di default è 500. Incrementalo se hai bisogno di risposte più lunghe."
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi al servizio",
+      "invalid_auth": "Autenticazione non valida",
+      "invalid_config": "Configurazione non valida",
+      "unknown": "Errore sconosciuto",
+      "no_entities": "Nessuna nuova entità trovata",
+      "api_error": "Errore API",
+      "required_field": "Questo campo è obbligatorio"
+    },
+    "abort": {
+      "already_configured": "Provider già configurato",
+      "provider_not_supported": "Questo provider non è attualmente supportato"
+    }
+  },
+  "services": {
+    "generate_suggestions": {
+      "name": "Genera Suggerimenti",
+      "description": "Lancia manualmente AI automation suggestions",
+      "fields": {
+        "provider_config": {
+          "name": "Configurazione Provider",
+          "description": "Quale configurazione provider utilizzare (se ne hai più di una)"
+        },
+        "custom_prompt": {
+          "name": "Prompt personalizzato",
+          "description": "Prompt personalizzato facoltativo per sovrascrivere il prompt di default del sistema"
+        }
+      }
+    }
+  }
+}
