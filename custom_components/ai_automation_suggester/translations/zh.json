@@ -1,0 +1,55 @@
+{
+    "config": {
+      "step": {
+        "user": {
+          "title": "配置 AI 自动化建议器",
+          "data": {
+            "provider": "AI 提供商",
+            "max_tokens": "最大输出令牌"
+          }
+        },
+        "provider_config": {
+          "title": "提供商设置",
+          "data": {
+            "model": "模型名称",
+            "api_key": "API 密钥",
+            "max_tokens": "最大输出令牌",
+            "ip_address": "IP 地址",
+            "port": "端口",
+            "use_https": "使用 HTTPS"
+          },
+          "description": "最大令牌数量控制 AI 响应的长度。默认值为 500。如需更长响应，请增加此值。"
+        }
+      },
+      "error": {
+        "cannot_connect": "无法连接到服务",
+        "invalid_auth": "身份验证无效",
+        "invalid_config": "配置无效",
+        "unknown": "意外错误",
+        "no_entities": "未发现新实体",
+        "api_error": "发生 API 错误",
+        "required_field": "此字段为必填项"
+      },
+      "abort": {
+        "already_configured": "提供商已配置",
+        "provider_not_supported": "目前不支持此提供商"
+      }
+    },
+    "services": {
+      "generate_suggestions": {
+        "name": "生成建议",
+        "description": "手动触发 AI 自动化建议",
+        "fields": {
+          "provider_config": {
+            "name": "提供商配置",
+            "description": "选择使用哪个提供商配置（如果有多个）"
+          },
+          "custom_prompt": {
+            "name": "自定义提示",
+            "description": "可选自定义提示，覆盖默认系统提示"
+          }
+        }
+      }
+    }
+  }
+  
