@@ -26,10 +26,10 @@ condition:
       - sun
 
 action:
-  # Generate suggestions using the configured provider(s)
+  # Generate suggestions using the configured provider(s), scanning all entities
   - service: ai_automation_suggester.generate_suggestions
-    target: {}
-    data: {}
+    data:
+      all_entities: true
 
   # Create a notification
   - service: persistent_notification.create

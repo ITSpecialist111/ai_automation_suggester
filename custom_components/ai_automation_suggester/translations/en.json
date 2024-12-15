@@ -46,7 +46,19 @@
         },
         "custom_prompt": {
           "name": "Custom Prompt",
-          "description": "Optional custom prompt to override the default system prompt"
+          "description": "Optional custom prompt to override the default system prompt or guide the suggestions towards specific themes"
+        },
+        "all_entities": {
+          "name": "Consider All Entities",
+          "description": "If true, consider all entities instead of just new entities."
+        },
+        "domains": {
+          "name": "Domains",
+          "description": "List of domains to consider. If empty, consider all domains."
+        },
+        "entity_limit": {
+          "name": "Entity Limit",
+          "description": "Maximum number of entities to consider (randomly selected)."
         }
       }
     }

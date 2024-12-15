@@ -2,13 +2,14 @@
 
 """Coordinator for AI Automation Suggester."""
 import logging
+import random
 from datetime import datetime
-import aiohttp
-import json
 from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from homeassistant.helpers import device_registry as dr, entity_registry as er, area_registry as ar
 
 from .const import (
     DOMAIN,
@@ -48,26 +49,21 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You are an AI assistant that generates Home Assistant automations 
-based on the types of new entities discovered in the system. Your goal 
-is to provide detailed and useful automation suggestions tailored to 
-the specific types and functions of the entities, avoiding generic recommendations.
+based on the types of entities, their areas, and their associated devices, as well as 
+improving or suggesting new automations based on existing ones.
 
 For each entity:
-1. Understand its function (e.g., sensor, switch, light, climate control).
-2. Consider its current state (e.g., 'on', 'off', 'open', 'closed', 'temperature').
-3. Suggest automations based on common use cases for similar entities.
-4. Avoid generic suggestions. Instead, provide detailed scenarios such as:
-   - 'If the front door sensor detects it is open for more than 5 minutes, send a notification.'
-   - 'If no motion is detected for 10 minutes, turn off all lights.'
-   - 'If the temperature sensor detects a rise above 25°C, turn on the air conditioner.'
-5. Consider combining multiple entities to create context-aware automations.
-6. Include appropriate conditions and triggers for time of day, presence, or other contextual factors.
-7. Format suggestions in clear, implementable steps.
-8. When suggesting scenes, include all relevant entities that should be controlled.
-9. Consider energy efficiency and user convenience in your suggestions.
-10. Include the actual entity IDs in your suggestions so they can be easily implemented.
-11. Suggest automations that make sense based on the entity's domain and capabilities.
-12. Consider security implications for sensitive automations (like doors or windows)."""
+1. Understand its function, area, and device context.
+2. Consider its current state and attributes.
+3. Suggest contextually aware automations and improvements to existing automations.
+4. Include actual entity IDs in your suggestions.
+
+When focusing on custom aspects (like energy-saving or presence-based lighting), 
+integrate those themes into the automations. Provide triggers, conditions, 
+and detailed actions to refine the automations according to the instructions given in the custom prompt.
+
+Also consider existing automations and how they can be improved or complemented.
+"""
 
 class AIAutomationCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from AI model."""
@@ -79,8 +75,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.previous_entities = {}
         self.last_update = None
         self.SYSTEM_PROMPT = SYSTEM_PROMPT
+        self.scan_all = False      # Flag to consider all entities
+        self.selected_domains = [] # Filter to specified domains if provided
+        self.entity_limit = 200    # Limit number of entities considered
 
-        # Initialize data
         self.data = {
             "suggestions": "No suggestions yet",
             "last_update": None,
@@ -90,21 +88,23 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
         # Prevent automatic updates by setting update_interval to None
         self.update_interval = None
-
         self.session = async_get_clientsession(hass)
 
-        super().__init__(
-            hass,
-            _LOGGER,
-            name=DOMAIN,
-            update_interval=self.update_interval,
-        )
+        self.device_registry = None
+        self.entity_registry = None
+        self.area_registry = None
+
+        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=self.update_interval)
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        self.device_registry = dr.async_get(self.hass)
+        self.entity_registry = er.async_get(self.hass)
+        self.area_registry = ar.async_get(self.hass)
 
     async def _async_update_data(self):
-        """Fetch data from AI model."""
         try:
             current_time = datetime.now()
-            
             _LOGGER.debug("Starting manual update at %s", current_time)
 
             self.last_update = current_time
@@ -114,6 +114,12 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             try:
                 current_entities = {}
                 for entity_id in self.hass.states.async_entity_ids():
+                    # If user provided domains to filter, only include those domains
+                    if self.selected_domains:
+                        domain = entity_id.split('.')[0]
+                        if domain not in self.selected_domains:
+                            continue
+
                     state = self.hass.states.get(entity_id)
                     if state is not None:
                         friendly_name = state.attributes.get('friendly_name', entity_id)
@@ -128,52 +134,52 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 _LOGGER.error("Error fetching entities: %s", err)
                 return self.data
 
-            # Detect newly added entities
-            new_entities = {
-                k: v for k, v in current_entities.items()
-                if k not in self.previous_entities
-            }
+            if self.scan_all:
+                selected_entities = current_entities
+            else:
+                # Only consider new entities if scan_all is False
+                selected_entities = {
+                    k: v for k, v in current_entities.items()
+                    if k not in self.previous_entities
+                }
 
-            if not new_entities:
-                _LOGGER.debug("No new entities detected")
+            if not selected_entities:
+                _LOGGER.debug("No entities selected for suggestions")
+                self.previous_entities = current_entities
                 return self.data
 
-            # Limit processing to 10 entities if needed
-            if len(new_entities) > 10:
-                _LOGGER.debug("Limiting to 10 entities for processing")
-                new_entities = dict(list(new_entities.items())[:10])
-
-            # Prepare AI input
-            ai_input_data = self.prepare_ai_input(new_entities)
-            
-            # Get suggestions from AI
+            ai_input_data = self.prepare_ai_input(selected_entities)
             suggestions = await self.get_ai_suggestions(ai_input_data)
-            
+
             if suggestions:
                 _LOGGER.debug("Received suggestions: %s", suggestions)
                 try:
-                    # Create notification only if suggestions is not None
                     persistent_notification.async_create(
                         self.hass,
                         message=suggestions,
                         title="AI Automation Suggestions",
                         notification_id=f"ai_automation_suggestions_{current_time.timestamp()}"
                     )
-                    
-                    # Update data regardless of notification success
+
                     self.data = {
                         "suggestions": suggestions,
                         "last_update": current_time,
-                        "entities_processed": list(new_entities.keys()),
+                        "entities_processed": list(selected_entities.keys()),
                         "provider": self.entry.data.get(CONF_PROVIDER, "unknown")
                     }
+
+                    await self.hass.services.async_call(
+                        "logbook", 
+                        "log", 
+                        {"name": "AI Automation Suggester", "message": "New suggestions generated"}
+                    )
+
                 except Exception as err:
                     _LOGGER.error("Error creating notification: %s", err)
-                    # Still update data even if notification fails
                     self.data = {
                         "suggestions": suggestions,
                         "last_update": current_time,
-                        "entities_processed": list(new_entities.keys()),
+                        "entities_processed": list(selected_entities.keys()),
                         "provider": self.entry.data.get(CONF_PROVIDER, "unknown")
                     }
             else:
@@ -185,53 +191,127 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     "provider": self.entry.data.get(CONF_PROVIDER, "unknown")
                 }
 
-            # Always update previous entities list
             self.previous_entities = current_entities
-            
             return self.data
 
         except Exception as err:
             _LOGGER.error("Unexpected error in update: %s", err)
             return self.data
 
-    def prepare_ai_input(self, new_entities):
-        """Prepare the input data for AI processing."""
-        _LOGGER.debug("Preparing AI input for %d entities", len(new_entities))
-        
+    def prepare_ai_input(self, entities):
+        _LOGGER.debug("Preparing AI input for %d entities", len(entities))
+
+        MAX_ATTR_LENGTH = 500
+        MAX_AUTOMATIONS = 100
+
+        # Randomly pick entities up to entity_limit
+        entity_list = list(entities.items())
+        selected_entities = random.sample(entity_list, min(len(entity_list), self.entity_limit))
+
         entities_description = []
-        for entity_id, entity_data in new_entities.items():
+        for entity_id, entity_data in selected_entities:
             state = entity_data.get('state', 'unknown')
             attributes = entity_data.get('attributes', {})
             friendly_name = entity_data.get('friendly_name', entity_id)
             domain = entity_id.split('.')[0]
-            
-            # Enhanced entity description
+
+            attr_str = str(attributes)
+            if len(attr_str) > MAX_ATTR_LENGTH:
+                attr_str = attr_str[:MAX_ATTR_LENGTH] + "...(truncated)"
+
+            ent_reg_entry = self.entity_registry.async_get(entity_id) if self.entity_registry else None
+            device_info = None
+            area_name = "Unknown Area"
+            if ent_reg_entry:
+                if ent_reg_entry.device_id and self.device_registry:
+                    dev_reg_entry = self.device_registry.async_get(ent_reg_entry.device_id)
+                    if dev_reg_entry:
+                        device_info = {
+                            "manufacturer": dev_reg_entry.manufacturer,
+                            "model": dev_reg_entry.model,
+                            "name": dev_reg_entry.name_by_user or dev_reg_entry.name,
+                            "id": dev_reg_entry.id
+                        }
+
+                area_id = ent_reg_entry.area_id or (dev_reg_entry.area_id if dev_reg_entry and dev_reg_entry.area_id else None)
+                if area_id and self.area_registry:
+                    area_entry = self.area_registry.async_get_area(area_id)
+                    if area_entry:
+                        area_name = area_entry.name
+
             description = (
                 f"Entity: {entity_id}\n"
                 f"Friendly Name: {friendly_name}\n"
                 f"Domain: {domain}\n"
                 f"State: {state}\n"
-                f"Attributes: {attributes}\n"
+                f"Attributes: {attr_str}\n"
+                f"Area: {area_name}\n"
+            )
+
+            if device_info:
+                description += (
+                    f"Device Info:\n"
+                    f"  Manufacturer: {device_info['manufacturer']}\n"
+                    f"  Model: {device_info['model']}\n"
+                    f"  Device Name: {device_info['name']}\n"
+                    f"  Device ID: {device_info['id']}\n"
+                )
+
+            description += (
                 f"Last Changed: {entity_data.get('last_changed', 'unknown')}\n"
                 f"Last Updated: {entity_data.get('last_updated', 'unknown')}\n"
                 f"---\n"
             )
             entities_description.append(description)
 
+        # Gather existing automations, truncated
+        automation_entities = []
+        for auto_id in self.hass.states.async_entity_ids('automation'):
+            state = self.hass.states.get(auto_id)
+            if state is not None:
+                friendly_name = state.attributes.get('friendly_name', auto_id)
+                automation_entities.append({
+                    'entity_id': auto_id,
+                    'friendly_name': friendly_name,
+                    'state': state.state,
+                    'attributes': state.attributes
+                })
+
+        automation_entities = automation_entities[:MAX_AUTOMATIONS]
+
+        automation_description = "Existing Automations:\n"
+        if automation_entities:
+            for auto in automation_entities:
+                auto_attr_str = str(auto['attributes'])
+                if len(auto_attr_str) > MAX_ATTR_LENGTH:
+                    auto_attr_str = auto_attr_str[:MAX_ATTR_LENGTH] + "...(truncated)"
+
+                automation_description += (
+                    f"Entity: {auto['entity_id']}\n"
+                    f"Friendly Name: {auto['friendly_name']}\n"
+                    f"State: {auto['state']}\n"
+                    f"Attributes: {auto_attr_str}\n"
+                    f"---\n"
+                )
+        else:
+            automation_description += "None found.\n"
+
         prompt = (
             f"{self.SYSTEM_PROMPT}\n\n"
-            f"New entities discovered:\n"
-            f"{''.join(entities_description)}\n"
-            f"Please suggest detailed and specific automations for these entities, "
-            f"using their exact entity IDs in the suggestions."
+            f"Entities in your Home Assistant (randomly selected and possibly domain-filtered):\n"
+            f"{''.join(entities_description)}\n\n"
+            f"{automation_description}\n\n"
+            f"Please suggest detailed, specific automations and improvements, "
+            f"considering device and area context. Only reference the entities provided above. "
+            f"Adjust triggers, conditions, and actions to refine the automations according to the provided instructions."
         )
+
         return prompt
 
     async def get_ai_suggestions(self, prompt):
-        """Get suggestions from the configured AI provider."""
         provider = self.entry.data.get(CONF_PROVIDER, "OpenAI")
         _LOGGER.debug("Using AI provider: %s", provider)
-        
+
         try:
             if provider == "OpenAI":
                 return await self.process_with_openai(prompt)
@@ -255,23 +335,22 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
 
     async def process_with_openai(self, prompt):
-        """Process the prompt with OpenAI."""
         try:
             api_key = self.entry.data.get(CONF_OPENAI_API_KEY)
             model = self.entry.data.get(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"])
             max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-            
+
             if not api_key:
                 raise ValueError("OpenAI API key not configured")
 
-            _LOGGER.debug("Making OpenAI API request with model %s and max_tokens %d", 
-                        model, max_tokens)
-            
+            _LOGGER.debug("Making OpenAI API request with model %s and max_tokens %d",
+                          model, max_tokens)
+
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}"
             }
-            
+
             data = {
                 "model": model,
                 "messages": [
@@ -280,7 +359,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
-            
+
             async with self.session.post(
                 ENDPOINT_OPENAI,
                 headers=headers,
@@ -290,7 +369,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     error_text = await response.text()
                     _LOGGER.error("OpenAI API error: %s", error_text)
                     return None
-                    
+
                 result = await response.json()
                 return result["choices"][0]["message"]["content"]
 
@@ -299,24 +378,23 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
 
     async def process_with_anthropic(self, prompt):
-        """Process the prompt with Anthropic."""
         try:
             api_key = self.entry.data.get(CONF_ANTHROPIC_API_KEY)
             model = self.entry.data.get(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"])
             max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-            
+
             if not api_key:
                 raise ValueError("Anthropic API key not configured")
 
-            _LOGGER.debug("Making Anthropic API request with model %s and max_tokens %d", 
-                        model, max_tokens)
-            
+            _LOGGER.debug("Making Anthropic API request with model %s and max_tokens %d",
+                          model, max_tokens)
+
             headers = {
                 "Content-Type": "application/json",
                 "X-API-Key": api_key,
                 "anthropic-version": VERSION_ANTHROPIC
             }
-            
+
             data = {
                 "model": model,
                 "messages": [
@@ -325,7 +403,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
-            
+
             async with self.session.post(
                 ENDPOINT_ANTHROPIC,
                 headers=headers,
@@ -335,7 +413,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     error_text = await response.text()
                     _LOGGER.error("Anthropic API error: %s", error_text)
                     return None
-                    
+
                 result = await response.json()
                 return result["content"][0]["text"]
 
@@ -344,21 +422,20 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
 
     async def process_with_google(self, prompt):
-        """Process the prompt with Google."""
         try:
             api_key = self.entry.data.get(CONF_GOOGLE_API_KEY)
             model = self.entry.data.get(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"])
             max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-            
+
             if not api_key:
                 raise ValueError("Google API key not configured")
 
             _LOGGER.debug("Making Google API request with model %s", model)
-            
+
             headers = {
                 "Content-Type": "application/json",
             }
-            
+
             data = {
                 "contents": [
                     {
@@ -376,9 +453,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     "topP": 0.95,
                 }
             }
-            
+
             endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-            
+
             async with self.session.post(
                 endpoint,
                 headers=headers,
@@ -388,7 +465,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     error_text = await response.text()
                     _LOGGER.error("Google API error: %s", error_text)
                     return None
-                    
+
                 result = await response.json()
                 try:
                     return result["candidates"][0]["content"]["parts"][0]["text"]
@@ -401,23 +478,22 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
 
     async def process_with_groq(self, prompt):
-        """Process the prompt with Groq."""
         try:
             api_key = self.entry.data.get(CONF_GROQ_API_KEY)
             model = self.entry.data.get(CONF_GROQ_MODEL, DEFAULT_MODELS["Groq"])
             max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-            
+
             if not api_key:
                 raise ValueError("Groq API key not configured")
 
-            _LOGGER.debug("Making Groq API request with model %s and max_tokens %d", 
-                        model, max_tokens)
-            
+            _LOGGER.debug("Making Groq API request with model %s and max_tokens %d",
+                          model, max_tokens)
+
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}"
             }
-            
+
             data = {
                 "messages": [
                     {
@@ -431,7 +507,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
-            
+
             async with self.session.post(
                 ENDPOINT_GROQ,
                 headers=headers,
@@ -441,7 +517,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     error_text = await response.text()
                     _LOGGER.error("Groq API error: %s", error_text)
                     return None
-                    
+
                 result = await response.json()
                 return result["choices"][0]["message"]["content"]
 
@@ -450,14 +526,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
 
     async def process_with_localai(self, prompt):
-        """Process the prompt with LocalAI."""
         try:
             ip_address = self.entry.data.get(CONF_LOCALAI_IP_ADDRESS)
             port = self.entry.data.get(CONF_LOCALAI_PORT)
             https = self.entry.data.get(CONF_LOCALAI_HTTPS, False)
             model = self.entry.data.get(CONF_LOCALAI_MODEL, DEFAULT_MODELS["LocalAI"])
             max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-            
+
             if not ip_address or not port:
                 raise ValueError("LocalAI configuration incomplete")
 
@@ -467,10 +542,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 ip_address=ip_address,
                 port=port
             )
-            
-            _LOGGER.debug("Making LocalAI API request to %s with model %s and max_tokens %d", 
-                        endpoint, model, max_tokens)
-            
+
+            _LOGGER.debug("Making LocalAI API request to %s with model %s and max_tokens %d",
+                          endpoint, model, max_tokens)
+
             data = {
                 "model": model,
                 "messages": [
@@ -479,7 +554,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
-            
+
             async with self.session.post(
                 endpoint,
                 json=data
@@ -488,7 +563,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     error_text = await response.text()
                     _LOGGER.error("LocalAI API error: %s", error_text)
                     return None
-                    
+
                 result = await response.json()
                 return result["choices"][0]["message"]["content"]
 
@@ -497,14 +572,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
 
     async def process_with_ollama(self, prompt):
-        """Process the prompt with Ollama."""
         try:
             ip_address = self.entry.data.get(CONF_OLLAMA_IP_ADDRESS)
             port = self.entry.data.get(CONF_OLLAMA_PORT)
             https = self.entry.data.get(CONF_OLLAMA_HTTPS, False)
             model = self.entry.data.get(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"])
             max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-            
+
             if not ip_address or not port:
                 raise ValueError("Ollama configuration incomplete")
 
@@ -514,10 +588,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 ip_address=ip_address,
                 port=port
             )
-            
-            _LOGGER.debug("Making Ollama API request to %s with model %s and max_tokens %d", 
-                        endpoint, model, max_tokens)
-            
+
+            _LOGGER.debug("Making Ollama API request to %s with model %s and max_tokens %d",
+                          endpoint, model, max_tokens)
+
             data = {
                 "model": model,
                 "messages": [
@@ -529,7 +603,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     "num_predict": max_tokens
                 }
             }
-            
+
             async with self.session.post(
                 endpoint,
                 json=data
@@ -538,7 +612,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     error_text = await response.text()
                     _LOGGER.error("Ollama API error: %s", error_text)
                     return None
-                    
+
                 result = await response.json()
                 return result["message"]["content"]
 
@@ -547,25 +621,24 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
 
     async def process_with_custom_openai(self, prompt):
-        """Process the prompt with Custom OpenAI-compatible API."""
         try:
             endpoint = self.entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT)
             api_key = self.entry.data.get(CONF_CUSTOM_OPENAI_API_KEY)
             model = self.entry.data.get(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"])
             max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
-            
+
             if not endpoint:
                 raise ValueError("Custom OpenAI endpoint not configured")
 
-            _LOGGER.debug("Making Custom OpenAI API request to %s with model %s and max_tokens %d", 
-                        endpoint, model, max_tokens)
-            
+            _LOGGER.debug("Making Custom OpenAI API request to %s with model %s and max_tokens %d",
+                          endpoint, model, max_tokens)
+
             headers = {
                 "Content-Type": "application/json",
             }
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
-            
+
             data = {
                 "model": model,
                 "messages": [
@@ -574,7 +647,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
-            
+
             async with self.session.post(
                 endpoint,
                 headers=headers,
@@ -584,7 +657,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     error_text = await response.text()
                     _LOGGER.error("Custom OpenAI API error: %s", error_text)
                     return None
-                    
+
                 result = await response.json()
                 return result["choices"][0]["message"]["content"]
 

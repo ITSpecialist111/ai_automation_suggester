@@ -1,65 +1,94 @@
 {
     "config": {
-        "step": {
-            "user": {
-                "title": "AI Automation Suggester konfigurieren",
-                "description": "Wählen Sie Ihren KI-Anbieter und konfigurieren Sie die Einstellungen",
-                "data": {
-                    "provider": "KI-Anbieter",
-                    "scan_frequency": "Scan-Häufigkeit (Stunden)",
-                    "initial_lag_time": "Anfangsverzögerung (Minuten)",
-                    "max_tokens": "Maximale Ausgabe-Token"
-                }
-            },
-            "openai": {
-                "title": "OpenAI Konfiguration",
-                "data": {
-                    "api_key": "API-Schlüssel",
-                    "model": "Modell",
-                    "max_tokens": "Maximale Ausgabe-Token"
-                },
-                "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
-            },
-            "anthropic": {
-                "title": "Anthropic Konfiguration",
-                "data": {
-                    "api_key": "API-Schlüssel",
-                    "model": "Modell",
-                    "max_tokens": "Maximale Ausgabe-Token"
-                },
-                "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
-            },
-            "localai": {
-                "title": "LocalAI Konfiguration",
-                "data": {
-                    "ip_address": "IP-Adresse",
-                    "port": "Port",
-                    "https": "HTTPS verwenden",
-                    "model": "Modellname",
-                    "max_tokens": "Maximale Ausgabe-Token"
-                },
-                "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
-            },
-            "ollama": {
-                "title": "Ollama Konfiguration",
-                "data": {
-                    "ip_address": "IP-Adresse",
-                    "port": "Port",
-                    "https": "HTTPS verwenden",
-                    "model": "Modellname",
-                    "max_tokens": "Maximale Ausgabe-Token"
-                },
-                "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
-            }
+      "step": {
+        "user": {
+          "title": "AI Automation Suggester konfigurieren",
+          "description": "Wählen Sie Ihren KI-Anbieter und konfigurieren Sie die Einstellungen",
+          "data": {
+            "provider": "KI-Anbieter",
+            "scan_frequency": "Scan-Häufigkeit (Stunden)",
+            "initial_lag_time": "Anfangsverzögerung (Minuten)",
+            "max_tokens": "Maximale Ausgabe-Token"
+          }
         },
-        "error": {
-            "cannot_connect": "Verbindung zum Dienst fehlgeschlagen",
-            "invalid_auth": "Ungültige Authentifizierung",
-            "invalid_config": "Ungültige Konfiguration",
-            "unknown": "Unerwarteter Fehler",
-            "no_entities": "Keine neuen Entitäten gefunden",
-            "api_error": "API-Fehler aufgetreten",
-            "required_field": "Dieses Feld ist erforderlich"
+        "openai": {
+          "title": "OpenAI Konfiguration",
+          "data": {
+            "api_key": "API-Schlüssel",
+            "model": "Modell",
+            "max_tokens": "Maximale Ausgabe-Token"
+          },
+          "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
+        },
+        "anthropic": {
+          "title": "Anthropic Konfiguration",
+          "data": {
+            "api_key": "API-Schlüssel",
+            "model": "Modell",
+            "max_tokens": "Maximale Ausgabe-Token"
+          },
+          "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
+        },
+        "localai": {
+          "title": "LocalAI Konfiguration",
+          "data": {
+            "ip_address": "IP-Adresse",
+            "port": "Port",
+            "https": "HTTPS verwenden",
+            "model": "Modellname",
+            "max_tokens": "Maximale Ausgabe-Token"
+          },
+          "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
+        },
+        "ollama": {
+          "title": "Ollama Konfiguration",
+          "data": {
+            "ip_address": "IP-Adresse",
+            "port": "Port",
+            "https": "HTTPS verwenden",
+            "model": "Modellname",
+            "max_tokens": "Maximale Ausgabe-Token"
+          },
+          "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
         }
+      },
+      "error": {
+        "cannot_connect": "Verbindung zum Dienst fehlgeschlagen",
+        "invalid_auth": "Ungültige Authentifizierung",
+        "invalid_config": "Ungültige Konfiguration",
+        "unknown": "Unerwarteter Fehler",
+        "no_entities": "Keine neuen Entitäten gefunden",
+        "api_error": "API-Fehler aufgetreten",
+        "required_field": "Dieses Feld ist erforderlich"
+      }
+    },
+    "services": {
+      "generate_suggestions": {
+        "name": "Generiere Vorschläge",
+        "description": "Löst manuell AI Automationsvorschläge aus",
+        "fields": {
+          "provider_config": {
+            "name": "Anbieterkonfiguration",
+            "description": "Welche Anbieterkonfiguration soll verwendet werden (falls mehrere vorhanden)?"
+          },
+          "custom_prompt": {
+            "name": "Benutzerdefinierter Prompt",
+            "description": "Optionaler benutzerdefinierter Prompt, um den Standard-System-Prompt zu überschreiben oder die Vorschläge auf bestimmte Themen auszurichten"
+          },
+          "all_entities": {
+            "name": "Alle Entitäten berücksichtigen",
+            "description": "Wenn wahr, werden alle Entitäten berücksichtigt, anstatt nur neue."
+          },
+          "domains": {
+            "name": "Domänen",
+            "description": "Liste der zu berücksichtigenden Domänen. Wenn leer, werden alle Domänen berücksichtigt."
+          },
+          "entity_limit": {
+            "name": "Entitäten-Limit",
+            "description": "Maximale Anzahl von Entitäten, die berücksichtigt werden (zufällig ausgewählt)."
+          }
+        }
+      }
     }
-}
+  }
+  

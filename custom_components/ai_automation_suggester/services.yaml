@@ -1,5 +1,3 @@
-# custom_components/ai_automation_suggester/services.yaml
-
 generate_suggestions:
   name: Generate Suggestions
   description: "Manually trigger AI automation suggestions."
@@ -13,9 +11,33 @@ generate_suggestions:
           integration: ai_automation_suggester
     custom_prompt:
       name: Custom Prompt
-      description: Optional custom prompt to override the default system prompt
+      description: Optional custom prompt to override or enhance the default system prompt.
       required: false
-      example: "Generate automations focusing on energy savings and security"
+      example: "Focus on energy-saving automations"  
       selector:
         text:
           multiline: true
+    all_entities:
+      name: Consider All Entities
+      description: "If true, consider all entities instead of just new entities."
+      required: false
+      default: false
+      selector:
+        boolean: {}
+    domains:
+      name: Domains
+      description: "List of domains to consider. If empty, consider all domains."
+      required: false
+      selector:
+        object: {}
+      default: {}
+    entity_limit:
+      name: Entity Limit
+      description: "Maximum number of entities to consider (randomly selected from the chosen domains)."
+      required: false
+      default: 200
+      selector:
+        number:
+          min: 50
+          max: 1000
+          mode: slider

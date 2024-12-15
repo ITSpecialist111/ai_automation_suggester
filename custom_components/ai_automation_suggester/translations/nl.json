@@ -1,52 +1,28 @@
 {
-  "config": {
-    "step": {
-      "user": {
-        "title": "Configureer AI Automation Suggester",
-        "data": {
-          "provider": "AI Aanbieder",
-          "max_tokens": "Maximaal aantal uitvoertokens"
-        }
-      },
-      "provider_config": {
-        "title": "Aanbiederconfiguratie",
-        "data": {
-          "model": "Modelnaam",
-          "api_key": "API-sleutel",
-          "max_tokens": "Maximaal aantal uitvoertokens",
-          "ip_address": "IP Adres",
-          "port": "Poort",
-          "use_https": "Gebruik HTTPS"
-        },
-        "description": "Het maximaal aantal uitvoertokens beperkt de lengte van de door A.I.-gegenereerde uitvoer. De standaardlimiet is 500 tokens. Hoog het limiet op om een langere uitvoer mogelijk te maken."
-      }
-    },
-    "error": {
-      "cannot_connect": "Kon geen verbinding maken met de service",
-      "invalid_auth": "Ongeldige authenticatie",
-      "invalid_config": "Ongeldige configuratie",
-      "unknown": "Onverwachte fout",
-      "no_entities": "Geen nieuwe entiteiten gevonden",
-      "api_error": "API-fout opgetreden",
-      "required_field": "Dit veld is verplicht"
-    },
-    "abort": {
-      "already_configured": "Aanbieder is al geconfigureerd",
-      "provider_not_supported": "Deze aanbieder wordt momenteel niet ondersteund"
-    }
-  },
   "services": {
     "generate_suggestions": {
       "name": "Genereer Suggesties",
-      "description": "Handmatig AI Automation Suggester oproepen",
+      "description": "Handmatig AI-automatiseringssuggesties oproepen",
       "fields": {
         "provider_config": {
           "name": "Aanbiederconfiguratie",
-          "description": "Welke aanbiederconfiguratie te gebruiken (indien er meerdere zijn)"
+          "description": "Welke aanbiederconfiguratie moet worden gebruikt (indien er meerdere zijn)?"
         },
         "custom_prompt": {
           "name": "Aangepaste Prompt",
-          "description": "Optioneel: aangepaste prompt om de standaard systeemprompt mee te overschrijven"
+          "description": "Optioneel een aangepaste prompt om de standaard systeemprompt te overschrijven of om de suggesties op specifieke thema's te richten (bijv. energiebesparing)"
+        },
+        "all_entities": {
+          "name": "Alle Entiteiten Beschouwen",
+          "description": "Indien waar, worden alle entiteiten in overweging genomen in plaats van alleen nieuwe entiteiten."
+        },
+        "domains": {
+          "name": "Domeinen",
+          "description": "Lijst met te beschouwen domeinen. Als deze leeg is, worden alle domeinen beschouwd."
+        },
+        "entity_limit": {
+          "name": "Entiteitenlimiet",
+          "description": "Maximaal aantal te beschouwen entiteiten (willekeurig geselecteerd)."
         }
       }
     }

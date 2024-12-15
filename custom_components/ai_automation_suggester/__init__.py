@@ -1,7 +1,7 @@
 """The AI Automation Suggester integration."""
 import logging
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
 from homeassistant.helpers.typing import ConfigType
 
@@ -18,45 +18,19 @@ from .coordinator import AIAutomationCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
-    """Migrate old entry."""
+    """Migrate old config entry if necessary."""
     _LOGGER.debug(f"async_migrate_entry {config_entry.version}")
-    if config_entry.version > CONFIG_VERSION:
-        # This means the user has downgraded from a future version
-        # Need to add scheduling fields back in
-        _LOGGER.debug("Downgrading config entry from version %s to version %s", config_entry.version, CONFIG_VERSION)
-
-        new_data = {**config_entry.data}
-        new_data['scan_frequency'] = config_entry.data.get('scan_frequency')
-        new_data['initial_lag_time'] = config_entry.data.get('initial_lag_time')
-
-        config_entry.version = 1
-        hass.config_entries.async_update_entry(config_entry, data=new_data)
-
-        _LOGGER.debug("Downgrade migration to version %s successful", config_entry.version)
-        return False
-
-    if config_entry.version == CONFIG_VERSION:
-        # This means the major version still matches. We don't currently use minor versions for config.
-        return True
-
+    # Currently, no migration logic beyond ensuring version matches CONFIG_VERSION
     if config_entry.version < CONFIG_VERSION:
-        _LOGGER.debug(f"Migrating config entry from version {config_entry.version} to version {CONFIG_VERSION}")
+        _LOGGER.debug(f"Migrating config entry from version {config_entry.version} to {CONFIG_VERSION}")
         new_data = {**config_entry.data}
-
-        # Remove old scheduling fields that are no longer used
         new_data.pop('scan_frequency', None)
         new_data.pop('initial_lag_time', None)
-
-        # Update to current version
         config_entry.version = CONFIG_VERSION
         hass.config_entries.async_update_entry(config_entry, data=new_data)
-
-        _LOGGER.debug("Migration to version %s successful", config_entry.version)
+        _LOGGER.debug("Migration successful")
         return True
-
-    _LOGGER.debug("No migration required for version %s", config_entry.version)
     return True
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -67,11 +41,21 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         """Handle the generate_suggestions service call."""
         provider_config = call.data.get(ATTR_PROVIDER_CONFIG)
         custom_prompt = call.data.get(ATTR_CUSTOM_PROMPT)
-        
+        all_entities = call.data.get("all_entities", False)
+        domains = call.data.get("domains", {})
+        entity_limit = call.data.get("entity_limit", 200)
+
+        # Parse domains if it's provided as a string or dict
+        if isinstance(domains, str):
+            domains = [d.strip() for d in domains.split(',') if d.strip()]
+        elif isinstance(domains, dict):
+            # If user provided a dict, convert keys to a list of domains
+            domains = list(domains.keys())
+
         try:
             coordinator = None
             if provider_config:
-                coordinator = hass.data[DOMAIN][provider_config]
+                coordinator = hass.data[DOMAIN].get(provider_config)
             else:
                 # Find first available coordinator if no specific one is specified
                 for entry_id, coord in hass.data[DOMAIN].items():
@@ -83,17 +67,29 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 raise ServiceValidationError("No AI Automation Suggester provider configured")
 
             if custom_prompt:
+                # Append the custom prompt to the system prompt
                 original_prompt = coordinator.SYSTEM_PROMPT
-                try:
-                    coordinator.SYSTEM_PROMPT = custom_prompt
-                    await coordinator.async_request_refresh()
-                finally:
-                    coordinator.SYSTEM_PROMPT = original_prompt
+                coordinator.SYSTEM_PROMPT = f"{coordinator.SYSTEM_PROMPT}\n\nAdditional instructions:\n{custom_prompt}"
             else:
+                original_prompt = None
+
+            # Set the scan_all and filtering options before calling async_request_refresh
+            coordinator.scan_all = all_entities
+            coordinator.selected_domains = domains
+            coordinator.entity_limit = entity_limit
+
+            try:
                 await coordinator.async_request_refresh()
+            finally:
+                # Restore original prompt and reset parameters
+                if original_prompt is not None:
+                    coordinator.SYSTEM_PROMPT = original_prompt
+                coordinator.scan_all = False
+                coordinator.selected_domains = []
+                coordinator.entity_limit = 200
 
         except KeyError:
-            raise ServiceValidationError(f"Provider configuration not found")
+            raise ServiceValidationError("Provider configuration not found")
         except Exception as err:
             raise ServiceValidationError(f"Failed to generate suggestions: {err}")
 
@@ -123,13 +119,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 raise ConfigEntryNotReady from err
 
         _LOGGER.debug(
-            "Setup complete for %s with provider %s", 
-            entry.title, 
+            "Setup complete for %s with provider %s",
+            entry.title,
             entry.data.get(CONF_PROVIDER)
         )
 
         entry.async_on_unload(entry.add_update_listener(async_reload_entry))
-        
+
+        # Example of using the event bus to trigger suggestions:
+        @callback
+        def handle_custom_event(event):
+            _LOGGER.debug("Received custom event '%s', triggering suggestions with all_entities=True", event.event_type)
+            hass.async_create_task(coordinator_request_all_suggestions())
+
+        async def coordinator_request_all_suggestions():
+            coordinator.scan_all = True
+            await coordinator.async_request_refresh()
+            coordinator.scan_all = False
+
+        entry.async_on_unload(hass.bus.async_listen("ai_automation_suggester_update", handle_custom_event))
+
         return True
 
     except Exception as err:
@@ -140,7 +149,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     try:
         unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-        
+
         if unload_ok:
             coordinator = hass.data[DOMAIN].pop(entry.entry_id)
             await coordinator.async_shutdown()
