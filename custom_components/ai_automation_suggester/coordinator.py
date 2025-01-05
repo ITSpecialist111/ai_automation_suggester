@@ -334,37 +334,64 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Error getting suggestions: %s", err)
             return None
 
+    # ------------------------------------------------------------------------
+    # Updated process_with_openai for gpt-4o / o1-preview
+    # ------------------------------------------------------------------------
     async def process_with_openai(self, prompt):
         try:
             api_key = self.entry.data.get(CONF_OPENAI_API_KEY)
             model = self.entry.data.get(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"])
-            max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            max_tokens_conf = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
 
             if not api_key:
                 raise ValueError("OpenAI API key not configured")
 
-            _LOGGER.debug("Making OpenAI API request with model %s and max_tokens %d",
-                          model, max_tokens)
+            _LOGGER.debug("Making OpenAI API request with model %s", model)
+
+            # Approximate token counting
+            def count_tokens(text: str) -> int:
+                return len(text) // 4  # rough approximation
+
+            # Hard limit to avoid sending massive prompts (e.g., 32768 tokens)
+            HARD_MAX = 32768
+            max_tokens_used = min(max_tokens_conf, HARD_MAX)
+
+            prompt_token_count = count_tokens(prompt)
+            if prompt_token_count > max_tokens_used:
+                _LOGGER.warning(
+                    "Prompt is ~%d tokens, exceeding limit %d. Truncating...",
+                    prompt_token_count, max_tokens_used
+                )
+                prompt = prompt[: max_tokens_used * 4]
+                prompt_token_count = count_tokens(prompt)
+
+            _LOGGER.debug("Prompt length after truncation: ~%d tokens", prompt_token_count)
+
+            # Some new model variants require 'max_completion_tokens' instead of 'max_tokens'
+            lower_model = model.lower()
+            if lower_model in ["gpt-4o", "o1-preview", "o1", "o1-mini"]:
+                # The model rejects 'max_tokens'
+                data = {
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_completion_tokens": max_tokens_used,
+                    "temperature": DEFAULT_TEMPERATURE
+                }
+            else:
+                # Standard OpenAI usage
+                data = {
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens_used,
+                    "temperature": DEFAULT_TEMPERATURE
+                }
 
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}"
             }
 
-            data = {
-                "model": model,
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ],
-                "max_tokens": max_tokens,
-                "temperature": DEFAULT_TEMPERATURE
-            }
-
-            async with self.session.post(
-                ENDPOINT_OPENAI,
-                headers=headers,
-                json=data
-            ) as response:
+            async with self.session.post(ENDPOINT_OPENAI, headers=headers, json=data) as response:
                 if response.status != 200:
                     error_text = await response.text()
                     _LOGGER.error("OpenAI API error: %s", error_text)
@@ -421,46 +448,60 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Error processing with Anthropic: %s", err)
             return None
 
+    # ------------------------------------------------------------------------
+    # Updated process_with_google removing gpt-4o / o1-preview checks
+    # ------------------------------------------------------------------------
     async def process_with_google(self, prompt):
         try:
             api_key = self.entry.data.get(CONF_GOOGLE_API_KEY)
             model = self.entry.data.get(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"])
-            max_tokens = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            # Hard-cap at 30,720 tokens (Google’s known limit)
+            max_tokens = min(self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS), 30720)
 
             if not api_key:
                 raise ValueError("Google API key not configured")
 
             _LOGGER.debug("Making Google API request with model %s", model)
 
-            headers = {
-                "Content-Type": "application/json",
-            }
+            # Approximate token counting
+            def count_tokens(text: str) -> int:
+                return len(text) // 4
 
+            prompt_token_count = count_tokens(prompt)
+            if prompt_token_count > max_tokens:
+                _LOGGER.warning(
+                    "Prompt is ~%d tokens, exceeding limit %d. Truncating...",
+                    prompt_token_count, max_tokens
+                )
+                prompt = prompt[: max_tokens * 4]
+                prompt_token_count = count_tokens(prompt)
+
+            _LOGGER.debug("Prompt length after truncation: ~%d tokens", prompt_token_count)
+
+            # Always use "maxOutputTokens" for Google
             data = {
                 "contents": [
                     {
                         "parts": [
-                            {
-                                "text": prompt
-                            }
+                            {"text": prompt}
                         ]
                     }
                 ],
                 "generationConfig": {
                     "temperature": DEFAULT_TEMPERATURE,
-                    "maxOutputTokens": max_tokens,
                     "topK": 40,
                     "topP": 0.95,
+                    "maxOutputTokens": max_tokens
                 }
             }
 
             endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
-            async with self.session.post(
-                endpoint,
-                headers=headers,
-                json=data
-            ) as response:
+            headers = {
+                "Content-Type": "application/json",
+            }
+
+            async with self.session.post(endpoint, headers=headers, json=data) as response:
                 if response.status != 200:
                     error_text = await response.text()
                     _LOGGER.error("Google API error: %s", error_text)
@@ -476,6 +517,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             _LOGGER.error("Error processing with Google: %s", err)
             return None
+    # ------------------------------------------------------------------------
 
     async def process_with_groq(self, prompt):
         try:
@@ -555,10 +597,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "temperature": DEFAULT_TEMPERATURE
             }
 
-            async with self.session.post(
-                endpoint,
-                json=data
-            ) as response:
+            async with self.session.post(endpoint, json=data) as response:
                 if response.status != 200:
                     error_text = await response.text()
                     _LOGGER.error("LocalAI API error: %s", error_text)
@@ -604,10 +643,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 }
             }
 
-            async with self.session.post(
-                endpoint,
-                json=data
-            ) as response:
+            async with self.session.post(endpoint, json=data) as response:
                 if response.status != 200:
                     error_text = await response.text()
                     _LOGGER.error("Ollama API error: %s", error_text)
@@ -648,11 +684,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "temperature": DEFAULT_TEMPERATURE
             }
 
-            async with self.session.post(
-                endpoint,
-                headers=headers,
-                json=data
-            ) as response:
+            async with self.session.post(endpoint, headers=headers, json=data) as response:
                 if response.status != 200:
                     error_text = await response.text()
                     _LOGGER.error("Custom OpenAI API error: %s", error_text)

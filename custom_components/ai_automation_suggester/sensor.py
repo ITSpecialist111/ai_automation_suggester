@@ -76,7 +76,7 @@ class AISuggestionsSensor(CoordinatorEntity, SensorEntity):
             "name": f"AI Automation Suggester ({entry.data.get(CONF_PROVIDER, 'unknown')})",
             "manufacturer": "Community",
             "model": entry.data.get(CONF_PROVIDER, "unknown"),
-            "sw_version": "1.2.0",
+            "sw_version": "1.2.1",
         }
         self._entry = entry
         self._previous_suggestions = None
@@ -168,7 +168,7 @@ class AIProviderStatusSensor(CoordinatorEntity, SensorEntity):
             "name": f"AI Automation Suggester ({entry.data.get(CONF_PROVIDER, 'unknown')})",
             "manufacturer": "Community",
             "model": entry.data.get(CONF_PROVIDER, "unknown"),
-            "sw_version": "1.2.0",
+            "sw_version": "1.2.1",
         }
         self._entry = entry
         self._attr_native_value = STATE_UNKNOWN
