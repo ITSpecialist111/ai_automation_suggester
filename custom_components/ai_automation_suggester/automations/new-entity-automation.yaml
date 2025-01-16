@@ -34,9 +34,9 @@ condition:
   # Simple throttling based on last trigger time
   - condition: template
     value_template: >-
-      {% set last_triggered = states('automation.ai_suggestions_new_entity_detection').attributes.last_triggered %}
-      {% if last_triggered is not none %}
-        {% set hours_since = ((now() - as_datetime(last_triggered)).total_seconds() / 3600) | float %}
+      {% set automation = states.automation.ai_suggestions_new_entity_detection %}
+      {% if automation and automation.attributes.last_triggered %}
+        {% set hours_since = ((now() - as_datetime(automation.attributes.last_triggered)).total_seconds() / 3600) | float %}
         {{ hours_since > 1.0 }}
       {% else %}
         true
