@@ -22,6 +22,8 @@ As a modern smart home grows in complexity—encompassing lights, sensors, locks
 **In essence**, the AI Automation Suggester turns the complexity of a large Home Assistant environment into actionable insights and tangible benefits.
 
 ---
+![alt text](<Screenshot 2025-01-19 082247-1.png>)
+---
 
 ## The Solution and How It Works
 
@@ -57,6 +59,15 @@ As a modern smart home grows in complexity—encompassing lights, sensors, locks
 - **Enhanced Control**: Custom prompts, entity limits, and domain filters give you command over what kinds of suggestions are generated.
 
 ---
+***Snapshot View***
+![alt text](<Screenshot 2025-01-19 083200.png>)
+
+---
+***Ideas for Dashboard***
+
+You have the ability to build your own dashboard to show the suggestions on one page however you want. 
+![alt text](image.png)
+
 
 ## Table of Contents
 
