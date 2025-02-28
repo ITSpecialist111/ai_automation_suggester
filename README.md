@@ -272,7 +272,7 @@ This is a custom component, not affiliated with or endorsed by Home Assistant or
 
 If you find this helpful, consider supporting development:
 
-[Buy Me A Coffee](https://www.buymeacoffee.com/ITSpecialist111)
+[Buy Me A Coffee](https://www.buymeacoffee.com/ITSpecialist)
 
 Your support helps maintain and enhance this project!
 
