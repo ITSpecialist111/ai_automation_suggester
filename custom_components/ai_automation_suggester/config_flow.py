@@ -36,6 +36,10 @@ from .const import (
     CONF_CUSTOM_OPENAI_MODEL,
     DEFAULT_MODELS,
     VERSION_ANTHROPIC,
+    # Mistral AI additions:
+    CONF_MISTRAL_API_KEY,
+    CONF_MISTRAL_MODEL,
+    MISTRAL_MODELS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -134,7 +138,6 @@ class ProviderValidator:
                 "topP": 0.95,
             }
         }
-        
         try:
             _LOGGER.debug(f"Validating Google API key with model: {model}")
             response = await self.session.post(
@@ -156,8 +159,6 @@ class ProviderValidator:
         except Exception as err:
             _LOGGER.error(f"Google validation exception: {err}")
             return str(err)
-
-
 
     async def validate_groq(self, api_key: str) -> Optional[str]:
         """Validate Groq configuration."""
@@ -255,7 +256,7 @@ class ProviderValidator:
 
 class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for AI Automation Suggester."""
-    
+
     VERSION = 1
 
     def __init__(self):
@@ -277,7 +278,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.provider = user_input[CONF_PROVIDER]
             self.data.update(user_input)
-            
+
             # Check if provider is already configured
             existing_entries = self._async_current_entries()
             for entry in existing_entries:
@@ -295,10 +296,11 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "LocalAI": self.async_step_localai,
                     "Ollama": self.async_step_ollama,
                     "Custom OpenAI": self.async_step_custom_openai,
+                    "Mistral AI": self.async_step_mistral,
                 }
                 return await provider_steps[self.provider]()
 
-        providers = ["OpenAI", "Anthropic", "Google", "Groq", "LocalAI", "Ollama", "Custom OpenAI"]
+        providers = ["OpenAI", "Anthropic", "Google", "Groq", "LocalAI", "Ollama", "Custom OpenAI", "Mistral AI"]
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({
@@ -315,7 +317,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.validator = ProviderValidator(self.hass)
             error_message = await self.validator.validate_openai(user_input[CONF_OPENAI_API_KEY])
-            
+
             if error_message is None:
                 self.data.update(user_input)
                 return self.async_create_entry(
@@ -338,7 +340,6 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders=description_placeholders
         )
-
 
     async def async_step_anthropic(self, user_input: Optional[Dict[str, Any]] = None):
         """Configure Anthropic settings."""
@@ -412,7 +413,6 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders=description_placeholders
         )
 
-
     async def async_step_groq(self, user_input: Optional[Dict[str, Any]] = None):
         """Configure Groq settings."""
         errors = {}
@@ -444,7 +444,6 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders=description_placeholders
         )
-
 
     async def async_step_localai(self, user_input: Optional[Dict[str, Any]] = None):
         """Configure LocalAI settings."""
@@ -484,7 +483,6 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders=description_placeholders
         )
 
-
     async def async_step_ollama(self, user_input: Optional[Dict[str, Any]] = None):
         """Configure Ollama settings."""
         errors = {}
@@ -522,7 +520,6 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders=description_placeholders
         )
-
 
     async def async_step_custom_openai(self, user_input: Optional[Dict[str, Any]] = None):
         """Configure Custom OpenAI settings."""
@@ -562,6 +559,26 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders=description_placeholders
         )
 
+    async def async_step_mistral(self, user_input: Optional[Dict[str, Any]] = None):
+        """Configure Mistral AI settings."""
+        errors = {}
+        if user_input is not None:
+            self.data.update(user_input)
+            return self.async_create_entry(
+                title="AI Automation Suggester (Mistral AI)",
+                data=self.data
+            )
+        return self.async_show_form(
+            step_id="mistral",
+            data_schema=vol.Schema({
+                vol.Required(CONF_MISTRAL_API_KEY): str,
+                vol.Required(CONF_MISTRAL_MODEL, default="mistral-medium"): vol.In(MISTRAL_MODELS),
+                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.All(
+                    vol.Coerce(int), vol.Range(min=100)
+                ),
+            }),
+            errors=errors
+        )
 
 
 class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
@@ -628,6 +645,12 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_CUSTOM_OPENAI_MODEL,
                 default=self.config_entry.data.get(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"])
             )] = str
+        elif provider == "Mistral AI":
+            options[vol.Required(CONF_MISTRAL_API_KEY)] = str
+            options[vol.Required(
+                CONF_MISTRAL_MODEL,
+                default=self.config_entry.data.get(CONF_MISTRAL_MODEL, "mistral-medium")
+            )] = vol.In(MISTRAL_MODELS)
 
         return self.async_show_form(
             step_id="init",

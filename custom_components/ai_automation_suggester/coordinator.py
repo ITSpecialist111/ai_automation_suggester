@@ -8,7 +8,6 @@ from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
 from homeassistant.helpers import device_registry as dr, entity_registry as er, area_registry as ar
 
 from .const import (
@@ -35,6 +34,9 @@ from .const import (
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_MODEL,
+    # Mistral AI constants added:
+    CONF_MISTRAL_API_KEY,
+    CONF_MISTRAL_MODEL,
     DEFAULT_MAX_TOKENS,
     DEFAULT_TEMPERATURE,
     VERSION_ANTHROPIC,
@@ -44,6 +46,8 @@ from .const import (
     ENDPOINT_GROQ,
     ENDPOINT_LOCALAI,
     ENDPOINT_OLLAMA,
+    # New Mistral AI endpoint constant:
+    ENDPOINT_MISTRAL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -327,6 +331,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 return await self.process_with_ollama(prompt)
             elif provider == "Custom OpenAI":
                 return await self.process_with_custom_openai(prompt)
+            elif provider == "Mistral AI":
+                return await self.process_with_mistral(prompt)
             else:
                 _LOGGER.error("Unknown provider: %s", provider)
                 return None
@@ -367,10 +373,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             _LOGGER.debug("Prompt length after truncation: ~%d tokens", prompt_token_count)
 
-            # Some new model variants require 'max_completion_tokens' instead of 'max_tokens'
             lower_model = model.lower()
             if lower_model in ["gpt-4o", "o1-preview", "o1", "o1-mini"]:
-                # The model rejects 'max_tokens'
                 data = {
                     "model": model,
                     "messages": [{"role": "user", "content": prompt}],
@@ -378,7 +382,6 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     "temperature": DEFAULT_TEMPERATURE
                 }
             else:
-                # Standard OpenAI usage
                 data = {
                     "model": model,
                     "messages": [{"role": "user", "content": prompt}],
@@ -424,18 +427,12 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             data = {
                 "model": model,
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ],
+                "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
 
-            async with self.session.post(
-                ENDPOINT_ANTHROPIC,
-                headers=headers,
-                json=data
-            ) as response:
+            async with self.session.post(ENDPOINT_ANTHROPIC, headers=headers, json=data) as response:
                 if response.status != 200:
                     error_text = await response.text()
                     _LOGGER.error("Anthropic API error: %s", error_text)
@@ -455,7 +452,6 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self.entry.data.get(CONF_GOOGLE_API_KEY)
             model = self.entry.data.get(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"])
-            # Hard-cap at 30,720 tokens (Google’s known limit)
             max_tokens = min(self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS), 30720)
 
             if not api_key:
@@ -463,7 +459,6 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             _LOGGER.debug("Making Google API request with model %s", model)
 
-            # Approximate token counting
             def count_tokens(text: str) -> int:
                 return len(text) // 4
 
@@ -478,14 +473,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             _LOGGER.debug("Prompt length after truncation: ~%d tokens", prompt_token_count)
 
-            # Always use "maxOutputTokens" for Google
             data = {
                 "contents": [
-                    {
-                        "parts": [
-                            {"text": prompt}
-                        ]
-                    }
+                    {"parts": [{"text": prompt}]}
                 ],
                 "generationConfig": {
                     "temperature": DEFAULT_TEMPERATURE,
@@ -496,10 +486,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             }
 
             endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-
-            headers = {
-                "Content-Type": "application/json",
-            }
+            headers = {"Content-Type": "application/json"}
 
             async with self.session.post(endpoint, headers=headers, json=data) as response:
                 if response.status != 200:
@@ -517,8 +504,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             _LOGGER.error("Error processing with Google: %s", err)
             return None
-    # ------------------------------------------------------------------------
 
+    # ------------------------------------------------------------------------
     async def process_with_groq(self, prompt):
         try:
             api_key = self.entry.data.get(CONF_GROQ_API_KEY)
@@ -528,8 +515,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             if not api_key:
                 raise ValueError("Groq API key not configured")
 
-            _LOGGER.debug("Making Groq API request with model %s and max_tokens %d",
-                          model, max_tokens)
+            _LOGGER.debug("Making Groq API request with model %s and max_tokens %d", model, max_tokens)
 
             headers = {
                 "Content-Type": "application/json",
@@ -537,24 +523,16 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             }
 
             data = {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt}
-                        ]
-                    }
-                ],
+                "messages": [{
+                    "role": "user",
+                    "content": [{"type": "text", "text": prompt}]
+                }],
                 "model": model,
                 "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
 
-            async with self.session.post(
-                ENDPOINT_GROQ,
-                headers=headers,
-                json=data
-            ) as response:
+            async with self.session.post(ENDPOINT_GROQ, headers=headers, json=data) as response:
                 if response.status != 200:
                     error_text = await response.text()
                     _LOGGER.error("Groq API error: %s", error_text)
@@ -579,20 +557,12 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 raise ValueError("LocalAI configuration incomplete")
 
             protocol = "https" if https else "http"
-            endpoint = ENDPOINT_LOCALAI.format(
-                protocol=protocol,
-                ip_address=ip_address,
-                port=port
-            )
-
-            _LOGGER.debug("Making LocalAI API request to %s with model %s and max_tokens %d",
-                          endpoint, model, max_tokens)
+            endpoint = ENDPOINT_LOCALAI.format(protocol=protocol, ip_address=ip_address, port=port)
+            _LOGGER.debug("Making LocalAI API request to %s with model %s and max_tokens %d", endpoint, model, max_tokens)
 
             data = {
                 "model": model,
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ],
+                "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
@@ -622,20 +592,12 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 raise ValueError("Ollama configuration incomplete")
 
             protocol = "https" if https else "http"
-            endpoint = ENDPOINT_OLLAMA.format(
-                protocol=protocol,
-                ip_address=ip_address,
-                port=port
-            )
-
-            _LOGGER.debug("Making Ollama API request to %s with model %s and max_tokens %d",
-                          endpoint, model, max_tokens)
+            endpoint = ENDPOINT_OLLAMA.format(protocol=protocol, ip_address=ip_address, port=port)
+            _LOGGER.debug("Making Ollama API request to %s with model %s and max_tokens %d", endpoint, model, max_tokens)
 
             data = {
                 "model": model,
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ],
+                "messages": [{"role": "user", "content": prompt}],
                 "stream": False,
                 "options": {
                     "temperature": DEFAULT_TEMPERATURE,
@@ -666,20 +628,15 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             if not endpoint:
                 raise ValueError("Custom OpenAI endpoint not configured")
 
-            _LOGGER.debug("Making Custom OpenAI API request to %s with model %s and max_tokens %d",
-                          endpoint, model, max_tokens)
+            _LOGGER.debug("Making Custom OpenAI API request to %s with model %s and max_tokens %d", endpoint, model, max_tokens)
 
-            headers = {
-                "Content-Type": "application/json",
-            }
+            headers = {"Content-Type": "application/json"}
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
 
             data = {
                 "model": model,
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ],
+                "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
@@ -696,3 +653,29 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             _LOGGER.error("Error processing with Custom OpenAI: %s", err)
             return None
+
+    # ------------------------------------------------------------------------
+    async def process_with_mistral(self, prompt):
+        try:
+            api_key = self.entry.data.get(CONF_MISTRAL_API_KEY)
+            model = self.entry.data.get(CONF_MISTRAL_MODEL, "mistral-medium")
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": DEFAULT_TEMPERATURE,
+                "max_tokens": 4096
+            }
+            async with self.session.post(ENDPOINT_MISTRAL, headers=headers, json=payload) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    _LOGGER.error("Mistral AI API error: %s", error_text)
+                    return f"Error: {error_text}"
+                result = await response.json()
+                return result["choices"][0]["message"]["content"]
+        except Exception as e:
+            _LOGGER.error("Error calling Mistral AI API: %s", str(e))
+            return f"Error: {str(e)}"

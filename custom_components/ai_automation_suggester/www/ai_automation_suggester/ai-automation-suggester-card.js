@@ -1,68 +1,128 @@
-class AISuggesterCard extends HTMLElement {
-  
-  // Proper implementation of setConfig
+import { LitElement, html, css } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { applyHass } from 'custom-card-helpers'; // For hass object
+@customElement('ai-automation-suggester-card')
+export class AiAutomationSuggesterCard extends LitElement {
+  static styles = css`
+    :host {
+      display: block;
+    }
+    ha-card {
+      padding: 16px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 16px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 16px;
+    }
+    pre {
+      background-color: #f0f0f0;
+      padding: 10px;
+      overflow-x: auto;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    .details {
+      display: none; /* Initially hidden */
+    }
+    .details[open] {
+      display: block;
+    }
+    .error {
+      color: red;
+    }
+  `;
+  @property({ type: Object }) hass; // Home Assistant object
+  @property({ type: Array }) suggestions = [];
+  @state() loading = true;
+  @state() error = null;
+  connectedCallback() {
+    super.connectedCallback();
+    this.fetchData();
+  }
+  async fetchData() {
+    this.loading = true;
+    this.error = null;
+    try {
+      const response = await this.hass.callApi('GET', '/api/ai_automation_suggester/suggestions');
+      this.suggestions = response;
+    } catch (err) {
+      this.error = err.message || 'Failed to fetch suggestions.';
+    } finally {
+      this.loading = false;
+    }
+  }
+  toggleDetails(suggestion) {
+    suggestion.showDetails = !suggestion.showDetails;
+    this.requestUpdate(); // Ensure re-render
+  }
+  copyYaml(yaml) {
+    navigator.clipboard.writeText(yaml);
+    this.dispatchEvent(new CustomEvent('hass-notification', {
+      detail: {
+        type: 'info',
+        message: 'YAML code copied to clipboard!',
+      },
+    }));
+  }
+  async handleSuggestionAction(suggestionId, action) {
+    try {
+      const response = await this.hass.callApi('POST', `/api/ai_automation_suggester/${action}/${suggestionId}`);
+      if (response.success) {
+        this.fetchData(); // Refresh suggestions after action
+      } else {
+        this.error = response.error || `Failed to ${action} suggestion.`;
+      }
+    } catch (err) {
+      this.error = err.message || `Failed to ${action} suggestion.`;
+    }
+  }
+  render() {
+    return html`
+      <ha-card>
+        <div>
+          <h2>AI Automation Suggestions</h2>
+          ${this.loading
+            ? html`<p>Loading suggestions...</p>`
+            : this.error
+              ? html`<p class="error">Error: ${this.error}</p>`
+              : html`
+                  <ul>
+                    ${this.suggestions.map(suggestion => html`
+                      <li>
+                        <h3>${suggestion.title}</h3>
+                        <p>${suggestion.shortDescription}</p>
+                        <button @click="${() => this.toggleDetails(suggestion)}">Details</button>
+                        <div class="details" ?open="${suggestion.showDetails}">
+                          <p>${suggestion.detailedDescription}</p>
+                          <pre><code class="language-yaml">${suggestion.yamlCode}</code></pre>
+                          <button @click="${() => this.copyYaml(suggestion.yamlCode)}">Copy YAML</button>
+                          <button @click="${() => this.handleSuggestionAction(suggestion.id, 'accept')}">Accept</button>
+                          <button @click="${() => this.handleSuggestionAction(suggestion.id, 'decline')}">Decline</button>
+                        </div>
+                      </li>
+                    `)}
+                  </ul>
+                `}
+        </div>
+      </ha-card>
+    `;
+  }
   setConfig(config) {
-    if (!config) {
-      throw new Error("Invalid configuration");
-    }
-    this.config = config;
-    this.renderCard();
+    // Optional: Handle any configuration options passed to the card
   }
-
   set hass(hass) {
-    this._hass = hass;
-    if (this.config) {
-      this.renderCard();
-    }
+    applyHass(this, hass);
   }
-
-  renderCard() {
-    if (!this.content) {
-      const card = document.createElement('ha-card');
-      card.header = 'AI Automation Suggestions';
-      this.content = document.createElement('div');
-      this.content.style.padding = '16px';
-      card.appendChild(this.content);
-      this.appendChild(card);
-    }
-    if (this._hass) {
-      this._hass.callApi('GET', 'ai_suggester/suggestions').then((suggestions) => {
-        this.renderSuggestions(suggestions);
-      });
-    }
-  }
-
-  renderSuggestions(suggestions) {
-    this.content.innerHTML = '';
-    suggestions.suggestions.forEach((suggestion, index) => {
-      const suggestionDiv = document.createElement('div');
-      suggestionDiv.style.marginBottom = '16px';
-
-      const description = document.createElement('p');
-      description.textContent = suggestion.description;
-      suggestionDiv.appendChild(description);
-
-      const acceptButton = document.createElement('mwc-button');
-      acceptButton.textContent = 'Accept';
-      acceptButton.addEventListener('click', () => this.acceptSuggestion(index));
-      suggestionDiv.appendChild(acceptButton);
-
-      const rejectButton = document.createElement('mwc-button');
-      rejectButton.textContent = 'Reject';
-      rejectButton.addEventListener('click', () => this.rejectSuggestion(index));
-      suggestionDiv.appendChild(rejectButton);
-
-      this.content.appendChild(suggestionDiv);
-    });
-  }
-
-  acceptSuggestion(index) {
-    this._hass.callService('ai_suggester', 'accept_suggestion', { index });
-  }
-
-  rejectSuggestion(index) {
-    this._hass.callService('ai_suggester', 'reject_suggestion', { index });
+  get hass() {
+    return this._hass;
   }
 }
-
-customElements.define('ai-suggester-card', AISuggesterCard);
+// Provide a fallback registration if the module is loaded directly
+if (customElements.get('ai-automation-suggester-card') === undefined) {
+  customElements.define('ai-automation-suggester-card', AiAutomationSuggesterCard);
+}

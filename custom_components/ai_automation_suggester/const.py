@@ -45,6 +45,11 @@ CONF_CUSTOM_OPENAI_ENDPOINT = "custom_openai_endpoint"
 CONF_CUSTOM_OPENAI_API_KEY = "custom_openai_api_key"
 CONF_CUSTOM_OPENAI_MODEL = "custom_openai_model"
 
+# Mistral AI specific (new)
+CONF_MISTRAL_API_KEY = "mistral_api_key"
+CONF_MISTRAL_MODEL = "mistral_model"
+MISTRAL_MODELS = ["mistral-tiny", "mistral-small", "mistral-medium", "mistral-large"]
+
 # Model Defaults
 DEFAULT_MODELS = {
     "OpenAI": "gpt-4o-mini",
@@ -53,7 +58,8 @@ DEFAULT_MODELS = {
     "Groq": "llama3-8b-8192",
     "LocalAI": "llama3",
     "Ollama": "llama2",
-    "Custom OpenAI": "gpt-3.5-turbo"
+    "Custom OpenAI": "gpt-3.5-turbo",
+    "Mistral AI": "mistral-medium"
 }
 
 # Error Messages
@@ -88,7 +94,7 @@ EVENT_PROVIDER_STATUS_CHANGE = f"{DOMAIN}_provider_status_change"
 
 # Configuration defaults
 CONF_MAX_TOKENS = "max_tokens"
-DEFAULT_MAX_TOKENS = 500  # Conservative default example from 500 to 16384 for gpt-4o-mini output limit, other models are different
+DEFAULT_MAX_TOKENS = 500  # Conservative default; adjust as needed per provider
 DEFAULT_TEMPERATURE = 0.7
 
 # API Endpoints
@@ -98,3 +104,4 @@ ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta2/models/{mod
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
 ENDPOINT_LOCALAI = "{protocol}://{ip_address}:{port}/v1/chat/completions"
 ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"
+ENDPOINT_MISTRAL = "https://api.mistral.ai/v1/chat/completions"
