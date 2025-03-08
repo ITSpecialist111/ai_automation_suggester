@@ -58,10 +58,7 @@ class ProviderValidator:
         }
         try:
             _LOGGER.debug("Validating OpenAI API key")
-            response = await self.session.get(
-                "https://api.openai.com/v1/models",
-                headers=headers
-            )
+            response = await self.session.get("https://api.openai.com/v1/models", headers=headers)
             if response.status == 200:
                 return None  # Success
             else:
@@ -112,24 +109,11 @@ class ProviderValidator:
             return str(err)
 
     async def validate_google(self, api_key: str, model: str) -> Optional[str]:
-        headers = {
-            'Content-Type': 'application/json',
-        }
+        headers = {'Content-Type': 'application/json'}
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         payload = {
-            "contents": [
-                {
-                    "parts": [
-                        {"text": "Hello"}
-                    ]
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.5,
-                "maxOutputTokens": 100,
-                "topK": 40,
-                "topP": 0.95,
-            }
+            "contents": [{"parts": [{"text": "Hello"}]}],
+            "generationConfig": {"temperature": 0.5, "maxOutputTokens": 100, "topK": 40, "topP": 0.95}
         }
         try:
             _LOGGER.debug(f"Validating Google API key with model: {model}")
@@ -150,16 +134,10 @@ class ProviderValidator:
             return str(err)
 
     async def validate_groq(self, api_key: str) -> Optional[str]:
-        headers = {
-            'Authorization': f"Bearer {api_key}",
-            'Content-Type': 'application/json',
-        }
+        headers = {'Authorization': f"Bearer {api_key}", 'Content-Type': 'application/json'}
         try:
             _LOGGER.debug("Validating Groq API key")
-            response = await self.session.get(
-                "https://api.groq.com/openai/v1/models",
-                headers=headers
-            )
+            response = await self.session.get("https://api.groq.com/openai/v1/models", headers=headers)
             if response.status == 200:
                 return None  # Success
             else:
@@ -208,9 +186,7 @@ class ProviderValidator:
             return str(err)
 
     async def validate_custom_openai(self, endpoint: str, api_key: Optional[str]) -> Optional[str]:
-        headers = {
-            'Content-Type': 'application/json',
-        }
+        headers = {'Content-Type': 'application/json'}
         if api_key:
             headers['Authorization'] = f"Bearer {api_key}"
         try:
@@ -233,12 +209,11 @@ class ProviderValidator:
 
 
 class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for AI Automation Suggester."""
+    """Handle a config flow for AI Automation Suggester integration."""
 
     VERSION = 1
 
     def __init__(self):
-        """Initialize config flow."""
         self.provider = None
         self.data = {}
         self.validator = None
@@ -250,22 +225,17 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return AIAutomationOptionsFlowHandler(config_entry)
 
     async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
-        """Handle the initial step."""
         errors = {}
-
         if user_input is not None:
             self.provider = user_input[CONF_PROVIDER]
             self.data.update(user_input)
-            
             # Check if provider is already configured
             existing_entries = self._async_current_entries()
             for entry in existing_entries:
                 if entry.data.get(CONF_PROVIDER) == self.provider:
                     errors["base"] = "already_configured"
                     break
-
             if not errors:
-                # Move to provider-specific configuration
                 provider_steps = {
                     "OpenAI": self.async_step_openai,
                     "Anthropic": self.async_step_anthropic,
@@ -277,7 +247,6 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "Mistral AI": self.async_step_mistral,
                 }
                 return await provider_steps[self.provider]()
-
         providers = ["OpenAI", "Anthropic", "Google", "Groq", "LocalAI", "Ollama", "Custom OpenAI", "Mistral AI"]
         return self.async_show_form(
             step_id="user",
@@ -286,126 +255,106 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_openai(self, user_input: Optional[Dict[str, Any]] = None):
-        """Configure OpenAI settings."""
         errors = {}
         description_placeholders = {}
-
         if user_input is not None:
             self.validator = ProviderValidator(self.hass)
             error_message = await self.validator.validate_openai(user_input[CONF_OPENAI_API_KEY])
-            
             if error_message is None:
                 self.data.update(user_input)
                 return self.async_create_entry(title="AI Automation Suggester (OpenAI)", data=self.data)
             else:
                 errors["base"] = "api_error"
                 description_placeholders["error_message"] = error_message
-
         return self.async_show_form(
             step_id="openai",
             data_schema=vol.Schema({
                 vol.Required(CONF_OPENAI_API_KEY): str,
                 vol.Optional(CONF_OPENAI_MODEL, default=DEFAULT_MODELS["OpenAI"]): str,
-                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.All(vol.Coerce(int), vol.Range(min=100)),
+                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS):
+                    vol.All(vol.Coerce(int), vol.Range(min=100)),
             }),
             errors=errors,
             description_placeholders=description_placeholders
         )
 
     async def async_step_anthropic(self, user_input: Optional[Dict[str, Any]] = None):
-        """Configure Anthropic settings."""
         errors = {}
         description_placeholders = {}
-
         if user_input is not None:
             self.validator = ProviderValidator(self.hass)
             model = user_input.get(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"])
-            error_message = await self.validator.validate_anthropic(
-                api_key=user_input[CONF_ANTHROPIC_API_KEY],
-                model=model
-            )
-
+            error_message = await self.validator.validate_anthropic(api_key=user_input[CONF_ANTHROPIC_API_KEY], model=model)
             if error_message is None:
                 self.data.update(user_input)
                 return self.async_create_entry(title="AI Automation Suggester (Anthropic)", data=self.data)
             else:
                 errors["base"] = "api_error"
                 description_placeholders["error_message"] = error_message
-
         return self.async_show_form(
             step_id="anthropic",
             data_schema=vol.Schema({
                 vol.Required(CONF_ANTHROPIC_API_KEY): str,
                 vol.Optional(CONF_ANTHROPIC_MODEL, default=DEFAULT_MODELS["Anthropic"]): str,
-                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.All(vol.Coerce(int), vol.Range(min=100)),
+                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS):
+                    vol.All(vol.Coerce(int), vol.Range(min=100)),
             }),
             errors=errors,
             description_placeholders=description_placeholders
         )
 
     async def async_step_google(self, user_input: Optional[Dict[str, Any]] = None):
-        """Configure Google settings."""
         errors = {}
         description_placeholders = {}
-
         if user_input is not None:
             self.validator = ProviderValidator(self.hass)
             model = user_input.get(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"])
-            error_message = await self.validator.validate_google(
-                api_key=user_input[CONF_GOOGLE_API_KEY],
-                model=model
-            )
-
+            error_message = await self.validator.validate_google(api_key=user_input[CONF_GOOGLE_API_KEY], model=model)
             if error_message is None:
                 self.data.update(user_input)
                 return self.async_create_entry(title="AI Automation Suggester (Google)", data=self.data)
             else:
                 errors["base"] = "api_error"
                 description_placeholders["error_message"] = error_message
-
         return self.async_show_form(
             step_id="google",
             data_schema=vol.Schema({
                 vol.Required(CONF_GOOGLE_API_KEY): str,
                 vol.Optional(CONF_GOOGLE_MODEL, default=DEFAULT_MODELS["Google"]): str,
-                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.All(vol.Coerce(int), vol.Range(min=100)),
+                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS):
+                    vol.All(vol.Coerce(int), vol.Range(min=100)),
             }),
             errors=errors,
             description_placeholders=description_placeholders
         )
 
     async def async_step_groq(self, user_input: Optional[Dict[str, Any]] = None):
-        """Configure Groq settings."""
         errors = {}
         description_placeholders = {}
-
         if user_input is not None:
             self.validator = ProviderValidator(self.hass)
             error_message = await self.validator.validate_groq(user_input[CONF_GROQ_API_KEY])
-
             if error_message is None:
                 self.data.update(user_input)
                 return self.async_create_entry(title="AI Automation Suggester (Groq)", data=self.data)
             else:
                 errors["base"] = "api_error"
                 description_placeholders["error_message"] = error_message
-
         return self.async_show_form(
             step_id="groq",
             data_schema=vol.Schema({
                 vol.Required(CONF_GROQ_API_KEY): str,
                 vol.Optional(CONF_GROQ_MODEL, default=DEFAULT_MODELS["Groq"]): str,
-                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.All(vol.Coerce(int), vol.Range(min=100)),
+                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS):
+                    vol.All(vol.Coerce(int), vol.Range(min=100)),
             }),
             errors=errors,
             description_placeholders=description_placeholders
         )
 
     async def async_step_localai(self, user_input: Optional[Dict[str, Any]] = None):
-        """Configure LocalAI settings."""
         errors = {}
         description_placeholders = {}
-
         if user_input is not None:
             self.validator = ProviderValidator(self.hass)
             error_message = await self.validator.validate_localai(
@@ -413,14 +362,12 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input[CONF_LOCALAI_PORT],
                 user_input[CONF_LOCALAI_HTTPS]
             )
-
             if error_message is None:
                 self.data.update(user_input)
                 return self.async_create_entry(title="AI Automation Suggester (LocalAI)", data=self.data)
             else:
                 errors["base"] = "api_error"
                 description_placeholders["error_message"] = error_message
-
         return self.async_show_form(
             step_id="localai",
             data_schema=vol.Schema({
@@ -428,17 +375,16 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_LOCALAI_PORT, default=8080): int,
                 vol.Required(CONF_LOCALAI_HTTPS, default=False): bool,
                 vol.Optional(CONF_LOCALAI_MODEL, default=DEFAULT_MODELS["LocalAI"]): str,
-                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.All(vol.Coerce(int), vol.Range(min=100)),
+                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS):
+                    vol.All(vol.Coerce(int), vol.Range(min=100)),
             }),
             errors=errors,
             description_placeholders=description_placeholders
         )
 
     async def async_step_ollama(self, user_input: Optional[Dict[str, Any]] = None):
-        """Configure Ollama settings."""
         errors = {}
         description_placeholders = {}
-
         if user_input is not None:
             self.validator = ProviderValidator(self.hass)
             error_message = await self.validator.validate_ollama(
@@ -446,14 +392,12 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input[CONF_OLLAMA_PORT],
                 user_input[CONF_OLLAMA_HTTPS]
             )
-
             if error_message is None:
                 self.data.update(user_input)
                 return self.async_create_entry(title="AI Automation Suggester (Ollama)", data=self.data)
             else:
                 errors["base"] = "api_error"
                 description_placeholders["error_message"] = error_message
-
         return self.async_show_form(
             step_id="ollama",
             data_schema=vol.Schema({
@@ -461,44 +405,41 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_OLLAMA_PORT, default=11434): int,
                 vol.Required(CONF_OLLAMA_HTTPS, default=False): bool,
                 vol.Optional(CONF_OLLAMA_MODEL, default=DEFAULT_MODELS["Ollama"]): str,
-                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.All(vol.Coerce(int), vol.Range(min=100)),
+                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS):
+                    vol.All(vol.Coerce(int), vol.Range(min=100)),
             }),
             errors=errors,
             description_placeholders=description_placeholders
         )
 
     async def async_step_custom_openai(self, user_input: Optional[Dict[str, Any]] = None):
-        """Configure Custom OpenAI settings."""
         errors = {}
         description_placeholders = {}
-
         if user_input is not None:
             self.validator = ProviderValidator(self.hass)
             api_key = user_input.get(CONF_CUSTOM_OPENAI_API_KEY)
             endpoint = user_input[CONF_CUSTOM_OPENAI_ENDPOINT]
             error_message = await self.validator.validate_custom_openai(endpoint=endpoint, api_key=api_key)
-
             if error_message is None:
                 self.data.update(user_input)
                 return self.async_create_entry(title="AI Automation Suggester (Custom OpenAI)", data=self.data)
             else:
                 errors["base"] = "api_error"
                 description_placeholders["error_message"] = error_message
-
         return self.async_show_form(
             step_id="custom_openai",
             data_schema=vol.Schema({
                 vol.Required(CONF_CUSTOM_OPENAI_ENDPOINT): str,
                 vol.Optional(CONF_CUSTOM_OPENAI_API_KEY): str,
                 vol.Optional(CONF_CUSTOM_OPENAI_MODEL, default=DEFAULT_MODELS["Custom OpenAI"]): str,
-                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.All(vol.Coerce(int), vol.Range(min=100)),
+                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS):
+                    vol.All(vol.Coerce(int), vol.Range(min=100)),
             }),
             errors=errors,
             description_placeholders=description_placeholders
         )
 
     async def async_step_mistral(self, user_input: Optional[Dict[str, Any]] = None):
-        """Configure Mistral AI settings."""
         errors = {}
         if user_input is not None:
             self.data.update(user_input)
@@ -508,7 +449,8 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Required(CONF_MISTRAL_API_KEY): str,
                 vol.Required(CONF_MISTRAL_MODEL, default="mistral-large-latest"): str,
-                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS): vol.All(vol.Coerce(int), vol.Range(min=100)),
+                vol.Optional(CONF_MAX_TOKENS, default=DEFAULT_MAX_TOKENS):
+                    vol.All(vol.Coerce(int), vol.Range(min=100)),
             }),
             errors=errors
         )
@@ -517,15 +459,9 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options for the AI Automation Suggester."""
 
-    def __init__(self, config_entry):
-        """Initialize options flow."""
-        self.config_entry = config_entry
-
     async def async_step_init(self, user_input: Optional[Dict[str, Any]] = None):
-        """Manage options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
-
         provider = self.config_entry.data.get(CONF_PROVIDER)
         options = {
             vol.Optional(
@@ -533,8 +469,6 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
                 default=self.config_entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
             ): vol.All(vol.Coerce(int), vol.Range(min=100))
         }
-
-        # Add provider-specific options
         if provider == "OpenAI":
             options[vol.Optional(CONF_OPENAI_API_KEY)] = str
             options[vol.Optional(CONF_OPENAI_MODEL, default=self.config_entry.data.get(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"]))] = str

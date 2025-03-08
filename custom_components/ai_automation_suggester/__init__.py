@@ -45,11 +45,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         domains = call.data.get("domains", {})
         entity_limit = call.data.get("entity_limit", 200)
 
-        # Parse domains if it's provided as a string or dict
+        # Parse domains if provided as a string or dict
         if isinstance(domains, str):
             domains = [d.strip() for d in domains.split(',') if d.strip()]
         elif isinstance(domains, dict):
-            # If user provided a dict, convert keys to a list of domains
             domains = list(domains.keys())
 
         try:
@@ -57,7 +56,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             if provider_config:
                 coordinator = hass.data[DOMAIN].get(provider_config)
             else:
-                # Find first available coordinator if no specific one is specified
+                # Find first available coordinator if none specified
                 for entry_id, coord in hass.data[DOMAIN].items():
                     if isinstance(coord, AIAutomationCoordinator):
                         coordinator = coord
@@ -67,13 +66,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 raise ServiceValidationError("No AI Automation Suggester provider configured")
 
             if custom_prompt:
-                # Append the custom prompt to the system prompt
                 original_prompt = coordinator.SYSTEM_PROMPT
                 coordinator.SYSTEM_PROMPT = f"{coordinator.SYSTEM_PROMPT}\n\nAdditional instructions:\n{custom_prompt}"
             else:
                 original_prompt = None
 
-            # Set the scan_all and filtering options before calling async_request_refresh
             coordinator.scan_all = all_entities
             coordinator.selected_domains = domains
             coordinator.entity_limit = entity_limit
@@ -81,7 +78,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             try:
                 await coordinator.async_request_refresh()
             finally:
-                # Restore original prompt and reset parameters
                 if original_prompt is not None:
                     coordinator.SYSTEM_PROMPT = original_prompt
                 coordinator.scan_all = False
@@ -111,12 +107,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         coordinator = AIAutomationCoordinator(hass, entry)
         hass.data[DOMAIN][entry.entry_id] = coordinator
 
-        for platform in PLATFORMS:
-            try:
-                await hass.config_entries.async_forward_entry_setup(entry, platform)
-            except Exception as err:
-                _LOGGER.error("Failed to setup platform %s: %s", platform, err)
-                raise ConfigEntryNotReady from err
+        # Use the new async_forward_entry_setups method (plural) instead of the deprecated async_forward_entry_setup.
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
         _LOGGER.debug(
             "Setup complete for %s with provider %s",
@@ -126,7 +118,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-        # Example of using the event bus to trigger suggestions:
         @callback
         def handle_custom_event(event):
             _LOGGER.debug("Received custom event '%s', triggering suggestions with all_entities=True", event.event_type)
@@ -149,13 +140,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     try:
         unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-
         if unload_ok:
             coordinator = hass.data[DOMAIN].pop(entry.entry_id)
             await coordinator.async_shutdown()
-
         return unload_ok
-
     except Exception as err:
         _LOGGER.error("Error unloading entry: %s", err)
         return False
