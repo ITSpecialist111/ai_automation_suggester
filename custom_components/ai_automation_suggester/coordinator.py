@@ -341,7 +341,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
 
     # ------------------------------------------------------------------------
-    # Updated process_with_openai for gpt-4o / o1-preview
+    # Updated process_with_openai for gpt-4o / o1-preview / 03
     # ------------------------------------------------------------------------
     async def process_with_openai(self, prompt):
         try:
@@ -374,7 +374,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Prompt length after truncation: ~%d tokens", prompt_token_count)
 
             lower_model = model.lower()
-            if lower_model in ["gpt-4o", "o1-preview", "o1", "o1-mini"]:
+            if lower_model in ["gpt-4o", "o1-preview", "o1", "o1-mini", "o1", "o3-mini", "o3", "gpt-4.5"]:
                 data = {
                     "model": model,
                     "messages": [{"role": "user", "content": prompt}],
