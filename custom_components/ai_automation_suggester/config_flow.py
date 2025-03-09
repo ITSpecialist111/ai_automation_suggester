@@ -83,14 +83,16 @@ class ProviderValidator:
         try:
             _LOGGER.debug("Validating Anthropic API key")
             response = await self.session.post(
-                "https://api.anthropic.com/v1/complete",
+                "https://api.anthropic.com/v1/messages",
                 headers=headers,
                 json={
-                    "prompt": "\n\nHuman: Hello\n\nAssistant:",
                     "model": model,
-                    "max_tokens_to_sample": 1,
-                    "temperature": 0.5,
-                    "stop_sequences": ["\n\nHuman:"]
+                    "messages": [{
+                        "role": "user",
+                        "content": [{"type": "text", "text": "Hello"}]
+                    }],
+                    "max_tokens": 1,
+                    "temperature": 0.5
                 }
             )
             if response.status == 200:
