@@ -99,7 +99,7 @@ DEFAULT_TEMPERATURE = 0.7
 
 # API Endpoints
 ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"
-ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages"
+ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages" 
 ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta2/models/{model}:generateText?key={api_key}"
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
 ENDPOINT_LOCALAI = "{protocol}://{ip_address}:{port}/v1/chat/completions"

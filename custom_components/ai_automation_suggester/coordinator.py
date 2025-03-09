@@ -427,7 +427,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             data = {
                 "model": model,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": [{
+                    "role": "user", 
+                    "content": [{"type": "text", "text": prompt}]
+                }],
                 "max_tokens": max_tokens,
                 "temperature": DEFAULT_TEMPERATURE
             }
