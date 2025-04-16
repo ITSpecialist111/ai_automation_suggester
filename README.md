@@ -68,6 +68,12 @@ As a modern smart home grows in complexity—encompassing lights, sensors, locks
 You have the ability to build your own dashboard to show the suggestions on one page however you want. 
 ![alt text](image.png)
 
+A basic dashboard suggestion would be to use the Markdown Card.
+In the Content of the Markdown Card insert the following:
+
+`{{ state_attr('sensor.ai_automation_suggestions_localai', 'suggestions') }}`
+
+Replace the sensor with the name of your sensor entity.  The state_attr function retrieves the value of the suggestions attribute from the sensor which is where the results are stored.
 
 ## Table of Contents
 
