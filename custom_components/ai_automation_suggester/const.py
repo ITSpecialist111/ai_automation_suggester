@@ -53,7 +53,7 @@ MISTRAL_MODELS = ["mistral-tiny", "mistral-small", "mistral-medium", "mistral-la
 # Model Defaults
 DEFAULT_MODELS = {
     "OpenAI": "gpt-4o-mini",
-    "Anthropic": "claude-2.1",
+    "Anthropic": "claude-3-7-sonnet-20250219",
     "Google": "gemini-2.0-flash",
     "Groq": "llama3-8b-8192",
     "LocalAI": "llama3",
