@@ -130,7 +130,7 @@ Replace the sensor with the name of your sensor entity.  The state_attr function
 
 ## Installation
 
-### Installing via HACS (Recommended)
+### Installing via HACS (Recommended)  **New!** - This Custom Integration is now available directly in the HACS search repo!
 
 1. **Install HACS** if not already done.
 2. **Add Custom Repository**:  
