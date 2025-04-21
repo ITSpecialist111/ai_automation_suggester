@@ -1,4 +1,3 @@
-```python
 # custom_components/ai_automation_suggester/coordinator.py
 """Coordinator for AI Automation Suggester."""
 

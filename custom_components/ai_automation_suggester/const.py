@@ -142,4 +142,3 @@ ENDPOINT_LOCALAI    = "{protocol}://{ip_address}:{port}/v1/chat/completions"
 ENDPOINT_OLLAMA     = "{protocol}://{ip_address}:{port}/api/chat"
 ENDPOINT_MISTRAL    = "https://api.mistral.ai/v1/chat/completions"
 ENDPOINT_PERPLEXITY = "https://api.perplexity.ai/chat/completions"
-```

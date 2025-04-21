@@ -1,0 +1,44 @@
+##COPY THE RAW DASHBOARD CODE BELOW TO BUILD A SEPERATE DASHBOARD FOR YOUR AUTOMATIONS
+
+title: AI Automation
+icon: mdi:robot
+views:
+  - title: AI
+    icon: mdi:home-outline
+    cards: []
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: custom:mushroom-chips-card
+            alignment: start
+            chips:
+              - type: template
+                icon: mdi:cloud-check
+                entity: sensor.ai_automation_suggestions_google
+                icon_color: >
+                  {% if states(entity) == 'Suggestions Available' %}yellow {%
+                  else %}green{% endif %}
+                content: "{{ iif(states(entity)=='Suggestions Available',\n       'Suggestions\_Available',\n       'All\_Good') }}\n"
+              - type: entity
+                entity: update.ai_automation_suggester_update
+                name: "AI\_Suggester"
+                icon_color: |
+                  {{ iif(is_state(entity,'on'),'red','green') }}
+              - type: template
+                entity: automation.ai_suggestions_new_entity_detection
+                icon: mdi:robot
+                icon_color: |
+                  {{ iif(is_state(entity,'on'),'teal','grey') }}
+                content: "{{ iif(is_state(entity,'on'),\n       'New‑Entity\_Detection\_ON',\n       'New‑Entity\_Detection\_OFF') }}\n"
+                tap_action:
+                  action: toggle
+        column_span: 4
+      - type: grid
+        cards:
+          - type: markdown
+            content: "## 🤖 AI\_Automation\_Suggestions\_(Google)\n\n**Status:** {{ states('sensor.ai_automation_suggestions_google') }}  \n**Last update:** {{ state_attr('sensor.ai_automation_suggestions_google','last_update') }}  \n\n---\n\n{{ state_attr('sensor.ai_automation_suggestions_google','suggestions') }}\n"
+            text_only: true
+            grid_options:
+              columns: full
+        column_span: 4
