@@ -14,5 +14,5 @@
     "pyyaml>=6.0",
     "voluptuous>=0.13.1"
   ],
-  "version": "1.2.7"
+  "version": "1.2.8"
 }
