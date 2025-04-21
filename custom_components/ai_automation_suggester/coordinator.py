@@ -59,7 +59,7 @@ from .const import (
     CONF_MISTRAL_API_KEY,
     CONF_MISTRAL_MODEL,
     ENDPOINT_MISTRAL,
-    # Perplexity (NEW in 1.2.8)
+    # Perplexity
     CONF_PERPLEXITY_API_KEY,
     CONF_PERPLEXITY_MODEL,
     ENDPOINT_PERPLEXITY,

@@ -67,7 +67,7 @@ MISTRAL_MODELS       = [
     "mistral-large",
 ]
 
-# Perplexity AI  (✨ NEW in v1.2.8)
+# Perplexity AI
 CONF_PERPLEXITY_API_KEY = "perplexity_api_key"
 CONF_PERPLEXITY_MODEL   = "perplexity_model"
 
