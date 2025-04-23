@@ -84,7 +84,7 @@ DEFAULT_MODELS = {
     "Ollama":        "llama2",
     "Custom OpenAI": "gpt-3.5-turbo",
     "Mistral AI":    "mistral-medium",
-    "Perplexity AI": "sonar-small-chat",
+    "Perplexity AI": "sonar",
 }
 
 
