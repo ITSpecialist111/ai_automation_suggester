@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 from datetime import datetime
 
 from homeassistant.components import persistent_notification
@@ -68,6 +69,11 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# ──────────────────────────────────────────────────────────────────────
+# Helper – extract fenced ```yaml … ``` blocks
+# ──────────────────────────────────────────────────────────────────────
+YAML_RE = re.compile(r"```yaml\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
+
 SYSTEM_PROMPT = """You are an AI assistant that generates Home Assistant automations
 based on the types of entities, their areas, and their associated devices, as well as
 improving or suggesting new automations based on existing ones.
@@ -78,7 +84,7 @@ For each entity:
 3. Suggest contextually aware automations and improvements to existing automations.
 4. Include actual entity IDs in your suggestions.
 
-When focusing on custom aspects (like energy‑saving or presence‑based lighting),
+When focusing on custom aspects (like energy-saving or presence-based lighting),
 integrate those themes into the automations. Provide triggers, conditions,
 and detailed actions to refine the automations according to the instructions given
 in the custom prompt.
@@ -98,7 +104,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.previous_entities: dict[str, dict] = {}
         self.last_update: datetime | None = None
 
-        # Runtime‑tunable flags – overridden temporarily by the service
+        # Runtime-tunable flags – overridden temporarily by the service
         self.SYSTEM_PROMPT: str = SYSTEM_PROMPT
         self.scan_all: bool = False
         self.selected_domains: list[str] = []
@@ -107,6 +113,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         # Data shared with sensors
         self.data: dict = {
             "suggestions": "No suggestions yet",
+            "description": None,
+            "yaml_block": None,
             "last_update": None,
             "entities_processed": [],
             "provider": entry.data.get(CONF_PROVIDER, "unknown"),
@@ -122,7 +130,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.area_registry: ar.AreaRegistry | None = None
 
     # ────────────────────────────────
-    # Home‑Assistant life‑cycle hooks
+    # HA life-cycle hooks
     # ────────────────────────────────
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -130,8 +138,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.entity_registry = er.async_get(self.hass)
         self.area_registry = ar.async_get(self.hass)
 
-    async def async_shutdown(self) -> None:  # called by __init__.py on unload
-        """Nothing to clean up yet – placeholder for future."""
+    async def async_shutdown(self) -> None:
+        """Placeholder for future cleanup."""
         return
 
     # ────────────────────────────────
@@ -160,12 +168,12 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     "friendly_name": state_obj.attributes.get("friendly_name", entity_id),
                 }
 
-            # pick new entities (or all, if scan_all True)
             selected = (
                 current_entities
                 if self.scan_all
                 else {e: v for e, v in current_entities.items() if e not in self.previous_entities}
             )
+
             if not selected:
                 _LOGGER.debug("No entities selected for suggestions")
                 self.previous_entities = current_entities
@@ -174,15 +182,23 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             prompt = self._build_prompt(selected)
             suggestions = await self._dispatch(prompt)
 
+            # ---------------- post-process the reply -----------------
             if suggestions:
+                match = YAML_RE.search(suggestions)
+                yaml_block = match.group(1).strip() if match else None
+                description = YAML_RE.sub("", suggestions).strip()
+
                 persistent_notification.async_create(
                     self.hass,
                     message=suggestions,
                     title="AI Automation Suggestions",
                     notification_id=f"ai_automation_suggestions_{now.timestamp()}",
                 )
+
                 self.data = {
                     "suggestions": suggestions,
+                    "description": description,
+                    "yaml_block": yaml_block,
                     "last_update": now,
                     "entities_processed": list(selected.keys()),
                     "provider": self.entry.data.get(CONF_PROVIDER, "unknown"),
@@ -191,6 +207,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 self.data.update(
                     {
                         "suggestions": "No suggestions available",
+                        "description": None,
+                        "yaml_block": None,
                         "last_update": now,
                         "entities_processed": [],
                     }
@@ -206,7 +224,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
     # ────────────────────────────────
     # Prompt builder
     # ────────────────────────────────
-    def _build_prompt(self, entities: dict) -> str:
+    def _build_prompt(self, entities: dict) -> str:  # noqa: C901  (long but readable)
         MAX_ATTR = 500
         MAX_AUTOM = 100
 
@@ -259,7 +277,6 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             )
             entity_sections.append(section)
 
-        # existing automations (truncate list)
         auto_sections: list[str] = []
         for aid in self.hass.states.async_entity_ids("automation")[:MAX_AUTOM]:
             st = self.hass.states.get(aid)
