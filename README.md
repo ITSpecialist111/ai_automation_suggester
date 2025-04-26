@@ -1,154 +1,124 @@
+<!-- Buy‑me‑a‑coffee at the very top -->
+<p align="center">
+  <a href="https://www.buymeacoffee.com/ITSpecialist" target="_blank">
+    <img src="https://img.shields.io/badge/Buy&nbsp;me&nbsp;a&nbsp;coffee-Support&nbsp;Dev-yellow?style=for-the-badge&logo=buy-me-a-coffee" alt="Buy Me A Coffee">
+  </a>
+</p>
+
 # AI Automation Suggester
 
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95%EF%B8%8F-orange?style=for-the-badge&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/ITSpecialist)
-[![Validate with hassfest](https://img.shields.io/github/actions/workflow/status/ITSpecialist111/ai_automation_suggester/hassfest.yaml?style=for-the-badge)](https://github.com/ITSpecialist111/ai_automation_suggester/actions)
-[![HACS validation](https://img.shields.io/github/actions/workflow/status/ITSpecialist111/ai_automation_suggester/validate.yaml?style=for-the-badge)](https://github.com/ITSpecialist111/ai_automation_suggester/actions)
-[![GitHub release](https://img.shields.io/github/v/release/ITSpecialist111/ai_automation_suggester?style=for-the-badge)](https://github.com/ITSpecialist111/ai_automation_suggester/releases)
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://hacs.xyz/)
+[![Validate with hassfest](https://img.shields.io/github/actions/workflow/status/ITSpecialist111/ai_automation_suggester/hassfest.yaml?style=for-the-badge)]()
+[![HACS Validation](https://img.shields.io/github/actions/workflow/status/ITSpecialist111/ai_automation_suggester/validate.yaml?style=for-the-badge)]()
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/ITSpecialist111/ai_automation_suggester?style=for-the-badge)]()
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)]()
 
-> **Current version:** 1.3.1 • **Tested on Home Assistant ≥ 2024.1**
-
-An integration for Home Assistant that leverages AI language models to understand your unique home environment and propose intelligent automations. By analysing your entities, devices, areas, and **existing automations**, the AI Automation Suggester surfaces new, context‑aware ideas that streamline home management and boost efficiency, comfort and security.
+An **AI‑powered assistant** for Home Assistant that *studies* your entities, areas, devices and existing automations, then proposes fresh YAML you can drop straight into your system.
 
 ---
 
-## 🚀 Quick highlights (v1.3.1)
+## ✨ Why does this exist?
 
-* **`description` & `yaml_block` split** – dashboards can now show prose *and* raw YAML separately.  
-* Supports **OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral AI, Perplexity AI**.  
-* Service `ai_automation_suggester.generate_suggestions` accepts `all_entities`, `domains`, `entity_limit`, `custom_prompt`.  
-* Two sensors exposed: suggestions + provider status.
+> *“I’ve added 200+ entities… now what?”*
 
----
+Building a truly smart home usually stalls at the same road‑block:
 
-## 1 • Purpose & problem statement
+* **Too many possibilities** – every new sensor or light multiplies the ways things *could* interact.  
+* **Writer’s block** – YAML automations look simple until you try capturing real‑world nuance (presence, time, energy prices…).  
+* **Maintenance overload** – even seasoned users forget to revisit old routines when hardware or habits change.
 
-Smart‑homes grow complex fast. Which automations actually help?  
-**AI Automation Suggester = personal automation consultant** spotting:
+The result: **under‑automated houses** full of unrealised potential.
 
-* Energy‑saving tweaks
-* Security gaps
-* Quality‑of‑life conveniences
-* Maintenance reminders
+### The Fix – an Automation Copilot
 
-with ready‑to‑paste YAML.
+AI Automation Suggester acts like a consultant who:
 
----
+1. **Inventories** your Home Assistant (entities, devices, areas and existing automations).  
+2. **Spots gaps & synergies** – e.g. *“You have a motion sensor in the hallway and a door sensor nearby; combine them for smarter lighting.”*  
+3. **Drafts ready‑to‑paste YAML** including triggers / conditions / actions referencing your actual `entity_id`s.  
+4. Repeats on demand, so ideas evolve as your home evolves.
 
-## 2 • How it works
-
-1. **Snapshot** – entity/device/area/automation metadata collected.  
-2. **AI call** – prompt sent to chosen provider.  
-3. **Result parsing** – splits into `description` and `yaml_block`.  
-4. **Notification & sensors** – easy review in HA UI or dashboards.
+You still decide what runs – the integration just boots you past the blank‑page stage.
 
 ---
 
-## 3 • Features
+## 🚀 How it works
 
-| Category | Details |
-|----------|---------|
-| **Multi‑provider** | OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral AI, Perplexity AI |
-| **Custom scope**  | Random entity sampling, domain filter, entity limit |
-| **Custom prompts**| Steer suggestions (“focus on off‑peak energy”) |
-| **Persistent results** | Stored as sensor attributes |
-| **Dashboard‑ready** | `description` & `yaml_block` attributes |
-
----
-
-## 4 • Prerequisites
-
-* **Home Assistant ≥ 2024.1**  
-* Cloud LLMs: API keys  
-* Local LLMs: LocalAI/Ollama server reachable by HA
+| Step | What happens? |
+|------|---------------|
+| 1. Snapshot | On a manual trigger or scheduled automation the integration collects a **randomised sample** (size configurable) of your entities & attributes plus a list of existing automations. |
+| 2. Prompt building | That snapshot is embedded into a **system prompt** describing your house. You can append a *custom prompt* such as “focus on energy‑saving”. |
+| 3. Provider call | The prompt is sent to your chosen model ‑ OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral or Perplexity. |
+| 4. Parsing | The raw LLM response is stored on a sensor attribute:<br> `description` (prose)  ·  `yaml_block` (detected ```yaml ... ``` code)  ·  full `suggestions` |
+| 5. Surface | A persistent notification appears. Markdown cards can show the attributes for a no‑code dashboard. |
 
 ---
 
-## 5 • Installation
+## 🏆 Benefits
 
-### a) HACS (recommended)
-
-1. HACS → *Integrations* → search “AI Automation Suggester”.  
-2. Install → restart HA.
-
-### b) Manual
-
-1. Download the release ZIP.  
-2. Copy `custom_components/ai_automation_suggester` into `config/custom_components/`.  
-3. Restart HA.
+* **Minutes, not hours** – go from idea to working automation fast.  
+* **Context‑aware** – suggestions include area/device info so you’ll see *living‑room‑specific* rules, not boiler‑plate.  
+* **Model‑agnostic** – cloud keys or fully‑local inference, your choice.  
+* **Safe to try** – nothing is executed automatically; you review & paste.  
 
 ---
 
-## 6 • Configuration
+## 📦 Features (v1.3.1)
 
-1. Settings → Devices & Services → **Add Integration** → AI Automation Suggester.  
-2. Select provider + credentials.  
-3. Optionally adjust `model` and `max_tokens`.  
-4. Repeat for multiple providers.
-
----
-
-## 7 • Using the service
-
-| Field | Purpose |
-|-------|---------|
-| `provider_config` | Target a specific config entry |
-| `all_entities` | Analyse every entity vs. only new ones |
-| `domains` | Domain list or comma‑string |
-| `entity_limit` | Cap for token control |
-| `custom_prompt` | Extra instructions for the LLM |
+* Multi‑provider back‑end (OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity).
+* Service `ai_automation_suggester.generate_suggestions` with flags:<br>
+  `all_entities`, `domains`, `entity_limit`, `custom_prompt`.
+* Two diagnostics sensors: **Suggestions** & **Provider Status**.
+* Built‑in example automations (new‑entity & weekly review).
+* Dashboard‑friendly attributes `description` & `yaml_block` (since 1.3.0).
 
 ---
 
-## 8 • Dashboard snippets
+## 🛠️ Installation
 
-### Description card
+### HACS (recommended)
 
-```yaml
-content: >
-  **Status:** {{ states('sensor.ai_automation_suggestions_google') }}
+1. In HACS › Integrations › **Search “AI Automation Suggester”**.  
+2. Install → Restart HA → Settings › Devices & Services → “+” → Add Integration.
 
-  **Last update:** {{ state_attr('sensor.ai_automation_suggestions_google','last_update') }}
+### Manual
 
-  ---
-
-  {{ state_attr('sensor.ai_automation_suggestions_google','description') }}
+```bash
+custom_components/
+└── ai_automation_suggester
+    ├── __init__.py
+    ├── ...
 ```
 
-### YAML block card
-
-```yaml
-content: >
-  {% set y = state_attr('sensor.ai_automation_suggestions_google','yaml_block') %}
-  {% if y %}
-  ```yaml
-  {{ y }}
-  ```
-  {% else %}
-  _No YAML block in last suggestion._
-  {% endif %}
-```
+Restart HA and add via UI.
 
 ---
 
-## 9 • Troubleshooting
+## ✍️ Usage
 
-* **No suggestions received** → check provider logs / API quota or lower `entity_limit`.  
-* **Provider status = error** → double‑check endpoint / model name.  
-* **Template errors** → reference `description` or `yaml_block`, not `suggestions`.
-
----
-
-## 10 • Roadmap
-
-* One‑click “Create automation”  
-* Feedback loop for smarter prompts  
-* More languages
+* **Manual**: Developer Tools › Services › call `ai_automation_suggester.generate_suggestions`.
+* **Automatic**: Enable the included example automations or create your own triggers.
+* **Dashboard**:  
+  *Description*: `{{ state_attr('sensor.ai_automation_suggestions_<provider>', 'description') }}`  
+  *YAML*: see docs for full card example.
 
 ---
 
-## 11 • License & support
+## 🧩 Troubleshooting
 
-MIT license. Not affiliated with Home Assistant or any AI provider.
+| Symptom | Check |
+|---------|-------|
+| “No suggestions available” | API key valid? provider status sensor error? try smaller `entity_limit`. |
+| Provider Status `error` | Inspect HA log for `processing error:` lines. |
+| Deprecation warning (options flow) | Fixed in 1.3.1 – update! |
 
-Found it helpful? **[Buy me a coffee ☕](https://www.buymeacoffee.com/ITSpecialist)** – keeps the tokens flowing!
+---
+
+## 🤝 Contributing & Support
+
+* Issues & PRs welcome.  
+* Translations live under `custom_components/.../translations/`.  
+* If this project saves you time, ☕ is always appreciated – hit the coffee button up top.
+
+---
+
+© 2025 MIT License – Not affiliated with Home Assistant or listed providers.
