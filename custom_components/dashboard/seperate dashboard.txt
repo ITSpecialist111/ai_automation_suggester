@@ -3,42 +3,58 @@
 title: AI Automation
 icon: mdi:robot
 views:
-  - title: AI
-    icon: mdi:home-outline
-    cards: []
-    type: sections
-    sections:
-      - type: grid
+  - title: AI Lab
+    type: panel
+    cards:
+      - type: vertical-stack
         cards:
           - type: custom:mushroom-chips-card
             alignment: start
             chips:
               - type: template
-                icon: mdi:cloud-check
                 entity: sensor.ai_automation_suggestions_google
+                icon: mdi:cloud-check
                 icon_color: >
-                  {% if states(entity) == 'Suggestions Available' %}yellow {%
-                  else %}green{% endif %}
-                content: "{{ iif(states(entity)=='Suggestions Available',\n       'Suggestions\_Available',\n       'All\_Good') }}\n"
+                  {{ 'yellow' if states(entity) == 'Suggestions Available' else
+                  'green' }}
+                content: >
+                  {{ 'Suggestions_Available' if states(entity) == 'Suggestions
+                  Available' else 'All_Good' }}
               - type: entity
                 entity: update.ai_automation_suggester_update
-                name: "AI\_Suggester"
-                icon_color: |
-                  {{ iif(is_state(entity,'on'),'red','green') }}
+                name: AI_Suggester
+                icon_color: '{{ ''red'' if is_state(entity,''on'') else ''green'' }}'
               - type: template
                 entity: automation.ai_suggestions_new_entity_detection
                 icon: mdi:robot
-                icon_color: |
-                  {{ iif(is_state(entity,'on'),'teal','grey') }}
-                content: "{{ iif(is_state(entity,'on'),\n       'New‑Entity\_Detection\_ON',\n       'New‑Entity\_Detection\_OFF') }}\n"
+                icon_color: '{{ ''teal'' if is_state(entity,''on'') else ''grey'' }}'
+                content: >
+                  {{ 'New-Entity_Detection_ON' if is_state(entity,'on') else
+                  'New-Entity_Detection_OFF' }}
                 tap_action:
                   action: toggle
-        column_span: 4
-      - type: grid
-        cards:
           - type: markdown
-            content: "## 🤖 AI\_Automation\_Suggestions\_(Google)\n\n**Status:** {{ states('sensor.ai_automation_suggestions_google') }}  \n**Last update:** {{ state_attr('sensor.ai_automation_suggestions_google','last_update') }}  \n\n---\n\n{{ state_attr('sensor.ai_automation_suggestions_google','suggestions') }}\n"
-            text_only: true
-            grid_options:
-              columns: full
-        column_span: 4
+            title: 🤖 AI Suggestion — Description
+            content: >
+              **Status:** {{ states('sensor.ai_automation_suggestions_google')
+              }}
+
+              **Last update:** {{
+              state_attr('sensor.ai_automation_suggestions_google',
+              'last_update') }}
+
+              ---
+
+              {{ state_attr('sensor.ai_automation_suggestions_google',
+              'description') or '_No description yet._' }}
+          - type: markdown
+            title: 📝 Suggested Automation YAML
+            content: >
+              {% set code =
+              state_attr('sensor.ai_automation_suggestions_google',
+              'yaml_block') %}
+
+              {% if code %} ```yaml {{ code }} ``` {% else %} _No YAML block
+              found. The most recent AI reply did not contain raw code._ {%
+              endif %}
+
