@@ -107,43 +107,6 @@ Leveraging the AI Automation Suggester provides several key benefits:
 
 ---
 
-## Table of Contents
-
-- [✨ Why does this exist? (Purpose and Problem Statement)](#✨-why-does-this-exist-purpose-and-problem-statement)
-- [🚀 How It Works (The Solution)](#🚀-how-it-works-the-solution)
-- [📸 What to Expect (Screenshots)](#📸-what-to-expect-screenshots)
-- [🏆 Benefits](#🏆-benefits)
-- [📦 Features](#📦-features)
-- [Table of Contents](#table-of-contents)
-- [🛠️ Prerequisites](#🛠️-prerequisites)
-- [⬇️ Installation](#⬇️-installation)
-  - [HACS (Recommended)](#hacs-recommended)
-  - [Manual Installation](#manual-installation)
-- [⚙️ Configuration](#⚙️-configuration)
-- [✍️ Usage](#✍️-usage)
-  - [Automatic Suggestions](#automatic-suggestions)
-  - [Manual Trigger](#manual-trigger)
-  - [Dashboard Snippets](#dashboard-snippets)
-- [Customization and Advanced Usage](#customization-and-advanced-usage)
-  - [Random Entity Selection](#random-entity-selection)
-  - [Domain Filtering](#domain-filtering)
-  - [Entity Limit](#entity-limit)
-  - [Custom Prompts](#custom-prompts)
-- [Implementing Automations](#implementing-automations)
-- [Sensors](#sensors)
-- [⚠️ Important Notes](#⚠️-important-notes)
-- [🧩 Troubleshooting](#🧩-troubleshooting)
-- [Roadmap](#roadmap)
-- [License](#license)
-- [Acknowledgments](#acknowledgments)
-- [Contributions](#contributions)
-- [Disclaimer](#disclaimer)
-- [🤝 Support the Project](#🤝-support-the-project)
-- [Additional Information](#additional-information)
-- [❓ FAQ](#❓-faq)
-
----
-
 ## 🛠️ Prerequisites
 
 * **Home Assistant:** Version 2023.5 or later.
