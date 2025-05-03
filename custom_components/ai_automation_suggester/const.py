@@ -1,28 +1,36 @@
 """Constants for the AI Automation Suggester integration."""
 
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # Core
-# ────────────────────────────────────────────────────────────────────────────
-DOMAIN     = "ai_automation_suggester"
-PLATFORMS  = ["sensor"]
+# ─────────────────────────────────────────────────────────────
+DOMAIN         = "ai_automation_suggester"
+PLATFORMS      = ["sensor"]
+CONFIG_VERSION = 2  # config‑entry version (used by async_migrate_entry)
 
-# Config‐entry version (used by async_migrate_entry)
-CONFIG_VERSION = 2
+# ─────────────────────────────────────────────────────────────
+# Token budgeting
+# ─────────────────────────────────────────────────────────────
+# Single legacy knob (kept for backward compatibility)
+CONF_MAX_TOKENS     = "max_tokens"
+DEFAULT_MAX_TOKENS  = 500          # legacy default – used for both budgets if new keys absent
 
+# New, separate knobs (Issue #91)
+CONF_MAX_INPUT_TOKENS  = "max_input_tokens"   # how much of the prompt we keep
+CONF_MAX_OUTPUT_TOKENS = "max_output_tokens"  # how long the AI response may be
 
-# ────────────────────────────────────────────────────────────────────────────
-# Generic config keys
-# ────────────────────────────────────────────────────────────────────────────
-CONF_PROVIDER   = "provider"
-CONF_MAX_TOKENS = "max_tokens"
+DEFAULT_MAX_INPUT_TOKENS  = DEFAULT_MAX_TOKENS
+DEFAULT_MAX_OUTPUT_TOKENS = DEFAULT_MAX_TOKENS
 
-DEFAULT_MAX_TOKENS = 500        # conservative default
-DEFAULT_TEMPERATURE = 0.7       # used for all providers unless overridden
+DEFAULT_TEMPERATURE = 0.7
 
+# ─────────────────────────────────────────────────────────────
+# Provider‑selection key
+# ─────────────────────────────────────────────────────────────
+CONF_PROVIDER = "provider"
 
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # Provider‑specific keys
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # OpenAI
 CONF_OPENAI_API_KEY = "openai_api_key"
 CONF_OPENAI_MODEL   = "openai_model"
@@ -71,13 +79,12 @@ MISTRAL_MODELS       = [
 CONF_PERPLEXITY_API_KEY = "perplexity_api_key"
 CONF_PERPLEXITY_MODEL   = "perplexity_model"
 
-
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # Model defaults per provider
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 DEFAULT_MODELS = {
     "OpenAI":        "gpt-4o-mini",
-    "Anthropic":     "claude-3-7-sonnet-20250219",
+    "Anthropic":     "claude-3-7-sonnet-latest",
     "Google":        "gemini-2.0-flash",
     "Groq":          "llama3-8b-8192",
     "LocalAI":       "llama3",
@@ -87,53 +94,23 @@ DEFAULT_MODELS = {
     "Perplexity AI": "sonar",
 }
 
-
-# ────────────────────────────────────────────────────────────────────────────
-# Common error messages
-# ────────────────────────────────────────────────────────────────────────────
-ERROR_INVALID_API_KEY            = "Invalid API key"
-ERROR_CONNECTION_FAILED          = "Could not connect to server"
-ERROR_INVALID_CONFIG             = "Invalid configuration"
-
-ERROR_OPENAI_NOT_CONFIGURED      = "OpenAI is not configured"
-ERROR_ANTHROPIC_NOT_CONFIGURED   = "Anthropic is not configured"
-ERROR_GOOGLE_NOT_CONFIGURED      = "Google is not configured"
-ERROR_GROQ_NOT_CONFIGURED        = "Groq is not configured"
-ERROR_LOCALAI_NOT_CONFIGURED     = "LocalAI is not configured"
-ERROR_OLLAMA_NOT_CONFIGURED      = "Ollama is not configured"
-ERROR_CUSTOM_OPENAI_NOT_CONFIGURED = "Custom OpenAI provider is not configured"
-ERROR_NO_IMAGE_INPUT             = "No image input provided"
-ERROR_HANDSHAKE_FAILED           = "Connection could not be established"
-ERROR_GROQ_MULTIPLE_IMAGES       = "Groq does not support videos or streams"
-
-
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # Service & attribute names
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 ATTR_PROVIDER_CONFIG = "provider_config"
 ATTR_CUSTOM_PROMPT   = "custom_prompt"
-
 SERVICE_GENERATE_SUGGESTIONS = "generate_suggestions"
 
-
-# ────────────────────────────────────────────────────────────────────────────
-# Provider status sensor values
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# Provider‑status sensor values
+# ─────────────────────────────────────────────────────────────
 PROVIDER_STATUS_CONNECTED    = "connected"
 PROVIDER_STATUS_DISCONNECTED = "disconnected"
 PROVIDER_STATUS_ERROR        = "error"
 
-
-# ────────────────────────────────────────────────────────────────────────────
-# Home Assistant event constants
-# ────────────────────────────────────────────────────────────────────────────
-EVENT_NEW_SUGGESTION         = f"{DOMAIN}_new_suggestion"
-EVENT_PROVIDER_STATUS_CHANGE = f"{DOMAIN}_provider_status_change"
-
-
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # REST endpoints
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 ENDPOINT_OPENAI     = "https://api.openai.com/v1/chat/completions"
 ENDPOINT_ANTHROPIC  = "https://api.anthropic.com/v1/messages"
 ENDPOINT_GOOGLE     = "https://generativelanguage.googleapis.com/v1beta2/models/{model}:generateText?key={api_key}"

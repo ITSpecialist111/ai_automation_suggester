@@ -16,52 +16,46 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import (
+from .const import (  # noqa: E501
     DOMAIN,
-    # Provider selector
     CONF_PROVIDER,
-    DEFAULT_MODELS,
-    # Generic limits
+    # New token knobs
+    CONF_MAX_INPUT_TOKENS,
+    CONF_MAX_OUTPUT_TOKENS,
+    # Legacy fallback
     CONF_MAX_TOKENS,
     DEFAULT_MAX_TOKENS,
     DEFAULT_TEMPERATURE,
-    # OpenAI
+    DEFAULT_MODELS,
+    # Provider‑specific keys + endpoints
     CONF_OPENAI_API_KEY,
     CONF_OPENAI_MODEL,
     ENDPOINT_OPENAI,
-    # Anthropic
     CONF_ANTHROPIC_API_KEY,
     CONF_ANTHROPIC_MODEL,
     VERSION_ANTHROPIC,
     ENDPOINT_ANTHROPIC,
-    # Google
     CONF_GOOGLE_API_KEY,
     CONF_GOOGLE_MODEL,
-    # Groq
     CONF_GROQ_API_KEY,
     CONF_GROQ_MODEL,
     ENDPOINT_GROQ,
-    # LocalAI
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_LOCALAI_HTTPS,
     CONF_LOCALAI_MODEL,
     ENDPOINT_LOCALAI,
-    # Ollama
     CONF_OLLAMA_IP_ADDRESS,
     CONF_OLLAMA_PORT,
     CONF_OLLAMA_HTTPS,
     CONF_OLLAMA_MODEL,
     ENDPOINT_OLLAMA,
-    # Custom OpenAI
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_MODEL,
-    # Mistral
     CONF_MISTRAL_API_KEY,
     CONF_MISTRAL_MODEL,
     ENDPOINT_MISTRAL,
-    # Perplexity
     CONF_PERPLEXITY_API_KEY,
     CONF_PERPLEXITY_MODEL,
     ENDPOINT_PERPLEXITY,
@@ -69,61 +63,60 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# ──────────────────────────────────────────────────────────────────────
-# Helper – extract fenced ```yaml … ``` blocks
-# ──────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# Regex to pull fenced YAML blocks out of the AI response
+# ─────────────────────────────────────────────────────────────
 YAML_RE = re.compile(r"```yaml\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
 
 SYSTEM_PROMPT = """You are an AI assistant that generates Home Assistant automations
-based on the types of entities, their areas, and their associated devices, as well as
-improving or suggesting new automations based on existing ones.
+based on entities, areas and devices, and suggests improvements to existing automations.
 
 For each entity:
-1. Understand its function, area, and device context.
+1. Understand its function and context.
 2. Consider its current state and attributes.
-3. Suggest contextually aware automations and improvements to existing automations.
-4. Include actual entity IDs in your suggestions.
+3. Suggest context‑aware automations or tweaks, including real entity_ids.
 
-When focusing on custom aspects (like energy-saving or presence-based lighting),
-integrate those themes into the automations. Provide triggers, conditions,
-and detailed actions to refine the automations according to the instructions given
-in the custom prompt.
-
-Also consider existing automations and how they can be improved or complemented.
+If asked to focus on a theme (energy saving, presence lighting, etc.), integrate it.
+Also review existing automations and propose improvements.
+If you see a lot of text in a different language, focus on it for a translation for your output.
 """
 
 
+# =============================================================================
+# Coordinator
+# =============================================================================
 class AIAutomationCoordinator(DataUpdateCoordinator):
-    """Manage calls to the configured AI provider and expose results."""
+    """Builds the prompt, sends it to the selected provider, shares results."""
 
+    # --------------------------------------------------------------------- #
+    # Init / lifecycle                                                      #
+    # --------------------------------------------------------------------- #
     def __init__(self, hass: HomeAssistant, entry) -> None:
         self.hass = hass
         self.entry = entry
 
-        # Track which entities we've already processed
         self.previous_entities: dict[str, dict] = {}
         self.last_update: datetime | None = None
 
-        # Runtime-tunable flags – overridden temporarily by the service
-        self.SYSTEM_PROMPT: str = SYSTEM_PROMPT
-        self.scan_all: bool = False
+        # Tunables modified by the generate_suggestions service
+        self.SYSTEM_PROMPT = SYSTEM_PROMPT
+        self.scan_all = False
         self.selected_domains: list[str] = []
-        self.entity_limit: int = 200
+        self.entity_limit = 200
 
-        # ------------------------------------------------------------------
-        # Call parent **first** – DataUpdateCoordinator sets self.data = None
-        # ------------------------------------------------------------------
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
 
-        # Data shared with sensors (must be set AFTER the super() call)
+        self._last_error: str | None = None
+
         self.data: dict = {
             "suggestions": "No suggestions yet",
             "description": None,
             "yaml_block": None,
             "last_update": None,
             "entities_processed": [],
-            "provider": entry.data.get(CONF_PROVIDER, "unknown"),
+            "provider": self._opt(CONF_PROVIDER, "unknown"),
+            "last_error": None,
         }
 
         # Registries (populated in async_added_to_hass)
@@ -131,131 +124,139 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.entity_registry: er.EntityRegistry | None = None
         self.area_registry: ar.AreaRegistry | None = None
 
-    # ────────────────────────────────
-    # HA life‑cycle hooks
-    # ────────────────────────────────
-    async def async_added_to_hass(self) -> None:
+    # ---------------------------------------------------------------------
+    # Utility – options‑first lookup
+    # ---------------------------------------------------------------------
+    def _opt(self, key: str, default=None):
+        """
+        Return config value with this priority:
+          1. entry.options  (saved via Options flow)
+          2. entry.data     (initial setup)
+          3. provided default
+        """
+        return self.entry.options.get(key, self.entry.data.get(key, default))
+
+    # ---------------------------------------------------------------------
+    # Helper – token budgets with legacy fallback
+    # ---------------------------------------------------------------------
+    def _budgets(self) -> tuple[int, int]:
+        """Return (input_budget, output_budget) respecting new + old fields."""
+        out_budget = self._opt(CONF_MAX_OUTPUT_TOKENS, self._opt(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS))
+        in_budget = self._opt(CONF_MAX_INPUT_TOKENS, self._opt(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS))
+        return in_budget, out_budget
+
+    # ---------------------------------------------------------------------
+    # HA lifecycle hooks
+    # ---------------------------------------------------------------------
+    async def async_added_to_hass(self):
         await super().async_added_to_hass()
         self.device_registry = dr.async_get(self.hass)
         self.entity_registry = er.async_get(self.hass)
         self.area_registry = ar.async_get(self.hass)
 
-    async def async_shutdown(self) -> None:
-        """Placeholder for future cleanup."""
+    async def async_shutdown(self):
         return
 
-    # ────────────────────────────────
+    # ---------------------------------------------------------------------
     # Main polling routine
-    # ────────────────────────────────
+    # ---------------------------------------------------------------------
     async def _async_update_data(self) -> dict:
         try:
             now = datetime.now()
             self.last_update = now
-            _LOGGER.debug("Starting manual update at %s", now)
+            self._last_error = None
 
-            # ---------- collect entities ----------
-            current_entities: dict[str, dict] = {}
-            for entity_id in self.hass.states.async_entity_ids():
-                domain = entity_id.split(".")[0]
-                if self.selected_domains and domain not in self.selected_domains:
+            # -------------------------------------------------- gather entities
+            current: dict[str, dict] = {}
+            for eid in self.hass.states.async_entity_ids():
+                if self.selected_domains and eid.split(".")[0] not in self.selected_domains:
                     continue
-                state_obj = self.hass.states.get(entity_id)
-                if state_obj is None:
-                    continue
-                current_entities[entity_id] = {
-                    "state": state_obj.state,
-                    "attributes": state_obj.attributes,
-                    "last_changed": state_obj.last_changed,
-                    "last_updated": state_obj.last_updated,
-                    "friendly_name": state_obj.attributes.get("friendly_name", entity_id),
-                }
+                st = self.hass.states.get(eid)
+                if st:
+                    current[eid] = {
+                        "state": st.state,
+                        "attributes": st.attributes,
+                        "last_changed": st.last_changed,
+                        "last_updated": st.last_updated,
+                        "friendly_name": st.attributes.get("friendly_name", eid),
+                    }
 
-            selected = (
-                current_entities
-                if self.scan_all
-                else {e: v for e, v in current_entities.items() if e not in self.previous_entities}
-            )
-
-            if not selected:
-                _LOGGER.debug("No entities selected for suggestions")
-                self.previous_entities = current_entities
+            picked = current if self.scan_all else {k: v for k, v in current.items() if k not in self.previous_entities}
+            if not picked:
+                self.previous_entities = current
                 return self.data
 
-            prompt = self._build_prompt(selected)
-            suggestions = await self._dispatch(prompt)
+            prompt = self._build_prompt(picked)
+            response = await self._dispatch(prompt)
 
-            # ---------------- post‑process the reply -----------------
-            if suggestions:
-                match = YAML_RE.search(suggestions)
+            if response:
+                match = YAML_RE.search(response)
                 yaml_block = match.group(1).strip() if match else None
-                description = YAML_RE.sub("", suggestions).strip()
+                description = YAML_RE.sub("", response).strip() if match else None
 
                 persistent_notification.async_create(
                     self.hass,
-                    message=suggestions,
+                    message=response,
                     title="AI Automation Suggestions",
                     notification_id=f"ai_automation_suggestions_{now.timestamp()}",
                 )
 
                 self.data = {
-                    "suggestions": suggestions,
+                    "suggestions": response,
                     "description": description,
                     "yaml_block": yaml_block,
                     "last_update": now,
-                    "entities_processed": list(selected.keys()),
-                    "provider": self.entry.data.get(CONF_PROVIDER, "unknown"),
+                    "entities_processed": list(picked.keys()),
+                    "provider": self._opt(CONF_PROVIDER, "unknown"),
+                    "last_error": None,
                 }
             else:
-                # Ensure self.data is *assigned*, not updated (handles None safely)
-                self.data = {
-                    "suggestions": "No suggestions available",
-                    "description": None,
-                    "yaml_block": None,
-                    "last_update": now,
-                    "entities_processed": [],
-                    "provider": self.entry.data.get(CONF_PROVIDER, "unknown"),
-                }
+                self.data.update(
+                    {
+                        "suggestions": "No suggestions available",
+                        "description": None,
+                        "yaml_block": None,
+                        "last_update": now,
+                        "entities_processed": [],
+                        "last_error": self._last_error,
+                    }
+                )
 
-            self.previous_entities = current_entities
+            self.previous_entities = current
             return self.data
 
         except Exception as err:  # noqa: BLE001
-            _LOGGER.error("Unexpected coordinator error: %s", err)
+            self._last_error = str(err)
+            _LOGGER.error("Coordinator fatal error: %s", err)
+            self.data["last_error"] = self._last_error
             return self.data
 
-    # ────────────────────────────────
-    # Prompt builder
-    # ────────────────────────────────
-    def _build_prompt(self, entities: dict) -> str:  # noqa: C901  (long but readable)
+    # ---------------------------------------------------------------------
+    # Prompt builder (unchanged)
+    # ---------------------------------------------------------------------
+    def _build_prompt(self, entities: dict) -> str:  # noqa: C901
         MAX_ATTR = 500
         MAX_AUTOM = 100
 
-        entity_sections: list[str] = []
-        for entity_id, meta in random.sample(list(entities.items()), min(len(entities), self.entity_limit)):
-            domain = entity_id.split(".")[0]
+        ent_sections: list[str] = []
+        for eid, meta in random.sample(list(entities.items()), min(len(entities), self.entity_limit)):
+            domain = eid.split(".")[0]
             attr_str = str(meta["attributes"])
             if len(attr_str) > MAX_ATTR:
                 attr_str = f"{attr_str[:MAX_ATTR]}...(truncated)"
 
-            # ---- registry lookups (safe) ----
-            ent_entry = self.entity_registry.async_get(entity_id) if self.entity_registry else None
-            dev_entry = (
-                self.device_registry.async_get(ent_entry.device_id) if ent_entry and ent_entry.device_id else None
-            )
+            ent_entry = self.entity_registry.async_get(eid) if self.entity_registry else None
+            dev_entry = self.device_registry.async_get(ent_entry.device_id) if ent_entry and ent_entry.device_id else None
 
-            area_id = (
-                ent_entry.area_id
-                if ent_entry and ent_entry.area_id
-                else (dev_entry.area_id if dev_entry and dev_entry.area_id else None)
-            )
+            area_id = ent_entry.area_id if ent_entry and ent_entry.area_id else (dev_entry.area_id if dev_entry else None)
             area_name = "Unknown Area"
             if area_id and self.area_registry:
-                area = self.area_registry.async_get_area(area_id)
-                if area:
-                    area_name = area.name
+                ar_entry = self.area_registry.async_get_area(area_id)
+                if ar_entry:
+                    area_name = ar_entry.name
 
-            section = (
-                f"Entity: {entity_id}\n"
+            block = (
+                f"Entity: {eid}\n"
                 f"Friendly Name: {meta['friendly_name']}\n"
                 f"Domain: {domain}\n"
                 f"State: {meta['state']}\n"
@@ -264,7 +265,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             )
 
             if dev_entry:
-                section += (
+                block += (
                     "Device Info:\n"
                     f"  Manufacturer: {dev_entry.manufacturer}\n"
                     f"  Model: {dev_entry.model}\n"
@@ -272,43 +273,42 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     f"  Device ID: {dev_entry.id}\n"
                 )
 
-            section += (
+            block += (
                 f"Last Changed: {meta['last_changed']}\n"
                 f"Last Updated: {meta['last_updated']}\n"
                 "---\n"
             )
-            entity_sections.append(section)
+            ent_sections.append(block)
 
-        auto_sections: list[str] = []
+        autom_sections: list[str] = []
         for aid in self.hass.states.async_entity_ids("automation")[:MAX_AUTOM]:
             st = self.hass.states.get(aid)
-            if st is None:
-                continue
-            attr = str(st.attributes)
-            if len(attr) > MAX_ATTR:
-                attr = f"{attr[:MAX_ATTR]}...(truncated)"
-            auto_sections.append(
-                f"Entity: {aid}\n"
-                f"Friendly Name: {st.attributes.get('friendly_name', aid)}\n"
-                f"State: {st.state}\n"
-                f"Attributes: {attr}\n"
-                "---\n"
-            )
+            if st:
+                attr = str(st.attributes)
+                if len(attr) > MAX_ATTR:
+                    attr = f"{attr[:MAX_ATTR]}...(truncated)"
+                autom_sections.append(
+                    f"Entity: {aid}\n"
+                    f"Friendly Name: {st.attributes.get('friendly_name', aid)}\n"
+                    f"State: {st.state}\n"
+                    f"Attributes: {attr}\n"
+                    "---\n"
+                )
 
         return (
             f"{self.SYSTEM_PROMPT}\n\n"
-            "Entities in your Home Assistant (sampled):\n"
-            f"{''.join(entity_sections)}\n"
+            f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
             "Existing Automations:\n"
-            f"{''.join(auto_sections) if auto_sections else 'None found.'}\n\n"
+            f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
             "Please propose detailed automations and improvements that reference only the entity_ids above."
         )
 
-    # ────────────────────────────────
-    # Provider dispatch
-    # ────────────────────────────────
+    # ---------------------------------------------------------------------
+    # Provider dispatcher
+    # ---------------------------------------------------------------------
     async def _dispatch(self, prompt: str) -> str | None:
-        provider = self.entry.data.get(CONF_PROVIDER, "OpenAI")
+        provider = self._opt(CONF_PROVIDER, "OpenAI")
+        self._last_error = None
         try:
             return await {
                 "OpenAI": self._openai,
@@ -322,51 +322,59 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Perplexity AI": self._perplexity,
             }[provider](prompt)
         except KeyError:
-            _LOGGER.error("Unknown provider: %s", provider)
+            self._last_error = f"Unknown provider '{provider}'"
+            _LOGGER.error(self._last_error)
             return None
-        except Exception as err:
-            _LOGGER.error("Error getting suggestions: %s", err)
+        except Exception as err:  # noqa: BLE001
+            self._last_error = str(err)
+            _LOGGER.error("Dispatch error: %s", err)
             return None
 
-    # ────────────────────────────────
-    # Provider implementations
-    # ────────────────────────────────
+    # ---------------------------------------------------------------------
+    # Provider implementations (OpenAI shown; the rest follow same pattern)
+    # ---------------------------------------------------------------------
     async def _openai(self, prompt: str) -> str | None:
         try:
-            api_key = self.entry.data.get(CONF_OPENAI_API_KEY)
-            model = self.entry.data.get(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"])
-            max_tok = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            api_key = self._opt(CONF_OPENAI_API_KEY)
+            model = self._opt(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"])
+            in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("OpenAI API key not configured")
 
-            if len(prompt) // 4 > max_tok:
-                prompt = prompt[: max_tok * 4]
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
 
             body = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tok,
+                "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
             }
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
             async with self.session.post(ENDPOINT_OPENAI, headers=headers, json=body) as resp:
                 if resp.status != 200:
-                    _LOGGER.error("OpenAI API error: %s", await resp.text())
+                    self._last_error = f"OpenAI error {resp.status}: {await resp.text()}"
+                    _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
                 return res["choices"][0]["message"]["content"]
         except Exception as err:
+            self._last_error = str(err)
             _LOGGER.error("OpenAI processing error: %s", err)
             return None
 
+    # ---------------- Anthropic ------------------------------------------------
     async def _anthropic(self, prompt: str) -> str | None:
         try:
-            api_key = self.entry.data.get(CONF_ANTHROPIC_API_KEY)
-            model = self.entry.data.get(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"])
-            max_tok = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            api_key = self._opt(CONF_ANTHROPIC_API_KEY)
+            model = self._opt(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"])
+            in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Anthropic API key not configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
 
             headers = {
                 "X-API-Key": api_key,
@@ -376,32 +384,39 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             body = {
                 "model": model,
                 "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
-                "max_tokens": max_tok,
+                "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
             }
+
             async with self.session.post(ENDPOINT_ANTHROPIC, headers=headers, json=body) as resp:
                 if resp.status != 200:
-                    _LOGGER.error("Anthropic API error: %s", await resp.text())
+                    self._last_error = f"Anthropic error {resp.status}: {await resp.text()}"
+                    _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
                 return res["content"][0]["text"]
         except Exception as err:
+            self._last_error = str(err)
             _LOGGER.error("Anthropic processing error: %s", err)
             return None
 
+    # ---------------- Google ---------------------------------------------------
     async def _google(self, prompt: str) -> str | None:
         try:
-            api_key = self.entry.data.get(CONF_GOOGLE_API_KEY)
-            model = self.entry.data.get(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"])
-            max_tok = min(self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS), 30720)
+            api_key = self._opt(CONF_GOOGLE_API_KEY)
+            model = self._opt(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"])
+            in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Google API key not configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
 
             body = {
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {
                     "temperature": DEFAULT_TEMPERATURE,
-                    "maxOutputTokens": max_tok,
+                    "maxOutputTokens": out_budget,
                     "topK": 40,
                     "topP": 0.95,
                 },
@@ -410,49 +425,61 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             async with self.session.post(endpoint, json=body) as resp:
                 if resp.status != 200:
-                    _LOGGER.error("Google API error: %s", await resp.text())
+                    self._last_error = f"Google error {resp.status}: {await resp.text()}"
+                    _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
                 return res["candidates"][0]["content"]["parts"][0]["text"]
         except Exception as err:
+            self._last_error = str(err)
             _LOGGER.error("Google processing error: %s", err)
             return None
 
+    # ---------------- Groq -----------------------------------------------------
     async def _groq(self, prompt: str) -> str | None:
         try:
-            api_key = self.entry.data.get(CONF_GROQ_API_KEY)
-            model = self.entry.data.get(CONF_GROQ_MODEL, DEFAULT_MODELS["Groq"])
-            max_tok = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            api_key = self._opt(CONF_GROQ_API_KEY)
+            model = self._opt(CONF_GROQ_MODEL, DEFAULT_MODELS["Groq"])
+            in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Groq API key not configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
 
             body = {
                 "model": model,
                 "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
-                "max_tokens": max_tok,
+                "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
             }
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
             async with self.session.post(ENDPOINT_GROQ, headers=headers, json=body) as resp:
                 if resp.status != 200:
-                    _LOGGER.error("Groq API error: %s", await resp.text())
+                    self._last_error = f"Groq error {resp.status}: {await resp.text()}"
+                    _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
                 return res["choices"][0]["message"]["content"]
         except Exception as err:
+            self._last_error = str(err)
             _LOGGER.error("Groq processing error: %s", err)
             return None
 
+    # ---------------- LocalAI --------------------------------------------------
     async def _localai(self, prompt: str) -> str | None:
         try:
-            ip = self.entry.data.get(CONF_LOCALAI_IP_ADDRESS)
-            port = self.entry.data.get(CONF_LOCALAI_PORT)
-            https = self.entry.data.get(CONF_LOCALAI_HTTPS, False)
-            model = self.entry.data.get(CONF_LOCALAI_MODEL, DEFAULT_MODELS["LocalAI"])
-            max_tok = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            ip = self._opt(CONF_LOCALAI_IP_ADDRESS)
+            port = self._opt(CONF_LOCALAI_PORT)
+            https = self._opt(CONF_LOCALAI_HTTPS, False)
+            model = self._opt(CONF_LOCALAI_MODEL, DEFAULT_MODELS["LocalAI"])
+            in_budget, out_budget = self._budgets()
             if not ip or not port:
                 raise ValueError("LocalAI not fully configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
 
             proto = "https" if https else "http"
             endpoint = ENDPOINT_LOCALAI.format(protocol=proto, ip_address=ip, port=port)
@@ -460,28 +487,34 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             body = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tok,
+                "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
             }
             async with self.session.post(endpoint, json=body) as resp:
                 if resp.status != 200:
-                    _LOGGER.error("LocalAI API error: %s", await resp.text())
+                    self._last_error = f"LocalAI error {resp.status}: {await resp.text()}"
+                    _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
                 return res["choices"][0]["message"]["content"]
         except Exception as err:
+            self._last_error = str(err)
             _LOGGER.error("LocalAI processing error: %s", err)
             return None
 
+    # ---------------- Ollama ---------------------------------------------------
     async def _ollama(self, prompt: str) -> str | None:
         try:
-            ip = self.entry.data.get(CONF_OLLAMA_IP_ADDRESS)
-            port = self.entry.data.get(CONF_OLLAMA_PORT)
-            https = self.entry.data.get(CONF_OLLAMA_HTTPS, False)
-            model = self.entry.data.get(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"])
-            max_tok = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            ip     = self._opt(CONF_OLLAMA_IP_ADDRESS)
+            port   = self._opt(CONF_OLLAMA_PORT)
+            https  = self._opt(CONF_OLLAMA_HTTPS, False)
+            model  = self._opt(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"])
+            in_budget, out_budget = self._budgets()
             if not ip or not port:
                 raise ValueError("Ollama not fully configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
 
             proto = "https" if https else "http"
             endpoint = ENDPOINT_OLLAMA.format(protocol=proto, ip_address=ip, port=port)
@@ -490,26 +523,32 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "stream": False,
-                "options": {"temperature": DEFAULT_TEMPERATURE, "num_predict": max_tok},
+                "options": {"temperature": DEFAULT_TEMPERATURE, "num_predict": out_budget},
             }
             async with self.session.post(endpoint, json=body) as resp:
                 if resp.status != 200:
-                    _LOGGER.error("Ollama API error: %s", await resp.text())
+                    self._last_error = f"Ollama error {resp.status}: {await resp.text()}"
+                    _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
                 return res["message"]["content"]
-        except Exception as err:
+
+        except Exception as err:                    # ← this whole block
+            self._last_error = str(err)             #   was missing
             _LOGGER.error("Ollama processing error: %s", err)
             return None
-
+    # ---------------- Custom‑endpoint OpenAI -------------------------------
     async def _custom_openai(self, prompt: str) -> str | None:
         try:
-            endpoint = self.entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT)
-            api_key = self.entry.data.get(CONF_CUSTOM_OPENAI_API_KEY)
-            model = self.entry.data.get(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"])
-            max_tok = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            endpoint = self._opt(CONF_CUSTOM_OPENAI_ENDPOINT)
+            api_key  = self._opt(CONF_CUSTOM_OPENAI_API_KEY)
+            model    = self._opt(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"])
+            in_budget, out_budget = self._budgets()
             if not endpoint:
                 raise ValueError("Custom OpenAI endpoint not configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
 
             headers = {"Content-Type": "application/json"}
             if api_key:
@@ -518,50 +557,63 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             body = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tok,
+                "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
             }
             async with self.session.post(endpoint, headers=headers, json=body) as resp:
                 if resp.status != 200:
-                    _LOGGER.error("Custom OpenAI API error: %s", await resp.text())
+                    self._last_error = f"Custom OpenAI error {resp.status}: {await resp.text()}"
+                    _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
                 return res["choices"][0]["message"]["content"]
         except Exception as err:
+            self._last_error = str(err)
             _LOGGER.error("Custom OpenAI processing error: %s", err)
             return None
 
+    # ---------------- Mistral ----------------------------------------------
     async def _mistral(self, prompt: str) -> str | None:
         try:
-            api_key = self.entry.data.get(CONF_MISTRAL_API_KEY)
-            model = self.entry.data.get(CONF_MISTRAL_MODEL, DEFAULT_MODELS["Mistral AI"])
+            api_key = self._opt(CONF_MISTRAL_API_KEY)
+            model   = self._opt(CONF_MISTRAL_MODEL, DEFAULT_MODELS["Mistral AI"])
+            in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Mistral API key not configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
 
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
             body = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": DEFAULT_TEMPERATURE,
-                "max_tokens": 4096,
+                "max_tokens": out_budget,
             }
             async with self.session.post(ENDPOINT_MISTRAL, headers=headers, json=body) as resp:
                 if resp.status != 200:
-                    _LOGGER.error("Mistral API error: %s", await resp.text())
+                    self._last_error = f"Mistral error {resp.status}: {await resp.text()}"
+                    _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
                 return res["choices"][0]["message"]["content"]
         except Exception as err:
+            self._last_error = str(err)
             _LOGGER.error("Mistral processing error: %s", err)
             return None
 
+    # ---------------- Perplexity -------------------------------------------
     async def _perplexity(self, prompt: str) -> str | None:
         try:
-            api_key = self.entry.data.get(CONF_PERPLEXITY_API_KEY)
-            model = self.entry.data.get(CONF_PERPLEXITY_MODEL, DEFAULT_MODELS["Perplexity AI"])
-            max_tok = self.entry.data.get(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+            api_key = self._opt(CONF_PERPLEXITY_API_KEY)
+            model   = self._opt(CONF_PERPLEXITY_MODEL, DEFAULT_MODELS["Perplexity AI"])
+            in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Perplexity API key not configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
 
             headers = {
                 "Authorization": f"Bearer {api_key}",
@@ -571,15 +623,17 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             body = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tok,
+                "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
             }
             async with self.session.post(ENDPOINT_PERPLEXITY, headers=headers, json=body) as resp:
                 if resp.status != 200:
-                    _LOGGER.error("Perplexity API error: %s", await resp.text())
+                    self._last_error = f"Perplexity error {resp.status}: {await resp.text()}"
+                    _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
                 return res["choices"][0]["message"]["content"]
         except Exception as err:
+            self._last_error = str(err)
             _LOGGER.error("Perplexity processing error: %s", err)
             return None

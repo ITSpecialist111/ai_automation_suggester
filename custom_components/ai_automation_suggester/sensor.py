@@ -4,17 +4,11 @@
 from __future__ import annotations
 
 import logging
-from homeassistant.components.sensor import (
-    SensorEntity,
-    SensorEntityDescription,
-)
+from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.core import callback
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
-)
+from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
 
 from .const import (
     DOMAIN,
@@ -41,7 +35,7 @@ STATUS_SENSOR = SensorEntityDescription(
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up the AI Automation Suggester sensors."""
+    """Set up AI Automation Suggester sensors."""
     coordinator: DataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     entities = [
@@ -56,7 +50,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 # Suggestions sensor
 # ─────────────────────────────────────────────────────────────
 class AISuggestionsSensor(CoordinatorEntity, SensorEntity):
-    """Shows status + attributes from the AI suggestions coordinator."""
+    """Shows the availability of new AI suggestions and exposes them as attributes."""
 
     def __init__(
         self,
@@ -72,35 +66,30 @@ class AISuggestionsSensor(CoordinatorEntity, SensorEntity):
             "name": f"AI Automation Suggester ({entry.data.get(CONF_PROVIDER, 'unknown')})",
             "manufacturer": "Community",
             "model": entry.data.get(CONF_PROVIDER, "unknown"),
-            "sw_version": "1.3.2",
+            "sw_version": entry.version,
         }
         self._entry = entry
         self._previous_suggestions: str | None = None
         self._attr_native_value = "No Suggestions"
 
-    # Display-name in the UI
     @property
     def name(self) -> str:
         provider = self._entry.data.get(CONF_PROVIDER, "unknown")
         return f"AI Automation Suggestions ({provider})"
 
-    # Main state
     @property
     def native_value(self) -> str:
-        if not (data := self.coordinator.data):
-            return "No Suggestions"
-
+        data = self.coordinator.data or {}
         suggestions = data.get("suggestions")
+
         if suggestions in (None, "No suggestions available", "No suggestions yet"):
             return "No Suggestions"
 
         if suggestions != self._previous_suggestions:
-            # new content arrived
             return "New Suggestions Available"
 
         return "Suggestions Available"
 
-    # Expose details as attributes
     @property
     def extra_state_attributes(self) -> dict:
         data = self.coordinator.data or {}
@@ -115,12 +104,11 @@ class AISuggestionsSensor(CoordinatorEntity, SensorEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        """React to coordinator data updates."""
+        """React to coordinator updates by refreshing state."""
         if self.coordinator.data:
             suggestions = self.coordinator.data.get("suggestions")
             if suggestions and suggestions != self._previous_suggestions:
                 self._previous_suggestions = suggestions
-                # update native_value to reflect "New Suggestions Available"
                 self._attr_native_value = self.native_value
         self.async_write_ha_state()
 
@@ -130,10 +118,10 @@ class AISuggestionsSensor(CoordinatorEntity, SensorEntity):
 
 
 # ─────────────────────────────────────────────────────────────
-# Provider-status sensor
+# Provider‑status sensor
 # ─────────────────────────────────────────────────────────────
 class AIProviderStatusSensor(CoordinatorEntity, SensorEntity):
-    """Shows whether the provider is responding OK."""
+    """Indicates whether the configured provider is reachable and shows last error."""
 
     def __init__(
         self,
@@ -149,7 +137,7 @@ class AIProviderStatusSensor(CoordinatorEntity, SensorEntity):
             "name": f"AI Automation Suggester ({entry.data.get(CONF_PROVIDER, 'unknown')})",
             "manufacturer": "Community",
             "model": entry.data.get(CONF_PROVIDER, "unknown"),
-            "sw_version": "1.3.2",
+            "sw_version": entry.version,
         }
         self._entry = entry
         self._attr_native_value = STATE_UNKNOWN
@@ -160,15 +148,11 @@ class AIProviderStatusSensor(CoordinatorEntity, SensorEntity):
         provider = self._entry.data.get(CONF_PROVIDER, "unknown")
         return f"AI Provider Status ({provider})"
 
-    def _get_provider_status(self) -> str:
+    def _compute_status(self) -> str:
         if not self.coordinator.last_update:
             return PROVIDER_STATUS_DISCONNECTED
-        try:
-            data = self.coordinator.data or {}
-            return PROVIDER_STATUS_CONNECTED if "suggestions" in data else PROVIDER_STATUS_ERROR
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.error("Error computing provider status: %s", err)
-            return PROVIDER_STATUS_ERROR
+        data = self.coordinator.data or {}
+        return PROVIDER_STATUS_CONNECTED if "suggestions" in data else PROVIDER_STATUS_ERROR
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -176,7 +160,10 @@ class AIProviderStatusSensor(CoordinatorEntity, SensorEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        self._attr_native_value = self._get_provider_status()
+        """Update status and last_error attribute."""
+        data = self.coordinator.data or {}
+        self._last_error = data.get("last_error")
+        self._attr_native_value = self._compute_status()
         self.async_write_ha_state()
 
     async def async_added_to_hass(self) -> None:
