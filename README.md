@@ -59,14 +59,14 @@ Randomized entity selection (configurable) helps ensure each analysis run can su
 Suggestions are delivered directly within Home Assistant notifications:
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ITSpecialist111/ai_automation_suggester/1.3.1/Screenshot%202025-01-19%20082247-1.png" alt="Notification example" width="700"/>
+  <img src="https://raw.githubusercontent.com/ITSpecialist111/ai_automation_suggester/1.3.2/Screenshot%202025-01-19%20082247-1.png" alt="Notification example" width="700"/>
   <br><em>AI suggestions delivered right inside Home&nbsp;Assistant</em>
 </p>
 
 You can also build custom dashboard cards to display suggestions using sensor attributes:
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ITSpecialist111/ai_automation_suggester/1.3.1/Screenshot%202025-01-19%20083200.png" alt="Dashboard card example" width="700"/>
+  <img src="https://raw.githubusercontent.com/ITSpecialist111/ai_automation_suggester/1.3.2/Screenshot%202025-01-19%20083200.png" alt="Dashboard card example" width="700"/>
   <br><em>Dashboard showing human-readable description and extracted YAML block</em>
 </p>
 

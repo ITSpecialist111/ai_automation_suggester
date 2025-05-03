@@ -110,7 +110,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.selected_domains: list[str] = []
         self.entity_limit: int = 200
 
-        # Data shared with sensors
+        # ------------------------------------------------------------------
+        # Call parent **first** – DataUpdateCoordinator sets self.data = None
+        # ------------------------------------------------------------------
+        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
+        self.session = async_get_clientsession(hass)
+
+        # Data shared with sensors (must be set AFTER the super() call)
         self.data: dict = {
             "suggestions": "No suggestions yet",
             "description": None,
@@ -120,17 +126,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "provider": entry.data.get(CONF_PROVIDER, "unknown"),
         }
 
-        # Manual refresh only
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
-        self.session = async_get_clientsession(hass)
-
         # Registries (populated in async_added_to_hass)
         self.device_registry: dr.DeviceRegistry | None = None
         self.entity_registry: er.EntityRegistry | None = None
         self.area_registry: ar.AreaRegistry | None = None
 
     # ────────────────────────────────
-    # HA life-cycle hooks
+    # HA life‑cycle hooks
     # ────────────────────────────────
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -182,7 +184,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             prompt = self._build_prompt(selected)
             suggestions = await self._dispatch(prompt)
 
-            # ---------------- post-process the reply -----------------
+            # ---------------- post‑process the reply -----------------
             if suggestions:
                 match = YAML_RE.search(suggestions)
                 yaml_block = match.group(1).strip() if match else None
@@ -204,15 +206,15 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     "provider": self.entry.data.get(CONF_PROVIDER, "unknown"),
                 }
             else:
-                self.data.update(
-                    {
-                        "suggestions": "No suggestions available",
-                        "description": None,
-                        "yaml_block": None,
-                        "last_update": now,
-                        "entities_processed": [],
-                    }
-                )
+                # Ensure self.data is *assigned*, not updated (handles None safely)
+                self.data = {
+                    "suggestions": "No suggestions available",
+                    "description": None,
+                    "yaml_block": None,
+                    "last_update": now,
+                    "entities_processed": [],
+                    "provider": self.entry.data.get(CONF_PROVIDER, "unknown"),
+                }
 
             self.previous_entities = current_entities
             return self.data
