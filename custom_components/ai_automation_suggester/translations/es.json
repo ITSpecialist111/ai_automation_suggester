@@ -1,0 +1,66 @@
+{
+    "config": {
+      "step": {
+        "user": {
+          "title": "Configurar AI Automation Suggester",
+          "data": {
+            "provider": "Proveedor de IA",
+            "max_tokens": "Máximo de Tokens de Salida"
+          }
+        },
+        "provider_config": {
+          "title": "Configuración del Proveedor",
+          "data": {
+            "model": "Nombre del Modelo",
+            "api_key": "Clave de API",
+            "max_tokens": "Máximo de Tokens de Salida",
+            "ip_address": "Dirección IP",
+            "port": "Puerto",
+            "use_https": "Usar HTTPS"
+          },
+          "description": "El máximo de tokens controla la longitud de la respuesta de la IA. El valor predeterminado es 500. Aumenta si necesitas respuestas más largas."
+        }
+      },
+      "error": {
+        "cannot_connect": "Error al conectar con el servicio",
+        "invalid_auth": "Autenticación inválida",
+        "invalid_config": "Configuración inválida",
+        "unknown": "Error inesperado",
+        "no_entities": "No se encontraron nuevas entidades",
+        "api_error": "Ha ocurrido un error de API",
+        "required_field": "Este campo es obligatorio"
+      },
+      "abort": {
+        "already_configured": "El proveedor ya está configurado",
+        "provider_not_supported": "Este proveedor no es compatible actualmente"
+      }
+    },
+    "services": {
+      "generate_suggestions": {
+        "name": "Generar Sugerencias",
+        "description": "Activar manualmente las sugerencias de automatización de IA",
+        "fields": {
+          "provider_config": {
+            "name": "Configuración del Proveedor",
+            "description": "¿Qué configuración de proveedor usar (si tienes varias)?"
+          },
+          "custom_prompt": {
+            "name": "Prompt Personalizado",
+            "description": "Prompt personalizado opcional para anular el prompt del sistema predeterminado o guiar las sugerencias hacia temas específicos"
+          },
+          "all_entities": {
+            "name": "Considerar Todas las Entidades",
+            "description": "Si es verdadero, considerar todas las entidades en lugar de solo las nuevas entidades."
+          },
+          "domains": {
+            "name": "Dominios",
+            "description": "Lista de dominios a considerar. Si está vacío, considerar todos los dominios."
+          },
+          "entity_limit": {
+            "name": "Límite de Entidades",
+            "description": "Número máximo de entidades a considerar (seleccionadas aleatoriamente)."
+          }
+        }
+      }
+    }
+  }
