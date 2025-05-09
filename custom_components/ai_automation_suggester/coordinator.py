@@ -540,12 +540,17 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
     # ---------------- Custom‑endpoint OpenAI -------------------------------
     async def _custom_openai(self, prompt: str) -> str | None:
         try:
-            endpoint = self._opt(CONF_CUSTOM_OPENAI_ENDPOINT)
+            endpoint = self._opt(CONF_CUSTOM_OPENAI_ENDPOINT) + "/v1/chat/completions"
+            if not endpoint:
+                raise ValueError("Custom OpenAI endpoint not configured")
+            
+            if not endpoint.endswith("/v1/chat/completions"):
+                endpoint = endpoint.rstrip("/") + "/v1/chat/completions"
+
             api_key  = self._opt(CONF_CUSTOM_OPENAI_API_KEY)
             model    = self._opt(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"])
             in_budget, out_budget = self._budgets()
-            if not endpoint:
-                raise ValueError("Custom OpenAI endpoint not configured")
+
 
             if len(prompt) // 4 > in_budget:
                 prompt = prompt[: in_budget * 4]
@@ -565,11 +570,29 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     self._last_error = f"Custom OpenAI error {resp.status}: {await resp.text()}"
                     _LOGGER.error(self._last_error)
                     return None
+                
                 res = await resp.json()
-                return res["choices"][0]["message"]["content"]
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+                
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+                
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+                
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(f"Message missing 'content': {res['choices'][0]['message']}")
+                
+            return res["choices"][0]["message"]["content"]
+        
         except Exception as err:
-            self._last_error = str(err)
-            _LOGGER.error("Custom OpenAI processing error: %s", err)
+            self._last_error = f"Custom OpenAI processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
             return None
 
     # ---------------- Mistral ----------------------------------------------
