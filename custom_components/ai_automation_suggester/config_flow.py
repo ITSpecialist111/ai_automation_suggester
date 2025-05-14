@@ -211,7 +211,11 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.validator = ProviderValidator(self.hass)
             err = await validate_fn(user_input)
             if err is None:
-                self.data.update(user_input)
+                self.data.update({
+                **user_input,
+                CONF_MAX_INPUT_TOKENS: user_input.get(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS),
+                CONF_MAX_OUTPUT_TOKENS: user_input.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS),
+            })
                 return self.async_create_entry(title=title, data=self.data)
             errors["base"] = "api_error"
             placeholders["error_message"] = err
@@ -414,17 +418,41 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         if user_input:
-            return self.async_create_entry(title="", data=user_input)
+            new_data = {
+                **self.config_entry.options,
+                **user_input,  
+                CONF_MAX_INPUT_TOKENS: user_input.get(
+                    CONF_MAX_INPUT_TOKENS, 
+                    self.config_entry.options.get(
+                        CONF_MAX_INPUT_TOKENS,
+                        self.config_entry.data.get(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)
+                    )
+                ),
+                CONF_MAX_OUTPUT_TOKENS: user_input.get(
+                    CONF_MAX_OUTPUT_TOKENS,
+                    self.config_entry.options.get(
+                        CONF_MAX_OUTPUT_TOKENS,
+                        self.config_entry.data.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
+                    )
+                ),
+            }
+            return self.async_create_entry(title="", data=new_data)
 
         provider = self.config_entry.data.get(CONF_PROVIDER)
         schema: Dict[Any, Any] = {
             vol.Optional(
                 CONF_MAX_INPUT_TOKENS,
-                default=self.config_entry.data.get(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS),
+                default=self.config_entry.options.get(
+                    CONF_MAX_INPUT_TOKENS,
+                    self.config_entry.data.get(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)
+                )
             ): vol.All(vol.Coerce(int), vol.Range(min=100)),
             vol.Optional(
                 CONF_MAX_OUTPUT_TOKENS,
-                default=self.config_entry.data.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS),
+                default=self.config_entry.options.get(
+                    CONF_MAX_OUTPUT_TOKENS, 
+                    self.config_entry.data.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
+                )
             ): vol.All(vol.Coerce(int), vol.Range(min=100)),
         }
 
