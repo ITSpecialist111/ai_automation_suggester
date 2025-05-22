@@ -23,6 +23,10 @@
         "entity_limit": {
           "name": "实体限制",
           "description": "要考虑的实体最大数量（随机选择）。"
+        },
+        "automation_read_yaml": {
+          "name": "Read 'automations.yaml' file",
+          "description": "Reads and appends the yaml code of the automations found in the automations.yaml file. This action will use a lot of input tokens, use it with care and with models with a large input window (e.g. Gemini)."
         }
       }
     }

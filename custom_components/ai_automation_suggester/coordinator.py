@@ -3,16 +3,21 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 import logging
 import random
 import re
-from datetime import datetime
+from pathlib import Path
+import yaml
+import anyio
 
 from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import area_registry as ar
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import (
+    area_registry as ar,
+    device_registry as dr,
+    entity_registry as er,
+)
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -103,6 +108,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.scan_all = False
         self.selected_domains: list[str] = []
         self.entity_limit = 200
+        self.automation_read_file = False  # Default automation reading mode
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
@@ -186,7 +192,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 self.previous_entities = current
                 return self.data
 
-            prompt = self._build_prompt(picked)
+            prompt = await self._build_prompt(picked)
             response = await self._dispatch(prompt)
 
             if response:
@@ -232,11 +238,12 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return self.data
 
     # ---------------------------------------------------------------------
-    # Prompt builder (unchanged)
+    # Prompt builder (updated)
     # ---------------------------------------------------------------------
-    def _build_prompt(self, entities: dict) -> str:  # noqa: C901
+    async def _build_prompt(self, entities: dict) -> str:  # noqa: C901
+        """Build the prompt based on entities and automations."""
         MAX_ATTR = 500
-        MAX_AUTOM = 100
+        MAX_AUTOM = 100 # Change this to user input?
 
         ent_sections: list[str] = []
         for eid, meta in random.sample(list(entities.items()), min(len(entities), self.entity_limit)):
@@ -280,13 +287,44 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             )
             ent_sections.append(block)
 
+        # Choose automation reading method
+        if self.automation_read_file:
+            autom_sections = self._read_automations_default(MAX_AUTOM, MAX_ATTR)
+            autom_codes = await self._read_automations_file_method(MAX_AUTOM, MAX_ATTR)
+
+            builded_prompt = (
+                f"{self.SYSTEM_PROMPT}\n\n"
+                f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
+                "Existing Automations Overview:\n"
+                f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
+                "Automations YAML Code (for analysis and improvement):\n"
+                f"{''.join(autom_codes) if autom_codes else 'No automations YAML code available.'}\n\n"
+                "Please analyze both the entities and existing automations. "
+                "Propose detailed improvements to existing automations and suggest new ones "
+                "that reference only the entity_ids shown above."
+            )
+        else:
+            autom_sections = self._read_automations_default(MAX_AUTOM, MAX_ATTR)
+
+            builded_prompt = (
+                f"{self.SYSTEM_PROMPT}\n\n"
+                f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
+                "Existing Automations:\n"
+                f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
+                "Please propose detailed automations and improvements that reference only the entity_ids above."
+            )
+
+        return builded_prompt
+
+    def _read_automations_default(self, max_autom: int, max_attr: int) -> list[str]:
+        """Default method for reading automations."""
         autom_sections: list[str] = []
-        for aid in self.hass.states.async_entity_ids("automation")[:MAX_AUTOM]:
+        for aid in self.hass.states.async_entity_ids("automation")[:max_autom]:
             st = self.hass.states.get(aid)
             if st:
                 attr = str(st.attributes)
-                if len(attr) > MAX_ATTR:
-                    attr = f"{attr[:MAX_ATTR]}...(truncated)"
+                if len(attr) > max_attr:
+                    attr = f"{attr[:max_attr]}...(truncated)"
                 autom_sections.append(
                     f"Entity: {aid}\n"
                     f"Friendly Name: {st.attributes.get('friendly_name', aid)}\n"
@@ -294,14 +332,51 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     f"Attributes: {attr}\n"
                     "---\n"
                 )
+        return autom_sections
 
-        return (
-            f"{self.SYSTEM_PROMPT}\n\n"
-            f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
-            "Existing Automations:\n"
-            f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
-            "Please propose detailed automations and improvements that reference only the entity_ids above."
-        )
+    async def _read_automations_file_method(self, max_autom: int, max_attr: int) -> list[str]:
+        """File method for reading automations."""
+        automations_file = Path(self.hass.config.path()) / "automations.yaml"
+        autom_codes: list[str] = []
+
+        try:
+            async with await anyio.open_file(
+                automations_file, "r", encoding="utf-8"
+            ) as file:
+                content = await file.read()
+                automations = yaml.safe_load(content)
+
+            for automation in automations[:max_autom]:
+                aid = automation.get("id", "unknown_id")
+                alias = automation.get("alias", "Unnamed Automation")
+                description = automation.get("description", "")
+                trigger = automation.get("trigger", []) + automation.get("triggers", [])
+                condition = automation.get("condition", []) + automation.get(
+                    "conditions", []
+                )
+                action = automation.get("action", []) + automation.get("actions", [])
+
+                # YAML
+                code_block = (
+                    f"Automation Code for automation.{aid}:\n"
+                    "```yaml\n"
+                    f"- id: '{aid}'\n"
+                    f"  alias: '{alias}'\n"
+                    f"  description: '{description}'\n"
+                    f"  trigger: {trigger}\n"
+                    f"  condition: {condition}\n"
+                    f"  action: {action}\n"
+                    "```\n"
+                    "---\n"
+                )
+                autom_codes.append(code_block)
+
+        except FileNotFoundError:
+            _LOGGER.error("The automations.yaml file was not found.")
+        except yaml.YAMLError as err:
+            _LOGGER.error("Error parsing automations.yaml: %s", err)
+
+        return autom_codes
 
     # ---------------------------------------------------------------------
     # Provider dispatcher
