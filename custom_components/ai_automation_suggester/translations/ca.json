@@ -1,66 +1,70 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "title": "Configurar AI Automation Suggester",
-          "data": {
-            "provider": "Proveïdor d'IA",
-            "max_tokens": "Màxim de Tokens de Sortida"
-          }
-        },
-        "provider_config": {
-          "title": "Configuració del Proveïdor",
-          "data": {
-            "model": "Nom del Model",
-            "api_key": "Clau d'API",
-            "max_tokens": "Màxim de Tokens de Sortida",
-            "ip_address": "Adreça IP",
-            "port": "Port",
-            "use_https": "Utilitzar HTTPS"
-          },
-          "description": "El màxim de tokens controla la longitud de la resposta de la IA. El valor predeterminat és 500. Augmenta si necessites respostes més llargues."
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar AI Automation Suggester",
+        "data": {
+          "provider": "Proveïdor d'IA",
+          "max_tokens": "Màxim de Tokens de Sortida"
         }
       },
-      "error": {
-        "cannot_connect": "Error en connectar amb el servei",
-        "invalid_auth": "Autenticació invàlida",
-        "invalid_config": "Configuració invàlida",
-        "unknown": "Error inesperat",
-        "no_entities": "No s'han trobat noves entitats",
-        "api_error": "Ha ocorregut un error d'API",
-        "required_field": "Aquest camp és obligatori"
-      },
-      "abort": {
-        "already_configured": "El proveïdor ja està configurat",
-        "provider_not_supported": "Aquest proveïdor no és compatible actualment"
+      "provider_config": {
+        "title": "Configuració del Proveïdor",
+        "data": {
+          "model": "Nom del Model",
+          "api_key": "Clau d'API",
+          "max_tokens": "Màxim de Tokens de Sortida",
+          "ip_address": "Adreça IP",
+          "port": "Port",
+          "use_https": "Utilitzar HTTPS"
+        },
+        "description": "El màxim de tokens controla la longitud de la resposta de la IA. El valor predeterminat és 500. Augmenta si necessites respostes més llargues."
       }
     },
-    "services": {
-      "generate_suggestions": {
-        "name": "Generar Suggeriments",
-        "description": "Activar manualment els suggeriments d'automatització d'IA",
-        "fields": {
-          "provider_config": {
-            "name": "Configuració del Proveïdor",
-            "description": "Quina configuració de proveïdor utilitzar (si en tens diverses)?"
-          },
-          "custom_prompt": {
-            "name": "Prompt Personalitzat",
-            "description": "Prompt personalitzat opcional per anul·lar el prompt del sistema per defecte o guiar els suggeriments cap a temes específics"
-          },
-          "all_entities": {
-            "name": "Considerar Totes les Entitats",
-            "description": "Si és cert, considerar totes les entitats en lloc de només les noves entitats."
-          },
-          "domains": {
-            "name": "Dominis",
-            "description": "Llista de dominis a considerar. Si està buit, considerar tots els dominis."
-          },
-          "entity_limit": {
-            "name": "Límit d'Entitats",
-            "description": "Nombre màxim d'entitats a considerar (seleccionades aleatòriament)."
-          }
+    "error": {
+      "cannot_connect": "Error en connectar amb el servei",
+      "invalid_auth": "Autenticació invàlida",
+      "invalid_config": "Configuració invàlida",
+      "unknown": "Error inesperat",
+      "no_entities": "No s'han trobat noves entitats",
+      "api_error": "Ha ocorregut un error d'API",
+      "required_field": "Aquest camp és obligatori"
+    },
+    "abort": {
+      "already_configured": "El proveïdor ja està configurat",
+      "provider_not_supported": "Aquest proveïdor no és compatible actualment"
+    }
+  },
+  "services": {
+    "generate_suggestions": {
+      "name": "Generar Suggeriments",
+      "description": "Activar manualment els suggeriments d'automatització d'IA",
+      "fields": {
+        "provider_config": {
+          "name": "Configuració del Proveïdor",
+          "description": "Quina configuració de proveïdor utilitzar (si en tens diverses)?"
+        },
+        "custom_prompt": {
+          "name": "Prompt Personalitzat",
+          "description": "Prompt personalitzat opcional per anul·lar el prompt del sistema per defecte o guiar els suggeriments cap a temes específics"
+        },
+        "all_entities": {
+          "name": "Considerar Totes les Entitats",
+          "description": "Si és cert, considerar totes les entitats en lloc de només les noves entitats."
+        },
+        "domains": {
+          "name": "Dominis",
+          "description": "Llista de dominis a considerar. Si està buit, considerar tots els dominis."
+        },
+        "entity_limit": {
+          "name": "Límit d'Entitats",
+          "description": "Nombre màxim d'entitats a considerar (seleccionades aleatòriament)."
+        },
+        "automation_read_yaml": {
+          "name": "Llegir arxiu 'automations.yaml'",
+          "description": "Llegeix i addiciona el codi yaml de les automatitzacions trobades en el fitxer automations.yaml. Aquesta acció utilitzarà molts tokens d'entrada, utilitza-la amb cura i amb models amb una finestra d'entrada gran (per exemple, Gemini)."
         }
       }
     }
   }
+}
