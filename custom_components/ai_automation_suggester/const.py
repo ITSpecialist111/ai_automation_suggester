@@ -3,9 +3,10 @@
 # ─────────────────────────────────────────────────────────────
 # Core
 # ─────────────────────────────────────────────────────────────
-DOMAIN = "ai_automation_suggester"
-PLATFORMS = ["sensor"]
-CONFIG_VERSION = 2  # config‑entry version (used by async_migrate_entry)
+DOMAIN           = "ai_automation_suggester"
+PLATFORMS        = ["sensor"]
+CONFIG_VERSION   = 2  # config‑entry version (used by async_migrate_entry)
+INTEGRATION_NAME = "AI Automation Suggester"
 
 # ─────────────────────────────────────────────────────────────
 # Token budgeting
@@ -113,7 +114,8 @@ SERVICE_GENERATE_SUGGESTIONS = "generate_suggestions"
 # ─────────────────────────────────────────────────────────────
 PROVIDER_STATUS_CONNECTED = "connected"
 PROVIDER_STATUS_DISCONNECTED = "disconnected"
-PROVIDER_STATUS_ERROR = "error"
+PROVIDER_STATUS_ERROR        = "error"
+PROVIDER_STATUS_INITIALIZING = "initializing"
 
 # ─────────────────────────────────────────────────────────────
 # REST endpoints
@@ -127,3 +129,14 @@ ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"
 ENDPOINT_MISTRAL = "https://api.mistral.ai/v1/chat/completions"
 ENDPOINT_PERPLEXITY = "https://api.perplexity.ai/chat/completions"
 ENDPOINT_OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
+
+
+# ─────────────────────────────────────────────────────────────
+# Sensor Keys
+# ─────────────────────────────────────────────────────────────
+SENSOR_KEY_SUGGESTIONS = "suggestions"
+SENSOR_KEY_STATUS = "status"
+SENSOR_KEY_INPUT_TOKENS = "input_tokens"
+SENSOR_KEY_OUTPUT_TOKENS = "output_tokens"
+SENSOR_KEY_MODEL = "model"
+SENSOR_KEY_LAST_ERROR = "last_error"

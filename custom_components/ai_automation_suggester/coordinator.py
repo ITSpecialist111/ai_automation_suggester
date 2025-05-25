@@ -7,6 +7,9 @@ from datetime import datetime
 import logging
 import random
 import re
+from pathlib import Path
+import yaml
+import anyio
 
 from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
@@ -110,6 +113,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.scan_all = False
         self.selected_domains: list[str] = []
         self.entity_limit = 200
+        self.automation_read_file = False  # Default automation reading mode
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
@@ -206,7 +210,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 self.previous_entities = current
                 return self.data
 
-            prompt = self._build_prompt(picked)
+            prompt = await self._build_prompt(picked)
             response = await self._dispatch(prompt)
 
             if response:
@@ -252,11 +256,12 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return self.data
 
     # ---------------------------------------------------------------------
-    # Prompt builder (unchanged)
+    # Prompt builder (updated)
     # ---------------------------------------------------------------------
-    def _build_prompt(self, entities: dict) -> str:  # noqa: C901
+    async def _build_prompt(self, entities: dict) -> str:  # noqa: C901
+        """Build the prompt based on entities and automations."""
         MAX_ATTR = 500
-        MAX_AUTOM = 100
+        MAX_AUTOM = 100 # Change this to user input?
 
         ent_sections: list[str] = []
         for eid, meta in random.sample(
@@ -312,13 +317,44 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             )
             ent_sections.append(block)
 
+        # Choose automation reading method
+        if self.automation_read_file:
+            autom_sections = self._read_automations_default(MAX_AUTOM, MAX_ATTR)
+            autom_codes = await self._read_automations_file_method(MAX_AUTOM, MAX_ATTR)
+
+            builded_prompt = (
+                f"{self.SYSTEM_PROMPT}\n\n"
+                f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
+                "Existing Automations Overview:\n"
+                f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
+                "Automations YAML Code (for analysis and improvement):\n"
+                f"{''.join(autom_codes) if autom_codes else 'No automations YAML code available.'}\n\n"
+                "Please analyze both the entities and existing automations. "
+                "Propose detailed improvements to existing automations and suggest new ones "
+                "that reference only the entity_ids shown above."
+            )
+        else:
+            autom_sections = self._read_automations_default(MAX_AUTOM, MAX_ATTR)
+
+            builded_prompt = (
+                f"{self.SYSTEM_PROMPT}\n\n"
+                f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
+                "Existing Automations:\n"
+                f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
+                "Please propose detailed automations and improvements that reference only the entity_ids above."
+            )
+
+        return builded_prompt
+
+    def _read_automations_default(self, max_autom: int, max_attr: int) -> list[str]:
+        """Default method for reading automations."""
         autom_sections: list[str] = []
-        for aid in self.hass.states.async_entity_ids("automation")[:MAX_AUTOM]:
+        for aid in self.hass.states.async_entity_ids("automation")[:max_autom]:
             st = self.hass.states.get(aid)
             if st:
                 attr = str(st.attributes)
-                if len(attr) > MAX_ATTR:
-                    attr = f"{attr[:MAX_ATTR]}...(truncated)"
+                if len(attr) > max_attr:
+                    attr = f"{attr[:max_attr]}...(truncated)"
                 autom_sections.append(
                     f"Entity: {aid}\n"
                     f"Friendly Name: {st.attributes.get('friendly_name', aid)}\n"
@@ -326,14 +362,51 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     f"Attributes: {attr}\n"
                     "---\n"
                 )
+        return autom_sections
 
-        return (
-            f"{self.SYSTEM_PROMPT}\n\n"
-            f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
-            "Existing Automations:\n"
-            f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
-            "Please propose detailed automations and improvements that reference only the entity_ids above."
-        )
+    async def _read_automations_file_method(self, max_autom: int, max_attr: int) -> list[str]:
+        """File method for reading automations."""
+        automations_file = Path(self.hass.config.path()) / "automations.yaml"
+        autom_codes: list[str] = []
+
+        try:
+            async with await anyio.open_file(
+                automations_file, "r", encoding="utf-8"
+            ) as file:
+                content = await file.read()
+                automations = yaml.safe_load(content)
+
+            for automation in automations[:max_autom]:
+                aid = automation.get("id", "unknown_id")
+                alias = automation.get("alias", "Unnamed Automation")
+                description = automation.get("description", "")
+                trigger = automation.get("trigger", []) + automation.get("triggers", [])
+                condition = automation.get("condition", []) + automation.get(
+                    "conditions", []
+                )
+                action = automation.get("action", []) + automation.get("actions", [])
+
+                # YAML
+                code_block = (
+                    f"Automation Code for automation.{aid}:\n"
+                    "```yaml\n"
+                    f"- id: '{aid}'\n"
+                    f"  alias: '{alias}'\n"
+                    f"  description: '{description}'\n"
+                    f"  trigger: {trigger}\n"
+                    f"  condition: {condition}\n"
+                    f"  action: {action}\n"
+                    "```\n"
+                    "---\n"
+                )
+                autom_codes.append(code_block)
+
+        except FileNotFoundError:
+            _LOGGER.error("The automations.yaml file was not found.")
+        except yaml.YAMLError as err:
+            _LOGGER.error("Error parsing automations.yaml: %s", err)
+
+        return autom_codes
 
     # ---------------------------------------------------------------------
     # Provider dispatcher
@@ -397,13 +470,30 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     )
                     _LOGGER.error(self._last_error)
                     return None
-                res = await resp.json()
-                return res["choices"][0]["message"]["content"]
-        except Exception as err:
-            self._last_error = str(err)
-            _LOGGER.error("OpenAI processing error: %s", err)
-            return None
 
+                res = await resp.json()
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+                
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+                
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+                
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(f"Message missing 'content': {res['choices'][0]['message']}")
+                
+            return res["choices"][0]["message"]["content"]
+        
+        except Exception as err:
+            self._last_error = f"OpenAI processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
+            return None
     # ---------------- Anthropic ------------------------------------------------
     async def _anthropic(self, prompt: str) -> str | None:
         try:
@@ -439,12 +529,28 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     )
                     _LOGGER.error(self._last_error)
                     return None
+
                 res = await resp.json()
-                return res["content"][0]["text"]
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "content" not in res:
+                raise ValueError(f"Response missing 'content' array: {res}")
+                
+            if not res["content"] or not isinstance(res["content"], list):
+                raise ValueError(f"Empty or invalid 'content' array: {res}")
+                
+            if "text" not in res["content"][0]:
+                raise ValueError(f"First choice missing 'text': {res['content'][0]}")
+                       
+            return res["content"][0]["text"]
+        
         except Exception as err:
-            self._last_error = str(err)
-            _LOGGER.error("Anthropic processing error: %s", err)
+            self._last_error = f"Anthropic processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
             return None
+                
 
     # ---------------- Google ---------------------------------------------------
     async def _google(self, prompt: str) -> str | None:
@@ -476,13 +582,38 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     )
                     _LOGGER.error(self._last_error)
                     return None
-                res = await resp.json()
-                return res["candidates"][0]["content"]["parts"][0]["text"]
-        except Exception as err:
-            self._last_error = str(err)
-            _LOGGER.error("Google processing error: %s", err)
-            return None
 
+                res = await resp.json()
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "candidates" not in res:
+                raise ValueError(f"Response missing 'candidates' array: {res}")
+                
+            if not res["candidates"] or not isinstance(res["candidates"], list):
+                raise ValueError(f"Empty or invalid 'candidates' array: {res}")
+                
+            if "content" not in res["candidates"][0]:
+                raise ValueError(f"First choice missing 'content': {res['candidates'][0]}")
+                
+            if "parts" not in res["candidates"][0]["content"]:
+                raise ValueError(f"content missing 'parts': {res['candidates'][0]['message']}")
+            
+            if not res["candidates"][0]["content"]["parts"] or not isinstance(res["candidates"][0]["content"]["parts"], list):
+                raise ValueError(f"Empty or invalid 'parts' array: {res['candidates'][0]['content']}")
+            
+            if "text" not in res["candidates"][0]["content"]["parts"][0]:
+                raise ValueError(f"parts missing 'text': {res['candidates'][0]['content']['parts']}")
+            
+                
+            return res["candidates"][0]["content"]["parts"][0]["text"]
+        
+        except Exception as err:
+            self._last_error = f"Google processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
+            return None
+                
     # ---------------- Groq -----------------------------------------------------
     async def _groq(self, prompt: str) -> str | None:
         try:
@@ -515,11 +646,29 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     self._last_error = f"Groq error {resp.status}: {await resp.text()}"
                     _LOGGER.error(self._last_error)
                     return None
+
                 res = await resp.json()
-                return res["choices"][0]["message"]["content"]
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+                
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+                
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+                
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(f"Message missing 'content': {res['choices'][0]['message']}")
+                
+            return res["choices"][0]["message"]["content"]
+        
         except Exception as err:
-            self._last_error = str(err)
-            _LOGGER.error("Groq processing error: %s", err)
+            self._last_error = f"Groq processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
             return None
 
     # ---------------- LocalAI --------------------------------------------------
@@ -552,11 +701,29 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     )
                     _LOGGER.error(self._last_error)
                     return None
+
                 res = await resp.json()
-                return res["choices"][0]["message"]["content"]
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+                
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+                
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+                
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(f"Message missing 'content': {res['choices'][0]['message']}")
+                
+            return res["choices"][0]["message"]["content"]
+        
         except Exception as err:
-            self._last_error = str(err)
-            _LOGGER.error("LocalAI processing error: %s", err)
+            self._last_error = f"LocalAI processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
             return None
 
     # ---------------- Ollama ---------------------------------------------------
@@ -592,23 +759,39 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     )
                     _LOGGER.error(self._last_error)
                     return None
-                res = await resp.json()
-                return res["message"]["content"]
 
-        except Exception as err:  # ← this whole block
-            self._last_error = str(err)  #   was missing
-            _LOGGER.error("Ollama processing error: %s", err)
+                res = await resp.json()
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "message" not in res:
+                raise ValueError(f"Response missing 'message' array: {res}")
+                
+            if "content" not in res["message"]:
+                raise ValueError(f"Message missing 'content': {res['message']}")
+                
+            return res["message"]["content"]
+        
+        except Exception as err:
+            self._last_error = f"Ollama processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
             return None
 
     # ---------------- Custom‑endpoint OpenAI -------------------------------
     async def _custom_openai(self, prompt: str) -> str | None:
         try:
-            endpoint = self._opt(CONF_CUSTOM_OPENAI_ENDPOINT)
-            api_key = self._opt(CONF_CUSTOM_OPENAI_API_KEY)
-            model = self._opt(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"])
-            in_budget, out_budget = self._budgets()
+            endpoint = self._opt(CONF_CUSTOM_OPENAI_ENDPOINT) + "/v1/chat/completions"
             if not endpoint:
                 raise ValueError("Custom OpenAI endpoint not configured")
+            
+            if not endpoint.endswith("/v1/chat/completions"):
+                endpoint = endpoint.rstrip("/") + "/v1/chat/completions"
+
+            api_key  = self._opt(CONF_CUSTOM_OPENAI_API_KEY)
+            model    = self._opt(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"])
+            in_budget, out_budget = self._budgets()
+
 
             if len(prompt) // 4 > in_budget:
                 prompt = prompt[: in_budget * 4]
@@ -630,11 +813,29 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     )
                     _LOGGER.error(self._last_error)
                     return None
+                
                 res = await resp.json()
-                return res["choices"][0]["message"]["content"]
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+                
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+                
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+                
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(f"Message missing 'content': {res['choices'][0]['message']}")
+                
+            return res["choices"][0]["message"]["content"]
+        
         except Exception as err:
-            self._last_error = str(err)
-            _LOGGER.error("Custom OpenAI processing error: %s", err)
+            self._last_error = f"Custom OpenAI processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
             return None
 
     # ---------------- Mistral ----------------------------------------------
@@ -669,10 +870,27 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
-                return res["choices"][0]["message"]["content"]
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+                
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+                
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+                
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(f"Message missing 'content': {res['choices'][0]['message']}")
+                
+            return res["choices"][0]["message"]["content"]
+        
         except Exception as err:
-            self._last_error = str(err)
-            _LOGGER.error("Mistral processing error: %s", err)
+            self._last_error = f"Mistral processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
             return None
 
     # ---------------- Perplexity -------------------------------------------
@@ -707,11 +925,29 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     )
                     _LOGGER.error(self._last_error)
                     return None
+
                 res = await resp.json()
-                return res["choices"][0]["message"]["content"]
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+                
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+                
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+                
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(f"Message missing 'content': {res['choices'][0]['message']}")
+                
+            return res["choices"][0]["message"]["content"]
+        
         except Exception as err:
-            self._last_error = str(err)
-            _LOGGER.error("Perplexity processing error: %s", err)
+            self._last_error = f"Perplexity processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
             return None
 
     # ---------------- OpenRouter -------------------------------------------
