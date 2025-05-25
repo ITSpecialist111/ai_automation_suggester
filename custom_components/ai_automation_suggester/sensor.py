@@ -43,7 +43,7 @@ from .const import (
     CONF_CUSTOM_OPENAI_MODEL,
     CONF_MISTRAL_MODEL,
     CONF_PERPLEXITY_MODEL,
-    # CONF_OPENROUTER_MODEL, # Uncomment when OpenRouter is supported
+    CONF_OPENROUTER_MODEL,
     DEFAULT_MODELS,
     # Sensor Keys from const.py
     SENSOR_KEY_SUGGESTIONS,
@@ -66,7 +66,7 @@ PROVIDER_TO_MODEL_KEY_MAP: dict[str, str] = {
     "Custom OpenAI": CONF_CUSTOM_OPENAI_MODEL,
     "Mistral AI": CONF_MISTRAL_MODEL,
     "Perplexity AI": CONF_PERPLEXITY_MODEL,
-    # "OpenRouter": CONF_OPENROUTER_MODEL, # Uncomment when OpenRouter is supported
+    "OpenRouter": CONF_OPENROUTER_MODEL,
 }
 
 SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
