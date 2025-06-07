@@ -64,6 +64,11 @@ from .const import (  # noqa: E501
     CONF_PERPLEXITY_API_KEY,
     CONF_PERPLEXITY_MODEL,
     ENDPOINT_PERPLEXITY,
+    CONF_OPENROUTER_API_KEY,
+    CONF_OPENROUTER_MODEL,
+    CONF_OPENROUTER_REASONING_MAX_TOKENS,
+    CONF_OPENROUTER_TEMPERATURE,
+    ENDPOINT_OPENROUTER,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -147,8 +152,12 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
     # ---------------------------------------------------------------------
     def _budgets(self) -> tuple[int, int]:
         """Return (input_budget, output_budget) respecting new + old fields."""
-        out_budget = self._opt(CONF_MAX_OUTPUT_TOKENS, self._opt(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS))
-        in_budget = self._opt(CONF_MAX_INPUT_TOKENS, self._opt(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS))
+        out_budget = self._opt(
+            CONF_MAX_OUTPUT_TOKENS, self._opt(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+        )
+        in_budget = self._opt(
+            CONF_MAX_INPUT_TOKENS, self._opt(CONF_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+        )
         return in_budget, out_budget
 
     # ---------------------------------------------------------------------
@@ -175,7 +184,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             # -------------------------------------------------- gather entities
             current: dict[str, dict] = {}
             for eid in self.hass.states.async_entity_ids():
-                if self.selected_domains and eid.split(".")[0] not in self.selected_domains:
+                if (
+                    self.selected_domains
+                    and eid.split(".")[0] not in self.selected_domains
+                ):
                     continue
                 st = self.hass.states.get(eid)
                 if st:
@@ -187,7 +199,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                         "friendly_name": st.attributes.get("friendly_name", eid),
                     }
 
-            picked = current if self.scan_all else {k: v for k, v in current.items() if k not in self.previous_entities}
+            picked = (
+                current
+                if self.scan_all
+                else {
+                    k: v for k, v in current.items() if k not in self.previous_entities
+                }
+            )
             if not picked:
                 self.previous_entities = current
                 return self.data
@@ -246,16 +264,28 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         MAX_AUTOM = 100 # Change this to user input?
 
         ent_sections: list[str] = []
-        for eid, meta in random.sample(list(entities.items()), min(len(entities), self.entity_limit)):
+        for eid, meta in random.sample(
+            list(entities.items()), min(len(entities), self.entity_limit)
+        ):
             domain = eid.split(".")[0]
             attr_str = str(meta["attributes"])
             if len(attr_str) > MAX_ATTR:
                 attr_str = f"{attr_str[:MAX_ATTR]}...(truncated)"
 
-            ent_entry = self.entity_registry.async_get(eid) if self.entity_registry else None
-            dev_entry = self.device_registry.async_get(ent_entry.device_id) if ent_entry and ent_entry.device_id else None
+            ent_entry = (
+                self.entity_registry.async_get(eid) if self.entity_registry else None
+            )
+            dev_entry = (
+                self.device_registry.async_get(ent_entry.device_id)
+                if ent_entry and ent_entry.device_id
+                else None
+            )
 
-            area_id = ent_entry.area_id if ent_entry and ent_entry.area_id else (dev_entry.area_id if dev_entry else None)
+            area_id = (
+                ent_entry.area_id
+                if ent_entry and ent_entry.area_id
+                else (dev_entry.area_id if dev_entry else None)
+            )
             area_name = "Unknown Area"
             if area_id and self.area_registry:
                 ar_entry = self.area_registry.async_get_area(area_id)
@@ -395,6 +425,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Custom OpenAI": self._custom_openai,
                 "Mistral AI": self._mistral,
                 "Perplexity AI": self._perplexity,
+                "OpenRouter": self._openrouter,
             }[provider](prompt)
         except KeyError:
             self._last_error = f"Unknown provider '{provider}'"
@@ -425,11 +456,18 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
             }
-            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
 
-            async with self.session.post(ENDPOINT_OPENAI, headers=headers, json=body) as resp:
+            async with self.session.post(
+                ENDPOINT_OPENAI, headers=headers, json=body
+            ) as resp:
                 if resp.status != 200:
-                    self._last_error = f"OpenAI error {resp.status}: {await resp.text()}"
+                    self._last_error = (
+                        f"OpenAI error {resp.status}: {await resp.text()}"
+                    )
                     _LOGGER.error(self._last_error)
                     return None
 
@@ -475,14 +513,20 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             }
             body = {
                 "model": model,
-                "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
+                "messages": [
+                    {"role": "user", "content": [{"type": "text", "text": prompt}]}
+                ],
                 "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
             }
 
-            async with self.session.post(ENDPOINT_ANTHROPIC, headers=headers, json=body) as resp:
+            async with self.session.post(
+                ENDPOINT_ANTHROPIC, headers=headers, json=body
+            ) as resp:
                 if resp.status != 200:
-                    self._last_error = f"Anthropic error {resp.status}: {await resp.text()}"
+                    self._last_error = (
+                        f"Anthropic error {resp.status}: {await resp.text()}"
+                    )
                     _LOGGER.error(self._last_error)
                     return None
 
@@ -533,7 +577,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             async with self.session.post(endpoint, json=body) as resp:
                 if resp.status != 200:
-                    self._last_error = f"Google error {resp.status}: {await resp.text()}"
+                    self._last_error = (
+                        f"Google error {resp.status}: {await resp.text()}"
+                    )
                     _LOGGER.error(self._last_error)
                     return None
 
@@ -582,13 +628,20 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             body = {
                 "model": model,
-                "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
+                "messages": [
+                    {"role": "user", "content": [{"type": "text", "text": prompt}]}
+                ],
                 "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
             }
-            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
 
-            async with self.session.post(ENDPOINT_GROQ, headers=headers, json=body) as resp:
+            async with self.session.post(
+                ENDPOINT_GROQ, headers=headers, json=body
+            ) as resp:
                 if resp.status != 200:
                     self._last_error = f"Groq error {resp.status}: {await resp.text()}"
                     _LOGGER.error(self._last_error)
@@ -643,7 +696,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             }
             async with self.session.post(endpoint, json=body) as resp:
                 if resp.status != 200:
-                    self._last_error = f"LocalAI error {resp.status}: {await resp.text()}"
+                    self._last_error = (
+                        f"LocalAI error {resp.status}: {await resp.text()}"
+                    )
                     _LOGGER.error(self._last_error)
                     return None
 
@@ -674,10 +729,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
     # ---------------- Ollama ---------------------------------------------------
     async def _ollama(self, prompt: str) -> str | None:
         try:
-            ip     = self._opt(CONF_OLLAMA_IP_ADDRESS)
-            port   = self._opt(CONF_OLLAMA_PORT)
-            https  = self._opt(CONF_OLLAMA_HTTPS, False)
-            model  = self._opt(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"])
+            ip = self._opt(CONF_OLLAMA_IP_ADDRESS)
+            port = self._opt(CONF_OLLAMA_PORT)
+            https = self._opt(CONF_OLLAMA_HTTPS, False)
+            model = self._opt(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"])
             in_budget, out_budget = self._budgets()
             if not ip or not port:
                 raise ValueError("Ollama not fully configured")
@@ -692,11 +747,16 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "stream": False,
-                "options": {"temperature": DEFAULT_TEMPERATURE, "num_predict": out_budget},
+                "options": {
+                    "temperature": DEFAULT_TEMPERATURE,
+                    "num_predict": out_budget,
+                },
             }
             async with self.session.post(endpoint, json=body) as resp:
                 if resp.status != 200:
-                    self._last_error = f"Ollama error {resp.status}: {await resp.text()}"
+                    self._last_error = (
+                        f"Ollama error {resp.status}: {await resp.text()}"
+                    )
                     _LOGGER.error(self._last_error)
                     return None
 
@@ -748,7 +808,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             }
             async with self.session.post(endpoint, headers=headers, json=body) as resp:
                 if resp.status != 200:
-                    self._last_error = f"Custom OpenAI error {resp.status}: {await resp.text()}"
+                    self._last_error = (
+                        f"Custom OpenAI error {resp.status}: {await resp.text()}"
+                    )
                     _LOGGER.error(self._last_error)
                     return None
                 
@@ -780,7 +842,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
     async def _mistral(self, prompt: str) -> str | None:
         try:
             api_key = self._opt(CONF_MISTRAL_API_KEY)
-            model   = self._opt(CONF_MISTRAL_MODEL, DEFAULT_MODELS["Mistral AI"])
+            model = self._opt(CONF_MISTRAL_MODEL, DEFAULT_MODELS["Mistral AI"])
             in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Mistral API key not configured")
@@ -788,16 +850,23 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             if len(prompt) // 4 > in_budget:
                 prompt = prompt[: in_budget * 4]
 
-            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
             body = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": DEFAULT_TEMPERATURE,
                 "max_tokens": out_budget,
             }
-            async with self.session.post(ENDPOINT_MISTRAL, headers=headers, json=body) as resp:
+            async with self.session.post(
+                ENDPOINT_MISTRAL, headers=headers, json=body
+            ) as resp:
                 if resp.status != 200:
-                    self._last_error = f"Mistral error {resp.status}: {await resp.text()}"
+                    self._last_error = (
+                        f"Mistral error {resp.status}: {await resp.text()}"
+                    )
                     _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
@@ -828,7 +897,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
     async def _perplexity(self, prompt: str) -> str | None:
         try:
             api_key = self._opt(CONF_PERPLEXITY_API_KEY)
-            model   = self._opt(CONF_PERPLEXITY_MODEL, DEFAULT_MODELS["Perplexity AI"])
+            model = self._opt(CONF_PERPLEXITY_MODEL, DEFAULT_MODELS["Perplexity AI"])
             in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Perplexity API key not configured")
@@ -847,9 +916,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
             }
-            async with self.session.post(ENDPOINT_PERPLEXITY, headers=headers, json=body) as resp:
+            async with self.session.post(
+                ENDPOINT_PERPLEXITY, headers=headers, json=body
+            ) as resp:
                 if resp.status != 200:
-                    self._last_error = f"Perplexity error {resp.status}: {await resp.text()}"
+                    self._last_error = (
+                        f"Perplexity error {resp.status}: {await resp.text()}"
+                    )
                     _LOGGER.error(self._last_error)
                     return None
 
@@ -874,5 +947,71 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         
         except Exception as err:
             self._last_error = f"Perplexity processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
+            return None
+
+    # ---------------- OpenRouter -------------------------------------------
+    async def _openrouter(self, prompt: str) -> str | None:
+        try:
+            api_key = self._opt(CONF_OPENROUTER_API_KEY)
+            model = self._opt(CONF_OPENROUTER_MODEL, DEFAULT_MODELS["OpenRouter"])
+            reasoning_max_tokens = self._opt(CONF_OPENROUTER_REASONING_MAX_TOKENS, 0)
+            in_budget, out_budget = self._budgets()
+
+            if not api_key:
+                raise ValueError("OpenRouter API key not configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
+
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
+            body = {
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": out_budget,
+                "temperature": self._opt(
+                    CONF_OPENROUTER_TEMPERATURE, DEFAULT_TEMPERATURE
+                ),
+            }
+
+            if reasoning_max_tokens > 0:
+                body["reasoning"] = {"max_tokens": reasoning_max_tokens}
+
+            async with self.session.post(
+                ENDPOINT_OPENROUTER, headers=headers, json=body
+            ) as resp:
+                if resp.status != 200:
+                    self._last_error = (
+                        f"OpenRouter error {resp.status}: {await resp.text()}"
+                    )
+                    _LOGGER.error(self._last_error)
+                    return None
+
+                res = await resp.json()
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(
+                    f"Message missing 'content': {res['choices'][0]['message']}"
+                )
+
+            return res["choices"][0]["message"]["content"]
+
+        except Exception as err:
+            self._last_error = f"OpenRouter processing error: {str(err)}"
             _LOGGER.error(self._last_error)
             return None

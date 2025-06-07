@@ -13,6 +13,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .const import (  # noqa: E501  (long import list)
     DOMAIN,
     CONF_PROVIDER,
+    DEFAULT_TEMPERATURE,
     # NEW token knobs
     CONF_MAX_INPUT_TOKENS,
     CONF_MAX_OUTPUT_TOKENS,
@@ -48,6 +49,10 @@ from .const import (  # noqa: E501  (long import list)
     CONF_PERPLEXITY_API_KEY,
     CONF_PERPLEXITY_MODEL,
     ENDPOINT_PERPLEXITY,
+    CONF_OPENROUTER_API_KEY,
+    CONF_OPENROUTER_MODEL,
+    CONF_OPENROUTER_REASONING_MAX_TOKENS,
+    CONF_OPENROUTER_TEMPERATURE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -138,6 +143,18 @@ class ProviderValidator:
         except Exception as err:
             return str(err)
 
+    async def validate_openrouter(self, api_key: str, model: str) -> Optional[str]:
+        hdr = {"content-type": "application/json"}
+        if api_key:
+            hdr["Authorization"] = f"Bearer {api_key}"
+        try:
+            resp = await self.session.get(
+                "https://openrouter.ai/api/v1/models", headers=hdr
+            )
+            return None if resp.status == 200 else await resp.text()
+        except Exception as err:
+            return str(err)
+
 
 # ─────────────────────────────────────────────────────────────
 # Config‑flow main class
@@ -172,6 +189,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "Custom OpenAI": self.async_step_custom_openai,
                     "Mistral AI": self.async_step_mistral,
                     "Perplexity AI": self.async_step_perplexity,
+                    "OpenRouter": self.async_step_openrouter,
                 }[self.provider]()
 
         return self.async_show_form(
@@ -189,6 +207,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "Custom OpenAI",
                             "Mistral AI",
                             "Perplexity AI",
+                            "OpenRouter",
                         ]
                     )
                 }
@@ -403,6 +422,36 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input,
         )
 
+    async def async_step_openrouter(self, user_input=None):
+        async def _v(ui):
+            return await self.validator.validate_openrouter(
+                ui[CONF_OPENROUTER_API_KEY],
+                ui.get(CONF_OPENROUTER_MODEL, DEFAULT_MODELS["OpenRouter"]),
+            )
+
+        schema = {
+            vol.Required(CONF_OPENROUTER_API_KEY): str,
+            vol.Optional(
+                CONF_OPENROUTER_MODEL, default=DEFAULT_MODELS["OpenRouter"]
+            ): str,
+            vol.Optional(CONF_OPENROUTER_REASONING_MAX_TOKENS, default=0): vol.All(
+                vol.Coerce(int), vol.Range(min=0)
+            ),
+            vol.Optional(
+                CONF_OPENROUTER_TEMPERATURE, default=DEFAULT_TEMPERATURE
+            ): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0)),
+        }
+        self._add_token_fields(schema)
+        return await self._provider_form(
+            "openrouter",
+            vol.Schema(schema),
+            _v,
+            "AI Automation Suggester (OpenRouter)",
+            {},
+            {},
+            user_input,
+        )
+        
     # ───────── Options flow (edit after setup) ─────────
     @staticmethod
     @callback
@@ -485,5 +534,40 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
         elif provider == "Perplexity AI":
             schema[vol.Optional(CONF_PERPLEXITY_API_KEY)] = str
             schema[vol.Optional(CONF_PERPLEXITY_MODEL, default=self.config_entry.data.get(CONF_PERPLEXITY_MODEL, DEFAULT_MODELS["Perplexity AI"]))] = str
+        elif provider == "OpenRouter":
+            schema[vol.Optional(CONF_OPENROUTER_API_KEY)] = str
+            schema[
+                vol.Optional(
+                    CONF_OPENROUTER_MODEL,
+                    default=self.config_entry.options.get(
+                        CONF_OPENROUTER_MODEL,
+                        self.config_entry.data.get(
+                            CONF_OPENROUTER_MODEL, DEFAULT_MODELS["OpenRouter"]
+                        ),
+                    ),
+                )
+            ] = str
+            schema[
+                vol.Optional(
+                    CONF_OPENROUTER_REASONING_MAX_TOKENS,
+                    default=self.config_entry.options.get(
+                        CONF_OPENROUTER_REASONING_MAX_TOKENS,
+                        self.config_entry.data.get(
+                            CONF_OPENROUTER_REASONING_MAX_TOKENS, 0
+                        ),
+                    ),
+                )
+            ] = vol.All(vol.Coerce(int), vol.Range(min=0))
+            schema[
+                vol.Optional(
+                    CONF_OPENROUTER_TEMPERATURE,
+                    default=self.config_entry.options.get(
+                        CONF_OPENROUTER_TEMPERATURE,
+                        self.config_entry.data.get(
+                            CONF_OPENROUTER_TEMPERATURE, DEFAULT_TEMPERATURE
+                        ),
+                    ),
+                )
+            ] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
 
         return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))
