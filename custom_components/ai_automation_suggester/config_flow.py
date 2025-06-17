@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import TextSelector, TextSelectorConfig
 
 from .const import (  # noqa: E501  (long import list)
     DOMAIN,
@@ -493,114 +494,76 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry):
         self.config_entry = config_entry
 
+    def _get_option(self, key, default=None):
+        """Get value from options, then data, then default."""
+        if key in self.config_entry.options:
+            return self.config_entry.options.get(key)
+        if key in self.config_entry.data:
+            return self.config_entry.data.get(key)
+        return default
+
     async def async_step_init(self, user_input=None):
         if user_input:
             new_data = {
                 **self.config_entry.options,
-                **user_input,  
+                **user_input,
                 CONF_MAX_INPUT_TOKENS: user_input.get(
-                    CONF_MAX_INPUT_TOKENS, 
-                    self.config_entry.options.get(
-                        CONF_MAX_INPUT_TOKENS,
-                        self.config_entry.data.get(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)
-                    )
+                    CONF_MAX_INPUT_TOKENS,
+                    self._get_option(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)
                 ),
                 CONF_MAX_OUTPUT_TOKENS: user_input.get(
                     CONF_MAX_OUTPUT_TOKENS,
-                    self.config_entry.options.get(
-                        CONF_MAX_OUTPUT_TOKENS,
-                        self.config_entry.data.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
-                    )
+                    self._get_option(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
                 ),
             }
             return self.async_create_entry(title="", data=new_data)
 
         provider = self.config_entry.data.get(CONF_PROVIDER)
         schema: Dict[Any, Any] = {
-            vol.Optional(
-                CONF_MAX_INPUT_TOKENS,
-                default=self.config_entry.options.get(
-                    CONF_MAX_INPUT_TOKENS,
-                    self.config_entry.data.get(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)
-                )
+            vol.Optional(CONF_MAX_INPUT_TOKENS, default=self._get_option(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)
             ): vol.All(vol.Coerce(int), vol.Range(min=100)),
-            vol.Optional(
-                CONF_MAX_OUTPUT_TOKENS,
-                default=self.config_entry.options.get(
-                    CONF_MAX_OUTPUT_TOKENS, 
-                    self.config_entry.data.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
-                )
+            vol.Optional(CONF_MAX_OUTPUT_TOKENS, default=self._get_option(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
             ): vol.All(vol.Coerce(int), vol.Range(min=100)),
         }
 
-        # provider‑specific editable fields (unchanged from previous version, but legacy tokens removed)
+        # provider‑specific editable fields
         if provider == "OpenAI":
-            schema[vol.Optional(CONF_OPENAI_API_KEY)] = str
-            schema[vol.Optional(CONF_OPENAI_MODEL, default=self.config_entry.data.get(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"]))] = str
+            schema[vol.Optional(CONF_OPENAI_API_KEY, default=self._get_option(CONF_OPENAI_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_OPENAI_MODEL, default=self._get_option(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"]))] = str
         elif provider == "Anthropic":
-            schema[vol.Optional(CONF_ANTHROPIC_API_KEY)] = str
-            schema[vol.Optional(CONF_ANTHROPIC_MODEL, default=self.config_entry.data.get(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"]))] = str
+            schema[vol.Optional(CONF_ANTHROPIC_API_KEY, default=self._get_option(CONF_ANTHROPIC_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_ANTHROPIC_MODEL, default=self._get_option(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"]))] = str
         elif provider == "Google":
-            schema[vol.Optional(CONF_GOOGLE_API_KEY)] = str
-            schema[vol.Optional(CONF_GOOGLE_MODEL, default=self.config_entry.data.get(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"]))] = str
+            schema[vol.Optional(CONF_GOOGLE_API_KEY, default=self._get_option(CONF_GOOGLE_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_GOOGLE_MODEL, default=self._get_option(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"]))] = str
         elif provider == "Groq":
-            schema[vol.Optional(CONF_GROQ_API_KEY)] = str
-            schema[vol.Optional(CONF_GROQ_MODEL, default=self.config_entry.data.get(CONF_GROQ_MODEL, DEFAULT_MODELS["Groq"]))] = str
+            schema[vol.Optional(CONF_GROQ_API_KEY, default=self._get_option(CONF_GROQ_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_GROQ_MODEL, default=self._get_option(CONF_GROQ_MODEL, DEFAULT_MODELS["Groq"]))] = str
         elif provider == "LocalAI":
-            schema[vol.Optional(CONF_LOCALAI_HTTPS)] = bool
-            schema[vol.Optional(CONF_LOCALAI_MODEL, default=self.config_entry.data.get(CONF_LOCALAI_MODEL, DEFAULT_MODELS["LocalAI"]))] = str
+            schema[vol.Optional(CONF_LOCALAI_HTTPS, default=self._get_option(CONF_LOCALAI_HTTPS, False))] = bool
+            schema[vol.Optional(CONF_LOCALAI_MODEL, default=self._get_option(CONF_LOCALAI_MODEL, DEFAULT_MODELS["LocalAI"]))] = str
         elif provider == "Ollama":
-            schema[vol.Optional(CONF_OLLAMA_HTTPS)] = bool
-            schema[vol.Optional(CONF_OLLAMA_MODEL, default=self.config_entry.data.get(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"]))] = str
+            schema[vol.Optional(CONF_OLLAMA_HTTPS, default=self._get_option(CONF_OLLAMA_HTTPS, False))] = bool
+            schema[vol.Optional(CONF_OLLAMA_MODEL, default=self._get_option(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"]))] = str
         elif provider == "Custom OpenAI":
-            schema[vol.Optional(CONF_CUSTOM_OPENAI_ENDPOINT)] = str
-            schema[vol.Optional(CONF_CUSTOM_OPENAI_API_KEY)] = str
-            schema[vol.Optional(CONF_CUSTOM_OPENAI_MODEL, default=self.config_entry.data.get(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"]))] = str
+            schema[vol.Optional(CONF_CUSTOM_OPENAI_ENDPOINT, default=self._get_option(CONF_CUSTOM_OPENAI_ENDPOINT))] = str
+            schema[vol.Optional(CONF_CUSTOM_OPENAI_API_KEY, default=self._get_option(CONF_CUSTOM_OPENAI_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_CUSTOM_OPENAI_MODEL, default=self._get_option(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"]))] = str
         elif provider == "Mistral AI":
-            schema[vol.Optional(CONF_MISTRAL_API_KEY)] = str
-            schema[vol.Optional(CONF_MISTRAL_MODEL, default=self.config_entry.data.get(CONF_MISTRAL_MODEL, DEFAULT_MODELS["Mistral AI"]))] = str
+            schema[vol.Optional(CONF_MISTRAL_API_KEY, default=self._get_option(CONF_MISTRAL_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_MISTRAL_MODEL, default=self._get_option(CONF_MISTRAL_MODEL, DEFAULT_MODELS["Mistral AI"]))] = str
         elif provider == "Perplexity AI":
-            schema[vol.Optional(CONF_PERPLEXITY_API_KEY)] = str
-            schema[vol.Optional(CONF_PERPLEXITY_MODEL, default=self.config_entry.data.get(CONF_PERPLEXITY_MODEL, DEFAULT_MODELS["Perplexity AI"]))] = str
+            schema[vol.Optional(CONF_PERPLEXITY_API_KEY, default=self._get_option(CONF_PERPLEXITY_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_PERPLEXITY_MODEL, default=self._get_option(CONF_PERPLEXITY_MODEL, DEFAULT_MODELS["Perplexity AI"]))] = str
         elif provider == "OpenRouter":
-            schema[vol.Optional(CONF_OPENROUTER_API_KEY)] = str
-            schema[
-                vol.Optional(
-                    CONF_OPENROUTER_MODEL,
-                    default=self.config_entry.options.get(
-                        CONF_OPENROUTER_MODEL,
-                        self.config_entry.data.get(
-                            CONF_OPENROUTER_MODEL, DEFAULT_MODELS["OpenRouter"]
-                        ),
-                    ),
-                )
-            ] = str
-            schema[
-                vol.Optional(
-                    CONF_OPENROUTER_REASONING_MAX_TOKENS,
-                    default=self.config_entry.options.get(
-                        CONF_OPENROUTER_REASONING_MAX_TOKENS,
-                        self.config_entry.data.get(
-                            CONF_OPENROUTER_REASONING_MAX_TOKENS, 0
-                        ),
-                    ),
-                )
-            ] = vol.All(vol.Coerce(int), vol.Range(min=0))
-            schema[
-                vol.Optional(
-                    CONF_OPENROUTER_TEMPERATURE,
-                    default=self.config_entry.options.get(
-                        CONF_OPENROUTER_TEMPERATURE,
-                        self.config_entry.data.get(
-                            CONF_OPENROUTER_TEMPERATURE, DEFAULT_TEMPERATURE
-                        ),
-                    ),
-                )
-            ] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+            schema[vol.Optional(CONF_OPENROUTER_API_KEY, default=self._get_option(CONF_OPENROUTER_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_OPENROUTER_MODEL, default=self._get_option(CONF_OPENROUTER_MODEL, DEFAULT_MODELS["OpenRouter"]))] = str
+            schema[vol.Optional(CONF_OPENROUTER_REASONING_MAX_TOKENS, default=self._get_option(CONF_OPENROUTER_REASONING_MAX_TOKENS, 0))] = vol.All(vol.Coerce(int), vol.Range(min=0))
+            schema[vol.Optional(CONF_OPENROUTER_TEMPERATURE, default=self._get_option(CONF_OPENROUTER_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
         elif provider == "OpenAI Azure":
-            schema[vol.Optional(CONF_OPENAI_AZURE_API_KEY)] = str
-            schema[vol.Optional(CONF_OPENAI_AZURE_ENDPOINT)] = str
-            schema[vol.Optional(CONF_OPENAI_AZURE_DEPLOYMENT_ID, default=self.config_entry.data.get(CONF_OPENAI_AZURE_DEPLOYMENT_ID, DEFAULT_MODELS["OpenAI Azure"]))] = str
-            schema[vol.Optional(CONF_OPENAI_AZURE_API_VERSION, default=self.config_entry.data.get(CONF_OPENAI_AZURE_API_VERSION, "2025-01-01-preview"))] = str
+            schema[vol.Optional(CONF_OPENAI_AZURE_API_KEY, default=self._get_option(CONF_OPENAI_AZURE_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_OPENAI_AZURE_ENDPOINT, default=self._get_option(CONF_OPENAI_AZURE_ENDPOINT))] = str
+            schema[vol.Optional(CONF_OPENAI_AZURE_DEPLOYMENT_ID, default=self._get_option(CONF_OPENAI_AZURE_DEPLOYMENT_ID, DEFAULT_MODELS["OpenAI Azure"]))] = str
+            schema[vol.Optional(CONF_OPENAI_AZURE_API_VERSION, default=self._get_option(CONF_OPENAI_AZURE_API_VERSION, "2025-01-01-preview"))] = str
 
         return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))
