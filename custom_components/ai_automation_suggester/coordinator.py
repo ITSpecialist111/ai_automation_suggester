@@ -238,7 +238,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 persistent_notification.async_create(
                     self.hass,
                     message=response,
-                    title="AI Automation Suggestions",
+                    title="AI Automation Suggestions (%s)" % self._opt(CONF_PROVIDER, "unknown"),
                     notification_id=f"ai_automation_suggestions_{now.timestamp()}",
                 )
 
