@@ -5,11 +5,13 @@ from __future__ import annotations
 
 from datetime import datetime
 import logging
+from pathlib import Path
 import random
 import re
-from pathlib import Path
-import yaml
+
+import aiohttp
 import anyio
+import yaml
 
 from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
@@ -72,6 +74,7 @@ from .const import (  # noqa: E501
     CONF_OPENAI_AZURE_API_KEY,
     CONF_OPENAI_AZURE_DEPLOYMENT_ID,
     CONF_OPENAI_AZURE_API_VERSION,
+    CONF_OPENAI_AZURE_ENDPOINT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -509,8 +512,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             api_version = self._opt(CONF_OPENAI_AZURE_API_VERSION, "2025-01-01-preview")
             in_budget, out_budget = self._budgets()
 
-            if not endpoint_base or not deployment or not api_key or not model:
-                raise ValueError("OpenAI Azure endpoint, deployment, model, or API key not configured")
+            if not endpoint_base or not deployment_id or not api_version or not api_key:
+                raise ValueError("OpenAI Azure endpoint, deployment, api version or API key not configured")
 
             if len(prompt) // 4 > in_budget:
                 prompt = prompt[: in_budget * 4]
@@ -522,7 +525,6 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Content-Type": "application/json",
             }
             body = {
-                "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": out_budget,
                 "temperature": DEFAULT_TEMPERATURE,
