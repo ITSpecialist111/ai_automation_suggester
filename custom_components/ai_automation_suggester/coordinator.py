@@ -37,34 +37,43 @@ from .const import (  # noqa: E501
     # Provider‑specific keys + endpoints
     CONF_OPENAI_API_KEY,
     CONF_OPENAI_MODEL,
+    CONF_OPENAI_TEMPERATURE,
     ENDPOINT_OPENAI,
     CONF_ANTHROPIC_API_KEY,
     CONF_ANTHROPIC_MODEL,
     VERSION_ANTHROPIC,
     ENDPOINT_ANTHROPIC,
+    CONF_ANTHROPIC_TEMPERATURE,
     CONF_GOOGLE_API_KEY,
     CONF_GOOGLE_MODEL,
+    CONF_GOOGLE_TEMPERATURE,
     CONF_GROQ_API_KEY,
     CONF_GROQ_MODEL,
+    CONF_GROQ_TEMPERATURE,
     ENDPOINT_GROQ,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_LOCALAI_HTTPS,
     CONF_LOCALAI_MODEL,
+    CONF_LOCALAI_TEMPERATURE,
     ENDPOINT_LOCALAI,
     CONF_OLLAMA_IP_ADDRESS,
     CONF_OLLAMA_PORT,
     CONF_OLLAMA_HTTPS,
     CONF_OLLAMA_MODEL,
+    CONF_OLLAMA_TEMPERATURE,
     ENDPOINT_OLLAMA,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_MODEL,
+    CONF_CUSTOM_OPENAI_TEMPERATURE,
     CONF_MISTRAL_API_KEY,
     CONF_MISTRAL_MODEL,
+    CONF_MISTRAL_TEMPERATURE,
     ENDPOINT_MISTRAL,
     CONF_PERPLEXITY_API_KEY,
     CONF_PERPLEXITY_MODEL,
+    CONF_PERPLEXITY_TEMPERATURE,
     ENDPOINT_PERPLEXITY,
     CONF_OPENROUTER_API_KEY,
     CONF_OPENROUTER_MODEL,
@@ -75,6 +84,7 @@ from .const import (  # noqa: E501
     CONF_OPENAI_AZURE_DEPLOYMENT_ID,
     CONF_OPENAI_AZURE_API_VERSION,
     CONF_OPENAI_AZURE_ENDPOINT,
+    CONF_OPENAI_AZURE_TEMPERATURE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -450,6 +460,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self._opt(CONF_OPENAI_API_KEY)
             model = self._opt(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"])
+            temperature = self._opt(CONF_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("OpenAI API key not configured")
@@ -461,7 +472,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
             headers = {
                 "Authorization": f"Bearer {api_key}",
@@ -511,6 +522,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             deployment_id = self._opt(CONF_OPENAI_AZURE_DEPLOYMENT_ID)
             api_version = self._opt(CONF_OPENAI_AZURE_API_VERSION, "2025-01-01-preview")
             in_budget, out_budget = self._budgets()
+            temperature = self._opt(CONF_OPENAI_AZURE_TEMPERATURE, DEFAULT_TEMPERATURE)
 
             if not endpoint_base or not deployment_id or not api_version or not api_key:
                 raise ValueError("OpenAI Azure endpoint, deployment, api version or API key not configured")
@@ -527,7 +539,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             body = {
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
 
             async with self.session.post(endpoint, headers=headers, json=body) as resp:
@@ -568,6 +580,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             api_key = self._opt(CONF_ANTHROPIC_API_KEY)
             model = self._opt(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"])
             in_budget, out_budget = self._budgets()
+            temperature = self._opt(CONF_ANTHROPIC_TEMPERATURE, DEFAULT_TEMPERATURE)
             if not api_key:
                 raise ValueError("Anthropic API key not configured")
 
@@ -585,7 +598,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     {"role": "user", "content": [{"type": "text", "text": prompt}]}
                 ],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
 
             async with self.session.post(
@@ -626,6 +639,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             api_key = self._opt(CONF_GOOGLE_API_KEY)
             model = self._opt(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"])
             in_budget, out_budget = self._budgets()
+            temperature = self._opt(CONF_GOOGLE_TEMPERATURE, DEFAULT_TEMPERATURE)
             if not api_key:
                 raise ValueError("Google API key not configured")
 
@@ -635,7 +649,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             body = {
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {
-                    "temperature": DEFAULT_TEMPERATURE,
+                    "temperature": temperature,
                     "maxOutputTokens": out_budget,
                     "topK": 40,
                     "topP": 0.95,
@@ -690,6 +704,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self._opt(CONF_GROQ_API_KEY)
             model = self._opt(CONF_GROQ_MODEL, DEFAULT_MODELS["Groq"])
+            temperature = self._opt(CONF_GROQ_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Groq API key not configured")
@@ -703,7 +718,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     {"role": "user", "content": [{"type": "text", "text": prompt}]}
                 ],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
             headers = {
                 "Authorization": f"Bearer {api_key}",
@@ -749,6 +764,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             port = self._opt(CONF_LOCALAI_PORT)
             https = self._opt(CONF_LOCALAI_HTTPS, False)
             model = self._opt(CONF_LOCALAI_MODEL, DEFAULT_MODELS["LocalAI"])
+            temperature = self._opt(CONF_LOCALAI_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not ip or not port:
                 raise ValueError("LocalAI not fully configured")
@@ -763,7 +779,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
             async with self.session.post(endpoint, json=body) as resp:
                 if resp.status != 200:
@@ -804,6 +820,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             port = self._opt(CONF_OLLAMA_PORT)
             https = self._opt(CONF_OLLAMA_HTTPS, False)
             model = self._opt(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"])
+            temperature = self._opt(CONF_OLLAMA_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not ip or not port:
                 raise ValueError("Ollama not fully configured")
@@ -819,7 +836,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "messages": [{"role": "user", "content": prompt}],
                 "stream": False,
                 "options": {
-                    "temperature": DEFAULT_TEMPERATURE,
+                    "temperature": temperature,
                     "num_predict": out_budget,
                 },
             }
@@ -861,6 +878,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             api_key  = self._opt(CONF_CUSTOM_OPENAI_API_KEY)
             model    = self._opt(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"])
+            temperature = self._opt(CONF_CUSTOM_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
 
 
@@ -875,7 +893,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
             async with self.session.post(endpoint, headers=headers, json=body) as resp:
                 if resp.status != 200:
@@ -914,6 +932,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self._opt(CONF_MISTRAL_API_KEY)
             model = self._opt(CONF_MISTRAL_MODEL, DEFAULT_MODELS["Mistral AI"])
+            temperature = self._opt(CONF_MISTRAL_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Mistral API key not configured")
@@ -928,7 +947,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             body = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
                 "max_tokens": out_budget,
             }
             async with self.session.post(
@@ -969,6 +988,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self._opt(CONF_PERPLEXITY_API_KEY)
             model = self._opt(CONF_PERPLEXITY_MODEL, DEFAULT_MODELS["Perplexity AI"])
+            temperature = self._opt(CONF_PERPLEXITY_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Perplexity API key not configured")
@@ -985,7 +1005,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
             async with self.session.post(
                 ENDPOINT_PERPLEXITY, headers=headers, json=body
