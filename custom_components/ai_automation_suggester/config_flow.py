@@ -48,6 +48,7 @@ from .const import (  # noqa: E501  (long import list)
     CONF_OLLAMA_HTTPS,
     CONF_OLLAMA_MODEL,
     CONF_OLLAMA_TEMPERATURE,
+    CONF_OLLAMA_DISABLE_THINK,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_MODEL,
@@ -385,6 +386,8 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional(CONF_OLLAMA_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(
                 vol.Coerce(float), vol.Range(min=0.0, max=2.0)
             ),
+            vol.Optional(CONF_OLLAMA_DISABLE_THINK, default=False): bool,
+   
         }
         self._add_token_fields(schema)
         return await self._provider_form(
@@ -583,6 +586,8 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_OLLAMA_HTTPS, default=self._get_option(CONF_OLLAMA_HTTPS, False))] = bool
             schema[vol.Optional(CONF_OLLAMA_MODEL, default=self._get_option(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"]))] = str
             schema[vol.Optional(CONF_OLLAMA_TEMPERATURE, default=self._get_option(CONF_OLLAMA_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+            schema[vol.Optional(CONF_OLLAMA_DISABLE_THINK, default=self._get_option(CONF_OLLAMA_DISABLE_THINK, False))] = bool
+       
         elif provider == "Custom OpenAI":
             schema[vol.Optional(CONF_CUSTOM_OPENAI_ENDPOINT, default=self._get_option(CONF_CUSTOM_OPENAI_ENDPOINT))] = str
             schema[vol.Optional(CONF_CUSTOM_OPENAI_API_KEY, default=self._get_option(CONF_CUSTOM_OPENAI_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))

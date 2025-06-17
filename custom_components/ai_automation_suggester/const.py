@@ -73,6 +73,7 @@ CONF_OLLAMA_PORT = "ollama_port"
 CONF_OLLAMA_HTTPS = "ollama_https"
 CONF_OLLAMA_MODEL = "ollama_model"
 CONF_OLLAMA_TEMPERATURE = "ollama_temperature"
+CONF_OLLAMA_DISABLE_THINK = "ollama_disable_think"
 
 # Custom OpenAI
 CONF_CUSTOM_OPENAI_ENDPOINT = "custom_openai_endpoint"

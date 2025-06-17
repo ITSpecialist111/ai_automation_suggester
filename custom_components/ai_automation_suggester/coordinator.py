@@ -62,6 +62,7 @@ from .const import (  # noqa: E501
     CONF_OLLAMA_HTTPS,
     CONF_OLLAMA_MODEL,
     CONF_OLLAMA_TEMPERATURE,
+    CONF_OLLAMA_DISABLE_THINK,
     ENDPOINT_OLLAMA,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
@@ -831,6 +832,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             https = self._opt(CONF_OLLAMA_HTTPS, False)
             model = self._opt(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"])
             temperature = self._opt(CONF_OLLAMA_TEMPERATURE, DEFAULT_TEMPERATURE)
+            disable_think = self._opt(CONF_OLLAMA_DISABLE_THINK, False)
             in_budget, out_budget = self._budgets()
             if not ip or not port:
                 raise ValueError("Ollama not fully configured")
@@ -841,9 +843,14 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             proto = "https" if https else "http"
             endpoint = ENDPOINT_OLLAMA.format(protocol=proto, ip_address=ip, port=port)
 
+            messages = []
+            if disable_think:
+                messages.append({"role": "system", "content": "/no_think"})
+            messages.append({"role": "user", "content": prompt})
+
             body = {
                 "model": model,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": messages,
                 "stream": False,
                 "options": {
                     "temperature": temperature,
