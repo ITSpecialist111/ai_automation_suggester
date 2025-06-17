@@ -53,6 +53,10 @@ from .const import (  # noqa: E501  (long import list)
     CONF_OPENROUTER_MODEL,
     CONF_OPENROUTER_REASONING_MAX_TOKENS,
     CONF_OPENROUTER_TEMPERATURE,
+    CONF_OPENAI_AZURE_API_KEY,
+    CONF_OPENAI_AZURE_DEPLOYMENT_ID,
+    CONF_OPENAI_AZURE_API_VERSION,
+    CONF_OPENAI_AZURE_ENDPOINT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -190,6 +194,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "Mistral AI": self.async_step_mistral,
                     "Perplexity AI": self.async_step_perplexity,
                     "OpenRouter": self.async_step_openrouter,
+                    "OpenAI Azure": self.async_step_openai_azure,
                 }[self.provider]()
 
         return self.async_show_form(
@@ -208,6 +213,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "Mistral AI",
                             "Perplexity AI",
                             "OpenRouter",
+                            "OpenAI Azure",
                         ]
                     )
                 }
@@ -451,7 +457,29 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {},
             user_input,
         )
-        
+
+    async def async_step_openai_azure(self, user_input=None):
+        async def _v(ui):
+            if not ui.get(CONF_OPENAI_AZURE_API_KEY) or not ui.get(CONF_OPENAI_AZURE_DEPLOYMENT_ID) or not ui.get(CONF_OPENAI_AZURE_API_VERSION):
+                return "All fields are required"
+            return None
+
+        schema = {
+            vol.Required(CONF_OPENAI_AZURE_API_KEY): str,
+            vol.Optional(CONF_OPENAI_AZURE_DEPLOYMENT_ID, default=DEFAULT_MODELS["OpenAI Azure"]): str,
+            vol.Optional(CONF_OPENAI_AZURE_API_VERSION, default="2025-01-01-preview"): str,
+        }
+        self._add_token_fields(schema)
+        return await self._provider_form(
+            "openai_azure",
+            vol.Schema(schema),
+            _v,
+            "AI Automation Suggester (OpenAI Azure)",
+            {},
+            {},
+            user_input,
+        )
+
     # ───────── Options flow (edit after setup) ─────────
     @staticmethod
     @callback
@@ -569,5 +597,10 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
                     ),
                 )
             ] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+        elif provider == "OpenAI Azure":
+            schema[vol.Optional(CONF_OPENAI_AZURE_API_KEY)] = str
+            schema[vol.Optional(CONF_OPENAI_AZURE_ENDPOINT)] = str
+            schema[vol.Optional(CONF_OPENAI_AZURE_DEPLOYMENT_ID, default=self.config_entry.data.get(CONF_OPENAI_AZURE_DEPLOYMENT_ID, DEFAULT_MODELS["OpenAI Azure"]))] = str
+            schema[vol.Optional(CONF_OPENAI_AZURE_API_VERSION, default=self.config_entry.data.get(CONF_OPENAI_AZURE_API_VERSION, "2025-01-01-preview"))] = str
 
         return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))

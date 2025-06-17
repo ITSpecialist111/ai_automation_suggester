@@ -69,6 +69,9 @@ from .const import (  # noqa: E501
     CONF_OPENROUTER_REASONING_MAX_TOKENS,
     CONF_OPENROUTER_TEMPERATURE,
     ENDPOINT_OPENROUTER,
+    CONF_OPENAI_AZURE_API_KEY,
+    CONF_OPENAI_AZURE_DEPLOYMENT_ID,
+    CONF_OPENAI_AZURE_API_VERSION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -426,6 +429,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Mistral AI": self._mistral,
                 "Perplexity AI": self._perplexity,
                 "OpenRouter": self._openrouter,
+                "OpenAI Azure": self._openai_azure,
             }[provider](prompt)
         except KeyError:
             self._last_error = f"Unknown provider '{provider}'"
@@ -494,6 +498,68 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             self._last_error = f"OpenAI processing error: {str(err)}"
             _LOGGER.error(self._last_error)
             return None
+
+    # ---------------- OpenAI Azure ---------------------------------------------------
+    async def _openai_azure(self, prompt: str) -> str | None:
+        """Send prompt to OpenAI Azure endpoint."""
+        try:
+            endpoint_base = self._opt(CONF_OPENAI_AZURE_ENDPOINT)
+            api_key = self._opt(CONF_OPENAI_AZURE_API_KEY)
+            deployment_id = self._opt(CONF_OPENAI_AZURE_DEPLOYMENT_ID)
+            api_version = self._opt(CONF_OPENAI_AZURE_API_VERSION, "2025-01-01-preview")
+            in_budget, out_budget = self._budgets()
+
+            if not endpoint_base or not deployment or not api_key or not model:
+                raise ValueError("OpenAI Azure endpoint, deployment, model, or API key not configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
+
+            endpoint = f"https://{endpoint_base}/openai/deployments/{deployment_id}/chat/completions?api-version={api_version}"
+
+            headers = {
+                "api-key": api_key,
+                "Content-Type": "application/json",
+            }
+            body = {
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": out_budget,
+                "temperature": DEFAULT_TEMPERATURE,
+            }
+
+            async with self.session.post(endpoint, headers=headers, json=body) as resp:
+                if resp.status != 200:
+                    self._last_error = (
+                        f"OpenAI Azure error {resp.status}: {await resp.text()}"
+                    )
+                    _LOGGER.error(self._last_error)
+                    return None
+
+                res = await resp.json()
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(f"Message missing 'content': {res['choices'][0]['message']}")
+
+            return res["choices"][0]["message"]["content"]
+
+        except Exception as err:
+            self._last_error = f"OpenAI Azure processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
+            return None
+
     # ---------------- Anthropic ------------------------------------------------
     async def _anthropic(self, prompt: str) -> str | None:
         try:
@@ -574,8 +640,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 },
             }
             endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            timeout = aiohttp.ClientTimeout(total=900)
 
-            async with self.session.post(endpoint, json=body) as resp:
+            async with self.session.post(endpoint, json=body, timeout=timeout) as resp:
                 if resp.status != 200:
                     self._last_error = (
                         f"Google error {resp.status}: {await resp.text()}"
@@ -612,6 +679,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Google processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Google API call:")
             return None
                 
     # ---------------- Groq -----------------------------------------------------

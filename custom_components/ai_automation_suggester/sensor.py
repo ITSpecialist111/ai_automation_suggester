@@ -44,6 +44,7 @@ from .const import (
     CONF_MISTRAL_MODEL,
     CONF_PERPLEXITY_MODEL,
     CONF_OPENROUTER_MODEL,
+    CONF_OPENAI_AZURE_DEPLOYMENT_ID,
     DEFAULT_MODELS,
     # Sensor Keys from const.py
     SENSOR_KEY_SUGGESTIONS,
@@ -67,6 +68,7 @@ PROVIDER_TO_MODEL_KEY_MAP: dict[str, str] = {
     "Mistral AI": CONF_MISTRAL_MODEL,
     "Perplexity AI": CONF_PERPLEXITY_MODEL,
     "OpenRouter": CONF_OPENROUTER_MODEL,
+    "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,  
 }
 
 SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (

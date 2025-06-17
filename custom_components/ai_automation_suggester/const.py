@@ -36,6 +36,12 @@ CONF_PROVIDER = "provider"
 CONF_OPENAI_API_KEY = "openai_api_key"
 CONF_OPENAI_MODEL = "openai_model"
 
+# OpenAI Azure
+CONF_OPENAI_AZURE_API_KEY = "openai_azure_api_key"
+CONF_OPENAI_AZURE_DEPLOYMENT_ID = "openai_azure_model"
+CONF_OPENAI_AZURE_API_VERSION = "openai_azure_api_version"
+CONF_OPENAI_AZURE_ENDPOINT = "openai_azure_endpoint"
+
 # Anthropic
 CONF_ANTHROPIC_API_KEY = "anthropic_api_key"
 CONF_ANTHROPIC_MODEL = "anthropic_model"
@@ -91,6 +97,7 @@ CONF_OPENROUTER_TEMPERATURE = "openrouter_temperature"
 # ─────────────────────────────────────────────────────────────
 DEFAULT_MODELS = {
     "OpenAI": "gpt-4o-mini",
+    "OpenAI Azure": "gpt-4o-mini",
     "Anthropic": "claude-3-7-sonnet-latest",
     "Google": "gemini-2.0-flash",
     "Groq": "llama3-8b-8192",
@@ -121,6 +128,7 @@ PROVIDER_STATUS_INITIALIZING = "initializing"
 # REST endpoints
 # ─────────────────────────────────────────────────────────────
 ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"
+ENDPOINT_OPENAI_AZURE = "https://{endpoint}/openai/deployments/{deployment-id}/chat/completions?api-version={api_version}"
 ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages"
 ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta2/models/{model}:generateText?key={api_key}"
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
