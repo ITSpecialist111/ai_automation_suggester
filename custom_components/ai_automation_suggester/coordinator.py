@@ -511,6 +511,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"OpenAI processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in OpenAI API call:")
             return None
 
     # ---------------- OpenAI Azure ---------------------------------------------------
@@ -572,6 +574,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"OpenAI Azure processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in OpenAI Azure API call:")
             return None
 
     # ---------------- Anthropic ------------------------------------------------
@@ -630,6 +634,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Anthropic processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Anthropic API call:")
             return None
                 
 
@@ -755,6 +761,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Groq processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Groq API call:")
             return None
 
     # ---------------- LocalAI --------------------------------------------------
@@ -811,6 +819,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"LocalAI processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in LocalAI API call:")
             return None
 
     # ---------------- Ollama ---------------------------------------------------
@@ -864,6 +874,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Ollama processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Ollama API call:")            
             return None
 
     # ---------------- Custom‑endpoint OpenAI -------------------------------
@@ -925,6 +937,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Custom OpenAI processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Custom OpenAI API call:")
             return None
 
     # ---------------- Mistral ----------------------------------------------
@@ -981,6 +995,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Mistral processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Mistral API call:")
             return None
 
     # ---------------- Perplexity -------------------------------------------
@@ -1039,6 +1055,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Perplexity processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Perplexity API call:")
             return None
 
     # ---------------- OpenRouter -------------------------------------------
@@ -1105,4 +1123,6 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"OpenRouter processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in OpenRouter API call:")
             return None
