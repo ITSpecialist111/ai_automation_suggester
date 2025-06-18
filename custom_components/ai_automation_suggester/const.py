@@ -39,7 +39,7 @@ CONF_OPENAI_TEMPERATURE = "openai_temperature"
 
 # OpenAI Azure
 CONF_OPENAI_AZURE_API_KEY = "openai_azure_api_key"
-CONF_OPENAI_AZURE_DEPLOYMENT_ID = "openai_azure_model"
+CONF_OPENAI_AZURE_DEPLOYMENT_ID = "openai_azure_deployment_id"
 CONF_OPENAI_AZURE_API_VERSION = "openai_azure_api_version"
 CONF_OPENAI_AZURE_ENDPOINT = "openai_azure_endpoint"
 CONF_OPENAI_AZURE_TEMPERATURE = "openai_azure_temperature"
