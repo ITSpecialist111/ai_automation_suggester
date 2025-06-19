@@ -1,71 +1,203 @@
 {
+  "title": "KI Automatisierungs-Vorschlag",
   "config": {
     "step": {
       "user": {
-        "title": "AI Automation Suggester konfigurieren",
-        "description": "Wählen Sie Ihren KI-Anbieter und konfigurieren Sie die Einstellungen",
+        "title": "KI-Anbieter auswählen",
         "data": {
-          "provider": "KI-Anbieter",
-          "scan_frequency": "Scan-Häufigkeit (Stunden)",
-          "initial_lag_time": "Anfangsverzögerung (Minuten)",
-          "max_tokens": "Maximale Ausgabe-Token"
+          "provider": "KI-Anbieter"
         }
       },
       "openai": {
-        "title": "OpenAI Konfiguration",
+        "title": "OpenAI konfigurieren",
         "data": {
-          "api_key": "API-Schlüssel",
-          "model": "Modell",
-          "max_tokens": "Maximale Ausgabe-Token"
-        },
-        "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
+          "openai_api_key": "OpenAI API-Schlüssel",
+          "openai_model": "OpenAI-Modell",
+          "openai_temperature": "Temperatur",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
       },
       "anthropic": {
-        "title": "Anthropic Konfiguration",
+        "title": "Anthropic konfigurieren",
         "data": {
-          "api_key": "API-Schlüssel",
-          "model": "Modell",
-          "max_tokens": "Maximale Ausgabe-Token"
-        },
-        "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
+          "anthropic_api_key": "Anthropic API-Schlüssel",
+          "anthropic_model": "Anthropic-Modell",
+          "anthropic_temperature": "Temperatur",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
+      },
+      "google": {
+        "title": "Google konfigurieren",
+        "data": {
+          "google_api_key": "Google API-Schlüssel",
+          "google_model": "Google-Modell",
+          "google_temperature": "Temperatur",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
+      },
+      "groq": {
+        "title": "Groq konfigurieren",
+        "data": {
+          "groq_api_key": "Groq API-Schlüssel",
+          "groq_model": "Groq-Modell",
+          "groq_temperature": "Temperatur",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
       },
       "localai": {
-        "title": "LocalAI Konfiguration",
+        "title": "LocalAI konfigurieren",
         "data": {
-          "ip_address": "IP-Adresse",
-          "port": "Port",
-          "https": "HTTPS verwenden",
-          "model": "Modellname",
-          "max_tokens": "Maximale Ausgabe-Token"
-        },
-        "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
+          "localai_ip": "LocalAI IP-Adresse",
+          "localai_port": "LocalAI Port",
+          "localai_https": "HTTPS für LocalAI verwenden",
+          "localai_model": "LocalAI-Modell",
+          "localai_temperature": "Temperatur",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
       },
       "ollama": {
-        "title": "Ollama Konfiguration",
+        "title": "Ollama konfigurieren",
         "data": {
-          "ip_address": "IP-Adresse",
-          "port": "Port",
-          "https": "HTTPS verwenden",
-          "model": "Modellname",
-          "max_tokens": "Maximale Ausgabe-Token"
-        },
-        "description": "Die maximale Anzahl von Token bestimmt die Länge der Antwort der KI. Standard ist 500. Erhöhen Sie diesen Wert, wenn Sie längere Antworten benötigen."
+          "ollama_ip": "Ollama IP-Adresse",
+          "ollama_port": "Ollama Port",
+          "ollama_https": "HTTPS für Ollama verwenden",
+          "ollama_model": "Ollama-Modell",
+          "ollama_temperature": "Temperatur",
+          "ollama_disable_think": "Denkmodus deaktivieren (Ollama)",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
+      },
+      "custom_openai": {
+        "title": "Benutzerdefiniertes OpenAI konfigurieren",
+        "data": {
+          "custom_openai_endpoint": "Benutzerdefinierter OpenAI-Endpunkt",
+          "custom_openai_api_key": "Benutzerdefinierter OpenAI API-Schlüssel (Optional)",
+          "custom_openai_model": "Benutzerdefiniertes OpenAI-Modell",
+          "custom_openai_temperature": "Temperatur",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
+      },
+      "mistral": {
+        "title": "Mistral AI konfigurieren",
+        "data": {
+          "mistral_api_key": "Mistral API-Schlüssel",
+          "mistral_model": "Mistral-Modell",
+          "mistral_temperature": "Temperatur",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
+      },
+      "perplexity": {
+        "title": "Perplexity AI konfigurieren",
+        "data": {
+          "perplexity_api_key": "Perplexity API-Schlüssel",
+          "perplexity_model": "Perplexity-Modell",
+          "perplexity_temperature": "Temperatur",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
+      },
+      "openrouter": {
+        "title": "OpenRouter konfigurieren",
+        "data": {
+          "openrouter_api_key": "OpenRouter API-Schlüssel",
+          "openrouter_model": "OpenRouter-Modell",
+          "openrouter_reasoning_max_tokens": "Max. Tokens für Schlussfolgerungen (OpenRouter)",
+          "openrouter_temperature": "Temperatur",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
+      },
+      "openai_azure": {
+        "title": "OpenAI Azure konfigurieren",
+        "data": {
+          "openai_azure_api_key": "Azure OpenAI API-Schlüssel",
+          "openai_azure_deployment_id": "Azure Deployment-ID",
+          "openai_azure_endpoint": "Azure-Endpunkt",
+          "openai_azure_api_version": "Azure API-Version",
+          "openai_azure_temperature": "Temperatur",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        }
       }
     },
     "error": {
-      "cannot_connect": "Verbindung zum Dienst fehlgeschlagen",
-      "invalid_auth": "Ungültige Authentifizierung",
-      "invalid_config": "Ungültige Konfiguration",
-      "unknown": "Unerwarteter Fehler",
-      "no_entities": "Keine neuen Entitäten gefunden",
-      "api_error": "API-Fehler aufgetreten",
-      "required_field": "Dieses Feld ist erforderlich"
+      "api_error": "API-Validierung fehlgeschlagen: {error_message}",
+      "cannot_connect": "Verbindung fehlgeschlagen. Bitte überprüfen Sie Ihre Einstellungen und Ihr Netzwerk.",
+      "unknown": "Ein unbekannter Fehler ist aufgetreten. Bitte überprüfen Sie die Protokolle für Details."
+    },
+    "abort": {
+      "already_configured": "Dieser KI-Anbieter ist bereits konfiguriert. Sie können ihn auf der Integrationsseite bearbeiten."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Optionen für KI Automatisierungs-Vorschlag",
+        "data": {
+          "openai_api_key": "OpenAI API-Schlüssel",
+          "openai_model": "OpenAI-Modell",
+          "openai_temperature": "Temperatur (OpenAI)",
+          "anthropic_api_key": "Anthropic API-Schlüssel",
+          "anthropic_model": "Anthropic-Modell",
+          "anthropic_temperature": "Temperatur (Anthropic)",
+          "google_api_key": "Google API-Schlüssel",
+          "google_model": "Google-Modell",
+          "google_temperature": "Temperatur (Google)",
+          "groq_api_key": "Groq API-Schlüssel",
+          "groq_model": "Groq-Modell",
+          "groq_temperature": "Temperatur (Groq)",
+          "localai_ip": "LocalAI IP-Adresse",
+          "localai_port": "LocalAI Port",
+          "localai_https": "HTTPS für LocalAI verwenden",
+          "localai_model": "LocalAI-Modell",
+          "localai_temperature": "Temperatur (LocalAI)",
+          "ollama_ip": "Ollama IP-Adresse",
+          "ollama_port": "Ollama Port",
+          "ollama_https": "HTTPS für Ollama verwenden",
+          "ollama_model": "Ollama-Modell",
+          "ollama_temperature": "Temperatur (Ollama)",
+          "ollama_disable_think": "Denkmodus deaktivieren (Ollama)",
+          "custom_openai_endpoint": "Benutzerdefinierter OpenAI-Endpunkt",
+          "custom_openai_api_key": "Benutzerdefinierter OpenAI API-Schlüssel",
+          "custom_openai_model": "Benutzerdefiniertes OpenAI-Modell",
+          "custom_openai_temperature": "Temperatur (Benutzerdefiniertes OpenAI)",
+          "mistral_api_key": "Mistral API-Schlüssel",
+          "mistral_model": "Mistral-Modell",
+          "mistral_temperature": "Temperatur (Mistral AI)",
+          "perplexity_api_key": "Perplexity API-Schlüssel",
+          "perplexity_model": "Perplexity-Modell",
+          "perplexity_temperature": "Temperatur (Perplexity AI)",
+          "openrouter_api_key": "OpenRouter API-Schlüssel",
+          "openrouter_model": "OpenRouter-Modell",
+          "openrouter_reasoning_max_tokens": "Max. Tokens für Schlussfolgerungen (OpenRouter)",
+          "openrouter_temperature": "Temperatur (OpenRouter)",
+          "openai_azure_api_key": "Azure OpenAI API-Schlüssel",
+          "openai_azure_deployment_id": "Azure Deployment-ID",
+          "openai_azure_endpoint": "Azure-Endpunkt",
+          "openai_azure_api_version": "Azure API-Version",
+          "openai_azure_temperature": "Temperatur (OpenAI Azure)",
+          "max_input_tokens": "Max. Eingabe-Tokens",
+          "max_output_tokens": "Max. Ausgabe-Tokens"
+        },
+        "description": "Passen Sie die Einstellungen für Ihre KI-Anbieter an. Es werden die für Ihren konfigurierten Anbieter relevanten Felder verwendet. Allgemeine Einstellungen wie Token-Limits werden pro Anbieter konfiguriert."
+      }
+    },
+    "error": {
+        "invalid_input": "Ein oder mehrere Werte sind ungültig."
     }
   },
   "services": {
     "generate_suggestions": {
-      "name": "Generiere Vorschläge",
-      "description": "Löst manuell AI Automationsvorschläge aus",
+      "name": "Vorschläge generieren",
+      "description": "Manuelles Auslösen von KI-Automatisierungsvorschlägen.",
       "fields": {
         "provider_config": {
           "name": "Anbieterkonfiguration",
@@ -88,8 +220,8 @@
           "description": "Maximale Anzahl von Entitäten, die berücksichtigt werden (zufällig ausgewählt)."
         },
         "automation_read_yaml": {
-          "name": "Read 'automations.yaml' file",
-          "description": "Reads and appends the yaml code of the automations found in the automations.yaml file. This action will use a lot of input tokens, use it with care and with models with a large input window (e.g. Gemini)."
+          "name": "Datei 'automations.yaml' lesen",
+          "description": "Liest und hängt den YAML-Code der in der Datei automations.yaml gefundenen Automatisierungen an. Diese Aktion verbraucht viele Eingabe-Tokens. Verwenden Sie sie mit Bedacht und mit Modellen mit einem großen Eingabefenster (z.B. Gemini)."
         }
       }
     }
