@@ -191,7 +191,7 @@
       }
     },
     "error": {
-        "invalid_input": "Uno o più valori non sono validi."
+      "invalid_input": "Uno o più valori non sono validi."
     }
   },
   "services": {
@@ -222,6 +222,10 @@
         "automation_read_yaml": {
           "name": "Leggi file 'automations.yaml'",
           "description": "Legge e aggiunge il codice yaml delle automazioni trovate nel file automations.yaml. Questa azione utilizzerà molti token di input, usala con cautela e con modelli con una grande finestra di input (es. Gemini)."
+        },
+        "automation_limit": {
+          "name": "Limite automazioni",
+          "description": "Numero massimo di automazioni da analizzare (predefinito: 100)."
         }
       }
     }

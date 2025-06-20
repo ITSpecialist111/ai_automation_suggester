@@ -191,7 +191,7 @@
       }
     },
     "error": {
-        "invalid_input": "一个或多个值无效。"
+      "invalid_input": "一个或多个值无效。"
     }
   },
   "services": {
@@ -222,6 +222,10 @@
         "automation_read_yaml": {
           "name": "读取 'automations.yaml' 文件",
           "description": "读取并附加 automations.yaml 文件中找到的自动化的 yaml 代码。此操作将使用大量输入令牌，请谨慎使用并配合具有较大输入窗口的模型（例如 Gemini）。"
+        },
+        "automation_limit": {
+          "name": "自动化数量上限",
+          "description": "要分析的自动化最大数量（默认：100）。"
         }
       }
     }

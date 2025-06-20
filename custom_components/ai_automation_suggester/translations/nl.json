@@ -191,7 +191,7 @@
       }
     },
     "error": {
-        "invalid_input": "Een of meer waarden zijn ongeldig."
+      "invalid_input": "Een of meer waarden zijn ongeldig."
     }
   },
   "services": {
@@ -222,6 +222,10 @@
         "automation_read_yaml": {
           "name": "Lees 'automations.yaml' bestand",
           "description": "Leest en voegt de yaml-code van de automatiseringen in het bestand automations.yaml toe. Deze actie zal veel input tokens gebruiken, gebruik het voorzichtig en met modellen met een groot input venster (bijv. Gemini)."
+        },
+        "automation_limit": {
+          "name": "Automatiseringslimiet",
+          "description": "Maximum aantal te analyseren automatiseringen (standaard: 100)."
         }
       }
     }

@@ -131,6 +131,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.selected_domains: list[str] = []
         self.entity_limit = 200
         self.automation_read_file = False  # Default automation reading mode
+        self.automation_limit = 100
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
@@ -278,7 +279,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
     async def _build_prompt(self, entities: dict) -> str:  # noqa: C901
         """Build the prompt based on entities and automations."""
         MAX_ATTR = 500
-        MAX_AUTOM = 100 # Change this to user input?
+        MAX_AUTOM = getattr(self, "automation_limit", 100)
 
         ent_sections: list[str] = []
         for eid, meta in random.sample(

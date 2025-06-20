@@ -191,7 +191,7 @@
       }
     },
     "error": {
-        "invalid_input": "One or more values are invalid."
+      "invalid_input": "One or more values are invalid."
     }
   },
   "services": {
@@ -222,6 +222,10 @@
         "automation_read_yaml": {
           "name": "Read 'automations.yaml' file",
           "description": "Reads and appends the yaml code of the automations found in the automations.yaml file. This action will use a lot of input tokens, use it with care and with models with a large input window (e.g. Gemini)."
+        },
+        "automation_limit": {
+          "name": "Automation Limit",
+          "description": "Maximum number of automations to analyze (default: 100)."
         }
       }
     }

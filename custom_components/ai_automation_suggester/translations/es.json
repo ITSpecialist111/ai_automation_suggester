@@ -191,7 +191,7 @@
       }
     },
     "error": {
-        "invalid_input": "Uno o más valores son inválidos."
+      "invalid_input": "Uno o más valores son inválidos."
     }
   },
   "services": {
@@ -222,6 +222,10 @@
         "automation_read_yaml": {
           "name": "Leer archivo 'automations.yaml'",
           "description": "Lee y añade el código yaml de las automatizaciones encontradas en el archivo automations.yaml. Esta acción usará muchos tokens de entrada, úsala con cuidado y con modelos con una ventana de entrada grande (ej. Gemini)."
+        },
+        "automation_limit": {
+          "name": "Límite de automatizaciones",
+          "description": "Número máximo de automatizaciones a analizar (por defecto: 100)."
         }
       }
     }

@@ -191,7 +191,7 @@
       }
     },
     "error": {
-        "invalid_input": "Ein oder mehrere Werte sind ungültig."
+      "invalid_input": "Ein oder mehrere Werte sind ungültig."
     }
   },
   "services": {
@@ -222,6 +222,10 @@
         "automation_read_yaml": {
           "name": "Datei 'automations.yaml' lesen",
           "description": "Liest und hängt den YAML-Code der in der Datei automations.yaml gefundenen Automatisierungen an. Diese Aktion verbraucht viele Eingabe-Tokens. Verwenden Sie sie mit Bedacht und mit Modellen mit einem großen Eingabefenster (z.B. Gemini)."
+        },
+        "automation_limit": {
+          "name": "Automatisierungslimit",
+          "description": "Maximale Anzahl der zu analysierenden Automatisierungen (Standard: 100)."
         }
       }
     }
