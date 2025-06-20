@@ -35,40 +35,56 @@ CONF_PROVIDER = "provider"
 # OpenAI
 CONF_OPENAI_API_KEY = "openai_api_key"
 CONF_OPENAI_MODEL = "openai_model"
+CONF_OPENAI_TEMPERATURE = "openai_temperature"
+
+# OpenAI Azure
+CONF_OPENAI_AZURE_API_KEY = "openai_azure_api_key"
+CONF_OPENAI_AZURE_DEPLOYMENT_ID = "openai_azure_deployment_id"
+CONF_OPENAI_AZURE_API_VERSION = "openai_azure_api_version"
+CONF_OPENAI_AZURE_ENDPOINT = "openai_azure_endpoint"
+CONF_OPENAI_AZURE_TEMPERATURE = "openai_azure_temperature"
 
 # Anthropic
 CONF_ANTHROPIC_API_KEY = "anthropic_api_key"
 CONF_ANTHROPIC_MODEL = "anthropic_model"
+CONF_ANTHROPIC_TEMPERATURE = "anthropic_temperature"
 VERSION_ANTHROPIC = "2023-06-01"
 
 # Google
 CONF_GOOGLE_API_KEY = "google_api_key"
 CONF_GOOGLE_MODEL = "google_model"
+CONF_GOOGLE_TEMPERATURE = "google_temperature"
 
 # Groq
 CONF_GROQ_API_KEY = "groq_api_key"
 CONF_GROQ_MODEL = "groq_model"
+CONF_GROQ_TEMPERATURE = "groq_temperature"
 
 # LocalAI
 CONF_LOCALAI_IP_ADDRESS = "localai_ip"
 CONF_LOCALAI_PORT = "localai_port"
 CONF_LOCALAI_HTTPS = "localai_https"
 CONF_LOCALAI_MODEL = "localai_model"
+CONF_LOCALAI_TEMPERATURE = "localai_temperature"
 
 # Ollama
 CONF_OLLAMA_IP_ADDRESS = "ollama_ip"
 CONF_OLLAMA_PORT = "ollama_port"
 CONF_OLLAMA_HTTPS = "ollama_https"
 CONF_OLLAMA_MODEL = "ollama_model"
+CONF_OLLAMA_TEMPERATURE = "ollama_temperature"
+CONF_OLLAMA_DISABLE_THINK = "ollama_disable_think"
 
 # Custom OpenAI
 CONF_CUSTOM_OPENAI_ENDPOINT = "custom_openai_endpoint"
 CONF_CUSTOM_OPENAI_API_KEY = "custom_openai_api_key"
 CONF_CUSTOM_OPENAI_MODEL = "custom_openai_model"
+CONF_CUSTOM_OPENAI_TEMPERATURE = "custom_openai_temperature"
 
 # Mistral AI
 CONF_MISTRAL_API_KEY = "mistral_api_key"
 CONF_MISTRAL_MODEL = "mistral_model"
+CONF_MISTRAL_TEMPERATURE = "mistral_temperature"
 MISTRAL_MODELS = [
     "mistral-tiny",
     "mistral-small",
@@ -79,6 +95,7 @@ MISTRAL_MODELS = [
 # Perplexity AI
 CONF_PERPLEXITY_API_KEY = "perplexity_api_key"
 CONF_PERPLEXITY_MODEL = "perplexity_model"
+CONF_PERPLEXITY_TEMPERATURE = "perplexity_temperature"
 
 # OpenRouter
 CONF_OPENROUTER_API_KEY = "openrouter_api_key"
@@ -91,6 +108,7 @@ CONF_OPENROUTER_TEMPERATURE = "openrouter_temperature"
 # ─────────────────────────────────────────────────────────────
 DEFAULT_MODELS = {
     "OpenAI": "gpt-4o-mini",
+    "OpenAI Azure": "gpt-4o-mini",
     "Anthropic": "claude-3-7-sonnet-latest",
     "Google": "gemini-2.0-flash",
     "Groq": "llama3-8b-8192",
@@ -121,6 +139,7 @@ PROVIDER_STATUS_INITIALIZING = "initializing"
 # REST endpoints
 # ─────────────────────────────────────────────────────────────
 ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"
+ENDPOINT_OPENAI_AZURE = "https://{endpoint}/openai/deployments/{deployment-id}/chat/completions?api-version={api_version}"
 ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages"
 ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta2/models/{model}:generateText?key={api_key}"
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"

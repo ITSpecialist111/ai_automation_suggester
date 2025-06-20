@@ -95,7 +95,12 @@ Leveraging the AI Automation Suggester provides several key benefits:
 
 ## 📦 Features
 
-* **Multi-Provider Support:** Connect to OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, or Perplexity.
+* **Multi-Provider Support:** Connect to OpenAI, OpenAI Azure, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, or OpenRouter with full configuration options:
+    * Temperature control for all providers (0.0 - 2.0)
+    * Model selection with provider-specific defaults
+    * Secure API key storage
+    * Custom endpoints for compatible providers
+    * Advanced options like Ollama's think mode control
 * **Customizable Prompts and Filters:** Tailor suggestions using system prompts, domain filters, and entity limits.
 * **Randomized Entity Selection:** Prevent repetitive suggestions and discover new opportunities.
 * **Context-Rich Insights:** Incorporates device and area information for smarter, more relevant ideas.
@@ -157,6 +162,23 @@ You can adjust these settings later via the integration options in Settings → 
 
 ---
 
+## 🛠️ Advanced Configuration
+
+### Global Settings
+
+* **Temperature Control:**
+    * Available for all providers
+    * Range: 0.0 (more focused) to 2.0 (more creative)
+    * Default: 0.7
+    * Configurable in both initial setup and options
+
+* **Token Management:**
+    * Separate input/output token limits
+    * Prevents excessive API usage
+    * Optimizes response length
+
+---
+
 ## ✍️ Usage
 
 ### Automatic Suggestions
@@ -193,6 +215,68 @@ The main sensor (`sensor.ai_automation_suggestions_<provider_name>`) exposes use
     {{ state_attr('sensor.ai_automation_suggestions_<provider_name>', 'yaml_block') }}
     ```
 You can use Markdown cards or other card types to present this information cleanly in your Home Assistant dashboard.
+
+---
+
+## 📊 Monitoring & Diagnostics
+
+The integration provides several sensors for monitoring:
+
+* **AI Automation Suggestions:** (`sensor.ai_automation_suggestions_<provider_name>`)
+    * State: `No Suggestions`, `New Suggestions Available`, `Suggestions Available`
+    * Attributes:
+        * `description`: Human-readable suggestion description
+        * `yaml_block`: Ready-to-use automation YAML
+        * `last_update`: Timestamp of last update
+        * `entities_processed`: List of analyzed entities
+        * `entities_processed_count`: Number of entities analyzed
+
+* **AI Provider Status:** (`sensor.ai_provider_status_<provider_name>`)
+    * State: `connected`, `error`, `disconnected`, `initializing`
+    * Attributes:
+        * `last_error_message`: Details of any errors
+        * `last_attempted_update`: Timestamp of last attempt
+
+* **Max Input/Output Tokens:** (`sensor.max_input_tokens_<provider_name>`, `sensor.max_output_tokens_<provider_name>`)
+    * Shows configured token limits
+    * Helps monitor API usage
+
+* **AI Model:** (`sensor.ai_model_in_use_<provider_name>`)
+    * Shows current model configuration
+    * Useful for multi-instance setups
+
+* **Last Error:** (`sensor.last_error_message_<provider_name>`)
+    * Detailed error tracking
+    * Includes stack traces for unexpected errors
+
+---
+
+## 🔍 Error Handling & Troubleshooting
+
+* **Stack Traces:**
+    * Detailed error logging for unexpected issues
+    * Available in Home Assistant logs
+    * Helpful for debugging API issues
+
+* **Common Error Scenarios:**
+    * API authentication failures
+    * Network connectivity issues
+    * Token limit exceeded
+    * Model availability problems
+    * Response parsing errors
+
+* **Error Monitoring:**
+    * Use the Last Error sensor for real-time error tracking
+    * Check Home Assistant logs for stack traces
+    * Monitor provider status sensor for connection issues
+
+---
+
+## 🔒 Security Notes
+
+* All API keys are stored securely using Home Assistant's secure storage
+* Password fields are properly masked in the UI
+* Local providers (Ollama, LocalAI) can be used for complete data privacy
 
 ---
 

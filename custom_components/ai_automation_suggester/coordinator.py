@@ -5,11 +5,13 @@ from __future__ import annotations
 
 from datetime import datetime
 import logging
+from pathlib import Path
 import random
 import re
-from pathlib import Path
-import yaml
+
+import aiohttp
 import anyio
+import yaml
 
 from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
@@ -35,40 +37,55 @@ from .const import (  # noqa: E501
     # Provider‑specific keys + endpoints
     CONF_OPENAI_API_KEY,
     CONF_OPENAI_MODEL,
+    CONF_OPENAI_TEMPERATURE,
     ENDPOINT_OPENAI,
     CONF_ANTHROPIC_API_KEY,
     CONF_ANTHROPIC_MODEL,
     VERSION_ANTHROPIC,
     ENDPOINT_ANTHROPIC,
+    CONF_ANTHROPIC_TEMPERATURE,
     CONF_GOOGLE_API_KEY,
     CONF_GOOGLE_MODEL,
+    CONF_GOOGLE_TEMPERATURE,
     CONF_GROQ_API_KEY,
     CONF_GROQ_MODEL,
+    CONF_GROQ_TEMPERATURE,
     ENDPOINT_GROQ,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_LOCALAI_HTTPS,
     CONF_LOCALAI_MODEL,
+    CONF_LOCALAI_TEMPERATURE,
     ENDPOINT_LOCALAI,
     CONF_OLLAMA_IP_ADDRESS,
     CONF_OLLAMA_PORT,
     CONF_OLLAMA_HTTPS,
     CONF_OLLAMA_MODEL,
+    CONF_OLLAMA_TEMPERATURE,
+    CONF_OLLAMA_DISABLE_THINK,
     ENDPOINT_OLLAMA,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_MODEL,
+    CONF_CUSTOM_OPENAI_TEMPERATURE,
     CONF_MISTRAL_API_KEY,
     CONF_MISTRAL_MODEL,
+    CONF_MISTRAL_TEMPERATURE,
     ENDPOINT_MISTRAL,
     CONF_PERPLEXITY_API_KEY,
     CONF_PERPLEXITY_MODEL,
+    CONF_PERPLEXITY_TEMPERATURE,
     ENDPOINT_PERPLEXITY,
     CONF_OPENROUTER_API_KEY,
     CONF_OPENROUTER_MODEL,
     CONF_OPENROUTER_REASONING_MAX_TOKENS,
     CONF_OPENROUTER_TEMPERATURE,
     ENDPOINT_OPENROUTER,
+    CONF_OPENAI_AZURE_API_KEY,
+    CONF_OPENAI_AZURE_DEPLOYMENT_ID,
+    CONF_OPENAI_AZURE_API_VERSION,
+    CONF_OPENAI_AZURE_ENDPOINT,
+    CONF_OPENAI_AZURE_TEMPERATURE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -221,7 +238,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 persistent_notification.async_create(
                     self.hass,
                     message=response,
-                    title="AI Automation Suggestions",
+                    title="AI Automation Suggestions (%s)" % self._opt(CONF_PROVIDER, "unknown"),
                     notification_id=f"ai_automation_suggestions_{now.timestamp()}",
                 )
 
@@ -426,6 +443,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Mistral AI": self._mistral,
                 "Perplexity AI": self._perplexity,
                 "OpenRouter": self._openrouter,
+                "OpenAI Azure": self._openai_azure,
             }[provider](prompt)
         except KeyError:
             self._last_error = f"Unknown provider '{provider}'"
@@ -443,6 +461,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self._opt(CONF_OPENAI_API_KEY)
             model = self._opt(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"])
+            temperature = self._opt(CONF_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("OpenAI API key not configured")
@@ -454,7 +473,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
             headers = {
                 "Authorization": f"Bearer {api_key}",
@@ -493,13 +512,80 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"OpenAI processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in OpenAI API call:")
             return None
+
+    # ---------------- OpenAI Azure ---------------------------------------------------
+    async def _openai_azure(self, prompt: str) -> str | None:
+        """Send prompt to OpenAI Azure endpoint."""
+        try:
+            endpoint_base = self._opt(CONF_OPENAI_AZURE_ENDPOINT)
+            api_key = self._opt(CONF_OPENAI_AZURE_API_KEY)
+            deployment_id = self._opt(CONF_OPENAI_AZURE_DEPLOYMENT_ID)
+            api_version = self._opt(CONF_OPENAI_AZURE_API_VERSION, "2025-01-01-preview")
+            in_budget, out_budget = self._budgets()
+            temperature = self._opt(CONF_OPENAI_AZURE_TEMPERATURE, DEFAULT_TEMPERATURE)
+
+            if not endpoint_base or not deployment_id or not api_version or not api_key:
+                raise ValueError("OpenAI Azure endpoint, deployment, api version or API key not configured")
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
+
+            endpoint = f"https://{endpoint_base}/openai/deployments/{deployment_id}/chat/completions?api-version={api_version}"
+
+            headers = {
+                "api-key": api_key,
+                "Content-Type": "application/json",
+            }
+            body = {
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": out_budget,
+                "temperature": temperature,
+            }
+
+            async with self.session.post(endpoint, headers=headers, json=body) as resp:
+                if resp.status != 200:
+                    self._last_error = (
+                        f"OpenAI Azure error {resp.status}: {await resp.text()}"
+                    )
+                    _LOGGER.error(self._last_error)
+                    return None
+
+                res = await resp.json()
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(f"Message missing 'content': {res['choices'][0]['message']}")
+
+            return res["choices"][0]["message"]["content"]
+
+        except Exception as err:
+            self._last_error = f"OpenAI Azure processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in OpenAI Azure API call:")
+            return None
+
     # ---------------- Anthropic ------------------------------------------------
     async def _anthropic(self, prompt: str) -> str | None:
         try:
             api_key = self._opt(CONF_ANTHROPIC_API_KEY)
             model = self._opt(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"])
             in_budget, out_budget = self._budgets()
+            temperature = self._opt(CONF_ANTHROPIC_TEMPERATURE, DEFAULT_TEMPERATURE)
             if not api_key:
                 raise ValueError("Anthropic API key not configured")
 
@@ -517,7 +603,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     {"role": "user", "content": [{"type": "text", "text": prompt}]}
                 ],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
 
             async with self.session.post(
@@ -549,6 +635,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Anthropic processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Anthropic API call:")
             return None
                 
 
@@ -558,6 +646,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             api_key = self._opt(CONF_GOOGLE_API_KEY)
             model = self._opt(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"])
             in_budget, out_budget = self._budgets()
+            temperature = self._opt(CONF_GOOGLE_TEMPERATURE, DEFAULT_TEMPERATURE)
             if not api_key:
                 raise ValueError("Google API key not configured")
 
@@ -567,15 +656,16 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             body = {
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {
-                    "temperature": DEFAULT_TEMPERATURE,
+                    "temperature": temperature,
                     "maxOutputTokens": out_budget,
                     "topK": 40,
                     "topP": 0.95,
                 },
             }
             endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            timeout = aiohttp.ClientTimeout(total=900)
 
-            async with self.session.post(endpoint, json=body) as resp:
+            async with self.session.post(endpoint, json=body, timeout=timeout) as resp:
                 if resp.status != 200:
                     self._last_error = (
                         f"Google error {resp.status}: {await resp.text()}"
@@ -612,6 +702,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Google processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Google API call:")
             return None
                 
     # ---------------- Groq -----------------------------------------------------
@@ -619,6 +711,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self._opt(CONF_GROQ_API_KEY)
             model = self._opt(CONF_GROQ_MODEL, DEFAULT_MODELS["Groq"])
+            temperature = self._opt(CONF_GROQ_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Groq API key not configured")
@@ -632,7 +725,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     {"role": "user", "content": [{"type": "text", "text": prompt}]}
                 ],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
             headers = {
                 "Authorization": f"Bearer {api_key}",
@@ -669,6 +762,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Groq processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Groq API call:")
             return None
 
     # ---------------- LocalAI --------------------------------------------------
@@ -678,6 +773,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             port = self._opt(CONF_LOCALAI_PORT)
             https = self._opt(CONF_LOCALAI_HTTPS, False)
             model = self._opt(CONF_LOCALAI_MODEL, DEFAULT_MODELS["LocalAI"])
+            temperature = self._opt(CONF_LOCALAI_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not ip or not port:
                 raise ValueError("LocalAI not fully configured")
@@ -692,7 +788,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
             async with self.session.post(endpoint, json=body) as resp:
                 if resp.status != 200:
@@ -724,6 +820,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"LocalAI processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in LocalAI API call:")
             return None
 
     # ---------------- Ollama ---------------------------------------------------
@@ -733,6 +831,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             port = self._opt(CONF_OLLAMA_PORT)
             https = self._opt(CONF_OLLAMA_HTTPS, False)
             model = self._opt(CONF_OLLAMA_MODEL, DEFAULT_MODELS["Ollama"])
+            temperature = self._opt(CONF_OLLAMA_TEMPERATURE, DEFAULT_TEMPERATURE)
+            disable_think = self._opt(CONF_OLLAMA_DISABLE_THINK, False)
             in_budget, out_budget = self._budgets()
             if not ip or not port:
                 raise ValueError("Ollama not fully configured")
@@ -743,12 +843,17 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             proto = "https" if https else "http"
             endpoint = ENDPOINT_OLLAMA.format(protocol=proto, ip_address=ip, port=port)
 
+            messages = []
+            if disable_think:
+                messages.append({"role": "system", "content": "/no_think"})
+            messages.append({"role": "user", "content": prompt})
+
             body = {
                 "model": model,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": messages,
                 "stream": False,
                 "options": {
-                    "temperature": DEFAULT_TEMPERATURE,
+                    "temperature": temperature,
                     "num_predict": out_budget,
                 },
             }
@@ -776,6 +881,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Ollama processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Ollama API call:")            
             return None
 
     # ---------------- Custom‑endpoint OpenAI -------------------------------
@@ -790,6 +897,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             api_key  = self._opt(CONF_CUSTOM_OPENAI_API_KEY)
             model    = self._opt(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"])
+            temperature = self._opt(CONF_CUSTOM_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
 
 
@@ -804,7 +912,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
             async with self.session.post(endpoint, headers=headers, json=body) as resp:
                 if resp.status != 200:
@@ -836,6 +944,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Custom OpenAI processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Custom OpenAI API call:")
             return None
 
     # ---------------- Mistral ----------------------------------------------
@@ -843,6 +953,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self._opt(CONF_MISTRAL_API_KEY)
             model = self._opt(CONF_MISTRAL_MODEL, DEFAULT_MODELS["Mistral AI"])
+            temperature = self._opt(CONF_MISTRAL_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Mistral API key not configured")
@@ -857,7 +968,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             body = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
                 "max_tokens": out_budget,
             }
             async with self.session.post(
@@ -891,6 +1002,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Mistral processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Mistral API call:")
             return None
 
     # ---------------- Perplexity -------------------------------------------
@@ -898,6 +1011,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             api_key = self._opt(CONF_PERPLEXITY_API_KEY)
             model = self._opt(CONF_PERPLEXITY_MODEL, DEFAULT_MODELS["Perplexity AI"])
+            temperature = self._opt(CONF_PERPLEXITY_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
             if not api_key:
                 raise ValueError("Perplexity API key not configured")
@@ -914,7 +1028,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
+                "temperature": temperature,
             }
             async with self.session.post(
                 ENDPOINT_PERPLEXITY, headers=headers, json=body
@@ -948,6 +1062,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"Perplexity processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Perplexity API call:")
             return None
 
     # ---------------- OpenRouter -------------------------------------------
@@ -1014,4 +1130,6 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = f"OpenRouter processing error: {str(err)}"
             _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in OpenRouter API call:")
             return None
