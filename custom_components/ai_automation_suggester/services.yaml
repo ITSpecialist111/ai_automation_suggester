@@ -13,7 +13,7 @@ generate_suggestions:
       name: Custom Prompt
       description: Optional custom prompt to override or enhance the default system prompt.
       required: false
-      example: "Focus on energy-saving automations"  
+      example: "Focus on energy-saving automations"
       selector:
         text:
           multiline: true
@@ -22,20 +22,22 @@ generate_suggestions:
       description: "If true, consider all entities instead of just new entities."
       required: false
       default: false
+      example: false
       selector:
         boolean: {}
     domains:
       name: Domains
       description: "List of domains to consider. If empty, consider all domains."
       required: false
+      default: {}
       selector:
         object: {}
-      default: {}
     entity_limit:
       name: Entity Limit
       description: "Maximum number of entities to consider (randomly selected from the chosen domains)."
       required: false
       default: 200
+      example: 200
       selector:
         number:
           min: 50
@@ -46,5 +48,17 @@ generate_suggestions:
       description: "Reads and appends the yaml code of the automations found in the automations.yaml file. This action will use a lot of input tokens, use it with care and with models with a large input window (e.g. Gemini)."
       required: false
       default: false
+      example: false
       selector:
         boolean: {}
+    automation_limit:
+      name: Automation Limit
+      description: "Maximum number of automations to analyze (default: 100)."
+      required: false
+      default: 100
+      example: 100
+      selector:
+        number:
+          min: 10
+          max: 500
+          mode: slider

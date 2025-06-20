@@ -45,6 +45,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         domains = call.data.get("domains", {})
         entity_limit = call.data.get("entity_limit", 200)
         automation_read_yaml = call.data.get("automation_read_yaml", False)
+        automation_limit = call.data.get("automation_limit", 100)
 
         # Parse domains if provided as a string or dict
         if isinstance(domains, str):
@@ -76,6 +77,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             coordinator.selected_domains = domains
             coordinator.entity_limit = entity_limit
             coordinator.automation_read_file = automation_read_yaml
+            coordinator.automation_limit = automation_limit
 
             try:
                 await coordinator.async_request_refresh()
@@ -86,6 +88,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 coordinator.selected_domains = []
                 coordinator.entity_limit = 200
                 coordinator.automation_read_file = False
+                coordinator.automation_limit = 100
 
         except KeyError:
             raise ServiceValidationError("Provider configuration not found")

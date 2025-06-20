@@ -1,44 +1,203 @@
 {
+  "title": "Sugeridor de Automatizaciones con IA",
   "config": {
     "step": {
       "user": {
-        "title": "Configurar AI Automation Suggester",
+        "title": "Seleccionar Proveedor de IA",
         "data": {
-          "provider": "Proveedor de IA",
-          "max_tokens": "Máximo de Tokens de Salida"
+          "provider": "Proveedor de IA"
         }
       },
-      "provider_config": {
-        "title": "Configuración del Proveedor",
+      "openai": {
+        "title": "Configurar OpenAI",
         "data": {
-          "model": "Nombre del Modelo",
-          "api_key": "Clave de API",
-          "max_tokens": "Máximo de Tokens de Salida",
-          "ip_address": "Dirección IP",
-          "port": "Puerto",
-          "use_https": "Usar HTTPS"
-        },
-        "description": "El máximo de tokens controla la longitud de la respuesta de la IA. El valor predeterminado es 500. Aumenta si necesitas respuestas más largas."
+          "openai_api_key": "Clave API de OpenAI",
+          "openai_model": "Modelo OpenAI",
+          "openai_temperature": "Temperatura",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
+      },
+      "anthropic": {
+        "title": "Configurar Anthropic",
+        "data": {
+          "anthropic_api_key": "Clave API de Anthropic",
+          "anthropic_model": "Modelo Anthropic",
+          "anthropic_temperature": "Temperatura",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
+      },
+      "google": {
+        "title": "Configurar Google",
+        "data": {
+          "google_api_key": "Clave API de Google",
+          "google_model": "Modelo Google",
+          "google_temperature": "Temperatura",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
+      },
+      "groq": {
+        "title": "Configurar Groq",
+        "data": {
+          "groq_api_key": "Clave API de Groq",
+          "groq_model": "Modelo Groq",
+          "groq_temperature": "Temperatura",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
+      },
+      "localai": {
+        "title": "Configurar LocalAI",
+        "data": {
+          "localai_ip": "Dirección IP de LocalAI",
+          "localai_port": "Puerto de LocalAI",
+          "localai_https": "Usar HTTPS para LocalAI",
+          "localai_model": "Modelo LocalAI",
+          "localai_temperature": "Temperatura",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
+      },
+      "ollama": {
+        "title": "Configurar Ollama",
+        "data": {
+          "ollama_ip": "Dirección IP de Ollama",
+          "ollama_port": "Puerto de Ollama",
+          "ollama_https": "Usar HTTPS para Ollama",
+          "ollama_model": "Modelo Ollama",
+          "ollama_temperature": "Temperatura",
+          "ollama_disable_think": "Desactivar Modo Pensamiento (Ollama)",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
+      },
+      "custom_openai": {
+        "title": "Configurar OpenAI Personalizado",
+        "data": {
+          "custom_openai_endpoint": "Endpoint OpenAI Personalizado",
+          "custom_openai_api_key": "Clave API OpenAI Personalizada (Opcional)",
+          "custom_openai_model": "Modelo OpenAI Personalizado",
+          "custom_openai_temperature": "Temperatura",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
+      },
+      "mistral": {
+        "title": "Configurar Mistral AI",
+        "data": {
+          "mistral_api_key": "Clave API de Mistral",
+          "mistral_model": "Modelo Mistral",
+          "mistral_temperature": "Temperatura",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
+      },
+      "perplexity": {
+        "title": "Configurar Perplexity AI",
+        "data": {
+          "perplexity_api_key": "Clave API de Perplexity",
+          "perplexity_model": "Modelo Perplexity",
+          "perplexity_temperature": "Temperatura",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
+      },
+      "openrouter": {
+        "title": "Configurar OpenRouter",
+        "data": {
+          "openrouter_api_key": "Clave API de OpenRouter",
+          "openrouter_model": "Modelo OpenRouter",
+          "openrouter_reasoning_max_tokens": "Máx Tokens de Razonamiento OpenRouter",
+          "openrouter_temperature": "Temperatura",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
+      },
+      "openai_azure": {
+        "title": "Configurar OpenAI Azure",
+        "data": {
+          "openai_azure_api_key": "Clave API de Azure OpenAI",
+          "openai_azure_deployment_id": "ID de Despliegue de Azure",
+          "openai_azure_endpoint": "Endpoint de Azure",
+          "openai_azure_api_version": "Versión API de Azure",
+          "openai_azure_temperature": "Temperatura",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        }
       }
     },
     "error": {
-      "cannot_connect": "Error al conectar con el servicio",
-      "invalid_auth": "Autenticación inválida",
-      "invalid_config": "Configuración inválida",
-      "unknown": "Error inesperado",
-      "no_entities": "No se encontraron nuevas entidades",
-      "api_error": "Ha ocurrido un error de API",
-      "required_field": "Este campo es obligatorio"
+      "api_error": "Falló la validación de la API: {error_message}",
+      "cannot_connect": "No se pudo conectar. Por favor, revisa tu configuración y red.",
+      "unknown": "Ocurrió un error desconocido. Por favor, revisa los logs para más detalles."
     },
     "abort": {
-      "already_configured": "El proveedor ya está configurado",
-      "provider_not_supported": "Este proveedor no es compatible actualmente"
+      "already_configured": "Este proveedor de IA ya está configurado. Puedes editarlo desde la página de integraciones."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones del Sugeridor de Automatizaciones con IA",
+        "data": {
+          "openai_api_key": "Clave API de OpenAI",
+          "openai_model": "Modelo OpenAI",
+          "openai_temperature": "Temperatura (OpenAI)",
+          "anthropic_api_key": "Clave API de Anthropic",
+          "anthropic_model": "Modelo Anthropic",
+          "anthropic_temperature": "Temperatura (Anthropic)",
+          "google_api_key": "Clave API de Google",
+          "google_model": "Modelo Google",
+          "google_temperature": "Temperatura (Google)",
+          "groq_api_key": "Clave API de Groq",
+          "groq_model": "Modelo Groq",
+          "groq_temperature": "Temperatura (Groq)",
+          "localai_ip": "Dirección IP de LocalAI",
+          "localai_port": "Puerto de LocalAI",
+          "localai_https": "Usar HTTPS para LocalAI",
+          "localai_model": "Modelo LocalAI",
+          "localai_temperature": "Temperatura (LocalAI)",
+          "ollama_ip": "Dirección IP de Ollama",
+          "ollama_port": "Puerto de Ollama",
+          "ollama_https": "Usar HTTPS para Ollama",
+          "ollama_model": "Modelo Ollama",
+          "ollama_temperature": "Temperatura (Ollama)",
+          "ollama_disable_think": "Desactivar Modo Pensamiento (Ollama)",
+          "custom_openai_endpoint": "Endpoint OpenAI Personalizado",
+          "custom_openai_api_key": "Clave API OpenAI Personalizada",
+          "custom_openai_model": "Modelo OpenAI Personalizado",
+          "custom_openai_temperature": "Temperatura (OpenAI Personalizado)",
+          "mistral_api_key": "Clave API de Mistral",
+          "mistral_model": "Modelo Mistral",
+          "mistral_temperature": "Temperatura (Mistral AI)",
+          "perplexity_api_key": "Clave API de Perplexity",
+          "perplexity_model": "Modelo Perplexity",
+          "perplexity_temperature": "Temperatura (Perplexity AI)",
+          "openrouter_api_key": "Clave API de OpenRouter",
+          "openrouter_model": "Modelo OpenRouter",
+          "openrouter_reasoning_max_tokens": "Máx Tokens de Razonamiento OpenRouter",
+          "openrouter_temperature": "Temperatura (OpenRouter)",
+          "openai_azure_api_key": "Clave API de Azure OpenAI",
+          "openai_azure_deployment_id": "ID de Despliegue de Azure",
+          "openai_azure_endpoint": "Endpoint de Azure",
+          "openai_azure_api_version": "Versión API de Azure",
+          "openai_azure_temperature": "Temperatura (OpenAI Azure)",
+          "max_input_tokens": "Máx Tokens de Entrada",
+          "max_output_tokens": "Máx Tokens de Salida"
+        },
+        "description": "Ajusta la configuración para tus proveedores de IA. Se usarán los campos relevantes para tu proveedor configurado. Configuraciones comunes como los límites de tokens se configuran por proveedor."
+      }
+    },
+    "error": {
+      "invalid_input": "Uno o más valores son inválidos."
     }
   },
   "services": {
     "generate_suggestions": {
       "name": "Generar Sugerencias",
-      "description": "Activar manualmente las sugerencias de automatización de IA",
+      "description": "Activar manualmente las sugerencias de automatización con IA.",
       "fields": {
         "provider_config": {
           "name": "Configuración del Proveedor",
@@ -62,7 +221,11 @@
         },
         "automation_read_yaml": {
           "name": "Leer archivo 'automations.yaml'",
-          "description": "Lee y añade el código yaml de las automatizaciones encontradas en el fichero automations.yaml. Esta acción utilizará muchos tokens de entrada, utilízala con cuidado y con modelos con una ventana de entrada grande (por ejemplo, Gemini)."
+          "description": "Lee y añade el código yaml de las automatizaciones encontradas en el archivo automations.yaml. Esta acción usará muchos tokens de entrada, úsala con cuidado y con modelos con una ventana de entrada grande (ej. Gemini)."
+        },
+        "automation_limit": {
+          "name": "Límite de automatizaciones",
+          "description": "Número máximo de automatizaciones a analizar (por defecto: 100)."
         }
       }
     }
