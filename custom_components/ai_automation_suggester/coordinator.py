@@ -481,8 +481,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Content-Type": "application/json",
             }
 
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_OPENAI, headers=headers, json=body
+                ENDPOINT_OPENAI, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = (
@@ -546,7 +548,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "temperature": temperature,
             }
 
-            async with self.session.post(endpoint, headers=headers, json=body) as resp:
+            timeout = aiohttp.ClientTimeout(total=900)
+
+            async with self.session.post(endpoint, headers=headers, json=body, timeout=timeout) as resp:
                 if resp.status != 200:
                     self._last_error = (
                         f"OpenAI Azure error {resp.status}: {await resp.text()}"
@@ -607,8 +611,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "temperature": temperature,
             }
 
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_ANTHROPIC, headers=headers, json=body
+                ENDPOINT_ANTHROPIC, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = (
@@ -733,8 +739,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Content-Type": "application/json",
             }
 
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_GROQ, headers=headers, json=body
+                ENDPOINT_GROQ, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = f"Groq error {resp.status}: {await resp.text()}"
@@ -791,7 +799,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": out_budget,
                 "temperature": temperature,
             }
-            async with self.session.post(endpoint, json=body) as resp:
+
+            timeout = aiohttp.ClientTimeout(total=900)
+
+            async with self.session.post(endpoint, json=body, timeout=timeout) as resp:
                 if resp.status != 200:
                     self._last_error = (
                         f"LocalAI error {resp.status}: {await resp.text()}"
@@ -858,7 +869,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     "num_predict": out_budget,
                 },
             }
-            async with self.session.post(endpoint, json=body) as resp:
+
+            timeout = aiohttp.ClientTimeout(total=900)
+
+            async with self.session.post(endpoint, json=body, timeout=timeout) as resp:
                 if resp.status != 200:
                     self._last_error = (
                         f"Ollama error {resp.status}: {await resp.text()}"
@@ -915,7 +929,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": out_budget,
                 "temperature": temperature,
             }
-            async with self.session.post(endpoint, headers=headers, json=body) as resp:
+            timeout = aiohttp.ClientTimeout(total=900)
+            async with self.session.post(endpoint, headers=headers, json=body, timeout=timeout) as resp:
                 if resp.status != 200:
                     self._last_error = (
                         f"Custom OpenAI error {resp.status}: {await resp.text()}"
@@ -972,8 +987,11 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "temperature": temperature,
                 "max_tokens": out_budget,
             }
+
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_MISTRAL, headers=headers, json=body
+                ENDPOINT_MISTRAL, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = (
@@ -1031,8 +1049,11 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": out_budget,
                 "temperature": temperature,
             }
+
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_PERPLEXITY, headers=headers, json=body
+                ENDPOINT_PERPLEXITY, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = (
@@ -1097,8 +1118,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             if reasoning_max_tokens > 0:
                 body["reasoning"] = {"max_tokens": reasoning_max_tokens}
 
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_OPENROUTER, headers=headers, json=body
+                ENDPOINT_OPENROUTER, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = (
