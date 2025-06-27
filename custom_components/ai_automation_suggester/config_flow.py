@@ -526,20 +526,21 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
     """Allow post‑setup tweaking of models, keys, token budgets."""
 
     def __init__(self, config_entry):
-        self.config_entry = config_entry
+        super().__init__()
+        self._config_entry = config_entry
 
     def _get_option(self, key, default=None):
         """Get value from options, then data, then default."""
-        if key in self.config_entry.options:
-            return self.config_entry.options.get(key)
-        if key in self.config_entry.data:
-            return self.config_entry.data.get(key)
+        if key in self._config_entry.options:
+            return self._config_entry.options.get(key)
+        if key in self._config_entry.data:
+            return self._config_entry.data.get(key)
         return default
 
     async def async_step_init(self, user_input=None):
         if user_input:
             new_data = {
-                **self.config_entry.options,
+                **self._config_entry.options,
                 **user_input,
                 CONF_MAX_INPUT_TOKENS: user_input.get(
                     CONF_MAX_INPUT_TOKENS,
@@ -552,7 +553,7 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             }
             return self.async_create_entry(title="", data=new_data)
 
-        provider = self.config_entry.data.get(CONF_PROVIDER)
+        provider = self._config_entry.data.get(CONF_PROVIDER)
         schema: Dict[Any, Any] = {
             vol.Optional(CONF_MAX_INPUT_TOKENS, default=self._get_option(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)
             ): vol.All(vol.Coerce(int), vol.Range(min=100)),
