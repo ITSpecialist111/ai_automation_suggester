@@ -116,15 +116,26 @@
         }
       },
       "openai_azure": {
-        "title": "Настроить OpenAI Azure",
+        "title": "Настройка OpenAI Azure",
         "data": {
           "openai_azure_api_key": "Ключ API Azure OpenAI",
-          "openai_azure_deployment_id": "ID Развертывания Azure",
-          "openai_azure_endpoint": "Endpoint Azure",
+          "openai_azure_deployment_id": "ID развертывания Azure",
+          "openai_azure_endpoint": "Конечная точка Azure",
           "openai_azure_api_version": "Версия API Azure",
           "openai_azure_temperature": "Температура",
-          "max_input_tokens": "Макс. Входных Токенов",
-          "max_output_tokens": "Макс. Выходных Токенов"
+          "max_input_tokens": "Макс. входных токенов",
+          "max_output_tokens": "Макс. выходных токенов"
+        }
+      },
+      "generic_openai": {
+        "title": "Настройка Общего OpenAI",
+        "data": {
+          "generic_openai_api_endpoint": "Полная конечная точка API для Общего OpenAI",
+          "generic_openai_api_key": "Ключ API Общего OpenAI (Необязательно)",
+          "generic_openai_model": "Модель Общего OpenAI",
+          "generic_openai_temperature": "Температура",
+          "max_input_tokens": "Макс. входных токенов",
+          "max_output_tokens": "Макс. выходных токенов"
         }
       }
     },
@@ -184,6 +195,10 @@
           "openai_azure_endpoint": "Endpoint Azure",
           "openai_azure_api_version": "Версия API Azure",
           "openai_azure_temperature": "Температура (OpenAI Azure)",
+          "generic_openai_api_endpoint": "Полная конечная точка API для Общего OpenAI",
+          "generic_openai_api_key": "Ключ API Общего OpenAI",
+          "generic_openai_model": "Модель Общего OpenAI",
+          "generic_openai_temperature": "Температура (Общий OpenAI)",
           "max_input_tokens": "Макс. Входных Токенов",
           "max_output_tokens": "Макс. Выходных Токенов"
         },

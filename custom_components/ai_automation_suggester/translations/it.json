@@ -118,13 +118,24 @@
       "openai_azure": {
         "title": "Configura OpenAI Azure",
         "data": {
-          "openai_azure_api_key": "Chiave API Azure OpenAI",
-          "openai_azure_deployment_id": "ID Deployment Azure",
+          "openai_azure_api_key": "Chiave API OpenAI Azure",
+          "openai_azure_deployment_id": "ID Distribuzione Azure",
           "openai_azure_endpoint": "Endpoint Azure",
           "openai_azure_api_version": "Versione API Azure",
           "openai_azure_temperature": "Temperatura",
-          "max_input_tokens": "Max Token di Input",
-          "max_output_tokens": "Max Token di Output"
+          "max_input_tokens": "Token di Input Massimi",
+          "max_output_tokens": "Token di Output Massimi"
+        }
+      },
+      "generic_openai": {
+        "title": "Configura OpenAI Generico",
+        "data": {
+          "generic_openai_api_endpoint": "Endpoint API Completo di OpenAI Generico",
+          "generic_openai_api_key": "Chiave API OpenAI Generico (Opzionale)",
+          "generic_openai_model": "Modello OpenAI Generico",
+          "generic_openai_temperature": "Temperatura",
+          "max_input_tokens": "Token di Input Massimi",
+          "max_output_tokens": "Token di Output Massimi"
         }
       }
     },
@@ -184,6 +195,10 @@
           "openai_azure_endpoint": "Endpoint Azure",
           "openai_azure_api_version": "Versione API Azure",
           "openai_azure_temperature": "Temperatura (OpenAI Azure)",
+          "generic_openai_api_endpoint": "Endpoint API Completo di OpenAI Generico",
+          "generic_openai_api_key": "Chiave API OpenAI Generico",
+          "generic_openai_model": "Modello OpenAI Generico",
+          "generic_openai_temperature": "Temperatura (OpenAI Generico)",
           "max_input_tokens": "Max Token di Input",
           "max_output_tokens": "Max Token di Output"
         },

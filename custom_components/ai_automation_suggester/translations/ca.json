@@ -120,11 +120,22 @@
         "data": {
           "openai_azure_api_key": "Clau API d'Azure OpenAI",
           "openai_azure_deployment_id": "ID de Desplegament d'Azure",
-          "openai_azure_endpoint": "Endpoint d'Azure",
-          "openai_azure_api_version": "Versió API d'Azure",
+          "openai_azure_endpoint": "Punt Final d'Azure",
+          "openai_azure_api_version": "Versió de l'API d'Azure",
           "openai_azure_temperature": "Temperatura",
-          "max_input_tokens": "Màx Tokens d'Entrada",
-          "max_output_tokens": "Màx Tokens de Sortida"
+          "max_input_tokens": "Màx. Tokens d'Entrada",
+          "max_output_tokens": "Màx. Tokens de Sortida"
+        }
+      },
+      "generic_openai": {
+        "title": "Configurar OpenAI Genèric",
+        "data": {
+          "generic_openai_api_endpoint": "Punt Final Complet de l'API d'OpenAI Genèric",
+          "generic_openai_api_key": "Clau API d'OpenAI Genèric (Opcional)",
+          "generic_openai_model": "Model OpenAI Genèric",
+          "generic_openai_temperature": "Temperatura",
+          "max_input_tokens": "Màx. Tokens d'Entrada",
+          "max_output_tokens": "Màx. Tokens de Sortida"
         }
       }
     },
@@ -184,6 +195,10 @@
           "openai_azure_endpoint": "Endpoint d'Azure",
           "openai_azure_api_version": "Versió API d'Azure",
           "openai_azure_temperature": "Temperatura (OpenAI Azure)",
+          "generic_openai_api_endpoint": "Punt Final Complet de l'API d'OpenAI Genèric",
+          "generic_openai_api_key": "Clau API d'OpenAI Genèric",
+          "generic_openai_model": "Model OpenAI Genèric",
+          "generic_openai_temperature": "Temperatura (OpenAI Genèric)",
           "max_input_tokens": "Màx Tokens d'Entrada",
           "max_output_tokens": "Màx Tokens de Sortida"
         },

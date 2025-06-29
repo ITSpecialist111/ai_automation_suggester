@@ -103,6 +103,12 @@ CONF_OPENROUTER_MODEL = "openrouter_model"
 CONF_OPENROUTER_REASONING_MAX_TOKENS = "openrouter_reasoning_max_tokens"
 CONF_OPENROUTER_TEMPERATURE = "openrouter_temperature"
 
+# Generic OpenAI
+CONF_GENERIC_OPENAI_ENDPOINT = "generic_openai_api_endpoint"
+CONF_GENERIC_OPENAI_API_KEY = "generic_openai_api_key"
+CONF_GENERIC_OPENAI_MODEL = "generic_openai_model"
+CONF_GENERIC_OPENAI_TEMPERATURE = "generic_openai_temperature"
+
 # ─────────────────────────────────────────────────────────────
 # Model defaults per provider
 # ─────────────────────────────────────────────────────────────
@@ -118,6 +124,7 @@ DEFAULT_MODELS = {
     "Mistral AI": "mistral-medium",
     "Perplexity AI": "sonar",
     "OpenRouter": "meta-llama/llama-4-maverick:free",
+    "Generic OpenAI": "gpt-3.5-turbo",
 }
 
 # ─────────────────────────────────────────────────────────────

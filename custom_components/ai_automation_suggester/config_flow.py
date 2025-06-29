@@ -11,65 +11,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import TextSelector, TextSelectorConfig
 
-from .const import (  # noqa: E501  (long import list)
-    DOMAIN,
-    CONF_PROVIDER,
-    DEFAULT_TEMPERATURE,
-    # NEW token knobs
-    CONF_MAX_INPUT_TOKENS,
-    CONF_MAX_OUTPUT_TOKENS,
-    DEFAULT_MAX_INPUT_TOKENS,
-    DEFAULT_MAX_OUTPUT_TOKENS,
-    # Legacy fallback (kept for migration)
-    CONF_MAX_TOKENS,
-    DEFAULT_MAX_TOKENS,
-    DEFAULT_MODELS,
-    # Provider‑specific
-    CONF_OPENAI_API_KEY,
-    CONF_OPENAI_MODEL,
-    CONF_OPENAI_TEMPERATURE,
-    CONF_ANTHROPIC_API_KEY,
-    CONF_ANTHROPIC_MODEL,
-    CONF_ANTHROPIC_TEMPERATURE,
-    VERSION_ANTHROPIC,
-    CONF_GOOGLE_API_KEY,
-    CONF_GOOGLE_MODEL,
-    CONF_GOOGLE_TEMPERATURE,
-    CONF_GROQ_API_KEY,
-    CONF_GROQ_MODEL,
-    CONF_GROQ_TEMPERATURE,
-    CONF_LOCALAI_IP_ADDRESS,
-    CONF_LOCALAI_PORT,
-    CONF_LOCALAI_HTTPS,
-    CONF_LOCALAI_MODEL,
-    CONF_LOCALAI_TEMPERATURE,
-    CONF_OLLAMA_IP_ADDRESS,
-    CONF_OLLAMA_PORT,
-    CONF_OLLAMA_HTTPS,
-    CONF_OLLAMA_MODEL,
-    CONF_OLLAMA_TEMPERATURE,
-    CONF_OLLAMA_DISABLE_THINK,
-    CONF_CUSTOM_OPENAI_ENDPOINT,
-    CONF_CUSTOM_OPENAI_API_KEY,
-    CONF_CUSTOM_OPENAI_MODEL,
-    CONF_CUSTOM_OPENAI_TEMPERATURE,
-    CONF_MISTRAL_API_KEY,
-    CONF_MISTRAL_MODEL,
-    CONF_MISTRAL_TEMPERATURE,
-    CONF_PERPLEXITY_API_KEY,
-    CONF_PERPLEXITY_MODEL,
-    CONF_PERPLEXITY_TEMPERATURE,
-    ENDPOINT_PERPLEXITY,
-    CONF_OPENROUTER_API_KEY,
-    CONF_OPENROUTER_MODEL,
-    CONF_OPENROUTER_REASONING_MAX_TOKENS,
-    CONF_OPENROUTER_TEMPERATURE,
-    CONF_OPENAI_AZURE_API_KEY,
-    CONF_OPENAI_AZURE_DEPLOYMENT_ID,
-    CONF_OPENAI_AZURE_API_VERSION,
-    CONF_OPENAI_AZURE_ENDPOINT,
-    CONF_OPENAI_AZURE_TEMPERATURE,
-)
+from .const import *
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -207,6 +149,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "Perplexity AI": self.async_step_perplexity,
                     "OpenRouter": self.async_step_openrouter,
                     "OpenAI Azure": self.async_step_openai_azure,
+                    "Generic OpenAI": self.async_step_generic_openai,
                 }[self.provider]()
 
         return self.async_show_form(
@@ -515,6 +458,30 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input,
         )
 
+    async def async_step_generic_openai(self, user_input=None):
+        """Handle the Generic OpenAI API configuration."""
+        async def _v(ui):
+            if not ui.get(CONF_GENERIC_OPENAI_ENDPOINT) or not ui.get(CONF_GENERIC_OPENAI_API_KEY):
+                return "API URL and API Key are required"
+            return await self.validator.validate_custom_openai(ui[CONF_GENERIC_OPENAI_ENDPOINT], ui[CONF_GENERIC_OPENAI_API_KEY])
+
+        schema = {
+            vol.Required(CONF_GENERIC_OPENAI_ENDPOINT): str,
+            vol.Required(CONF_GENERIC_OPENAI_API_KEY): TextSelector(TextSelectorConfig(type="password")),
+            vol.Optional(CONF_GENERIC_OPENAI_MODEL, default=DEFAULT_MODELS["Generic OpenAI"]): str,
+            vol.Optional(CONF_GENERIC_OPENAI_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0)),
+        }
+        self._add_token_fields(schema)
+        return await self._provider_form(
+            "generic_openai",
+            vol.Schema(schema),
+            _v,
+            "AI Automation Suggester (Generic OpenAI)",
+            {},
+            {},
+            user_input,
+        )
+
     # ───────── Options flow (edit after setup) ─────────
     @staticmethod
     @callback
@@ -615,5 +582,10 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_OPENAI_AZURE_DEPLOYMENT_ID, default=self._get_option(CONF_OPENAI_AZURE_DEPLOYMENT_ID, DEFAULT_MODELS["OpenAI Azure"]))] = str
             schema[vol.Optional(CONF_OPENAI_AZURE_API_VERSION, default=self._get_option(CONF_OPENAI_AZURE_API_VERSION, "2025-01-01-preview"))] = str
             schema[vol.Optional(CONF_OPENAI_AZURE_TEMPERATURE, default=self._get_option(CONF_OPENAI_AZURE_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+        elif provider == "Generic OpenAI":
+            schema[vol.Optional(CONF_GENERIC_OPENAI_API_KEY, default=self._get_option(CONF_GENERIC_OPENAI_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_GENERIC_OPENAI_ENDPOINT, default=self._get_option(CONF_GENERIC_OPENAI_ENDPOINT))] = str
+            schema[vol.Optional(CONF_GENERIC_OPENAI_MODEL, default=self._get_option(CONF_GENERIC_OPENAI_MODEL, DEFAULT_MODELS["Generic OpenAI"]))] = str
+            schema[vol.Optional(CONF_GENERIC_OPENAI_TEMPERATURE, default=self._get_option(CONF_GENERIC_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
 
         return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))
