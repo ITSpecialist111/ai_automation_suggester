@@ -185,6 +185,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "Perplexity AI",
                             "OpenRouter",
                             "OpenAI Azure",
+                            "Generic OpenAI",
                         ]
                     )
                 }
