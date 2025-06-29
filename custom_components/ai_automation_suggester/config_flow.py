@@ -113,19 +113,13 @@ class ProviderValidator:
         except Exception as err:
             return str(err)
 
-    async def validate_generic_openai(self, endpoint: str, api_key: str | None, enable_validation: bool, validation_endpoint: str | None) -> Optional[str]:
+    async def validate_generic_openai(self, endpoint: str, api_key: str) -> Optional[str]:
         hdr = {"Content-Type": "application/json"}
         if api_key:
             hdr["Authorization"] = f"Bearer {api_key}"
         try:
             resp = await self.session.get(f"{endpoint}", headers=hdr)
-            if resp.status == 200:
-                if enable_validation and validation_endpoint:
-                    # Validate the validation endpoint
-                    val_resp = await self.session.get(f"{validation_endpoint}", headers=hdr)
-                    return None if val_resp.status == 200 else await val_resp.text()
-                return None
-            return await resp.text()
+            return None if resp.status == 200 else await resp.text()
         except Exception as err:
             return str(err)
 
@@ -174,18 +168,18 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_PROVIDER): vol.In(
                         [
-                            "OpenAI",
                             "Anthropic",
+                            "Custom OpenAI",
+                            "Generic OpenAI",
                             "Google",
                             "Groq",
                             "LocalAI",
-                            "Ollama",
-                            "Custom OpenAI",
                             "Mistral AI",
-                            "Perplexity AI",
-                            "OpenRouter",
+                            "Ollama",
                             "OpenAI Azure",
-                            "Generic OpenAI",
+                            "OpenAI",
+                            "OpenRouter",
+                            "Perplexity AI",
                         ]
                     )
                 }
