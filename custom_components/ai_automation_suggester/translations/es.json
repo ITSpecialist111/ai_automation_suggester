@@ -130,10 +130,12 @@
       "generic_openai": {
         "title": "Configurar OpenAI Genérico",
         "data": {
-          "generic_openai_api_endpoint": "Endpoint Completo de API de OpenAI Genérico",
+          "generic_openai_api_endpoint": "Endpoint Completo de API de OpenAI Genérico (debe terminar con 'completions')",
           "generic_openai_api_key": "Clave API de OpenAI Genérico (Opcional)",
           "generic_openai_model": "Modelo OpenAI Genérico",
           "generic_openai_temperature": "Temperatura",
+          "generic_openai_validation_endpoint": "Endpoint de Validación (debe terminar con 'models')",
+          "generic_openai_enable_validation": "Habilitar Validación",
           "max_input_tokens": "Máx Tokens de Entrada",
           "max_output_tokens": "Máx Tokens de Salida"
         }
@@ -195,10 +197,12 @@
           "openai_azure_endpoint": "Endpoint de Azure",
           "openai_azure_api_version": "Versión API de Azure",
           "openai_azure_temperature": "Temperatura (OpenAI Azure)",
-          "generic_openai_api_endpoint": "Endpoint Completo de API de OpenAI Genérico",
+          "generic_openai_api_endpoint": "Endpoint Completo de API de OpenAI Genérico (debe terminar con 'completions')",
           "generic_openai_api_key": "Clave API de OpenAI Genérico",
           "generic_openai_model": "Modelo OpenAI Genérico",
           "generic_openai_temperature": "Temperatura (OpenAI Genérico)",
+          "generic_openai_validation_endpoint": "Endpoint de Validación (OpenAI Genérico, debe terminar con 'models')",
+          "generic_openai_enable_validation": "Habilitar Validación (OpenAI Genérico)",
           "max_input_tokens": "Máx Tokens de Entrada",
           "max_output_tokens": "Máx Tokens de Salida"
         },

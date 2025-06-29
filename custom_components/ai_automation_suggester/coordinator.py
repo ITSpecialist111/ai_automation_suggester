@@ -536,12 +536,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             if not re.match(r"^https?://", endpoint):
                 raise ValueError("Generic OpenAI endpoint must start with http:// or https://")
 
-
-            api_key  = self._opt(CONF_GENERIC_OPENAI_API_KEY)
-            model    = self._opt(CONF_GENERIC_OPENAI_MODEL, DEFAULT_MODELS["Generic OpenAI"])
+            api_key = self._opt(CONF_GENERIC_OPENAI_API_KEY)
+            model = self._opt(CONF_GENERIC_OPENAI_MODEL, DEFAULT_MODELS["Generic OpenAI"])
             temperature = self._opt(CONF_GENERIC_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
-
 
             if len(prompt) // 4 > in_budget:
                 prompt = prompt[: in_budget * 4]

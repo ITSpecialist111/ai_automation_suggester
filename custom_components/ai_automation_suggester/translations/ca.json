@@ -123,19 +123,21 @@
           "openai_azure_endpoint": "Punt Final d'Azure",
           "openai_azure_api_version": "Versió de l'API d'Azure",
           "openai_azure_temperature": "Temperatura",
-          "max_input_tokens": "Màx. Tokens d'Entrada",
-          "max_output_tokens": "Màx. Tokens de Sortida"
+          "max_input_tokens": "Tokens d'Entrada Màxims",
+          "max_output_tokens": "Tokens de Sortida Màxims"
         }
       },
       "generic_openai": {
         "title": "Configurar OpenAI Genèric",
         "data": {
-          "generic_openai_api_endpoint": "Punt Final Complet de l'API d'OpenAI Genèric",
+          "generic_openai_api_endpoint": "Punt Final API Complet d'OpenAI Genèric (hauria de acabar amb 'completions')",
           "generic_openai_api_key": "Clau API d'OpenAI Genèric (Opcional)",
-          "generic_openai_model": "Model OpenAI Genèric",
+          "generic_openai_model": "Model d'OpenAI Genèric",
           "generic_openai_temperature": "Temperatura",
-          "max_input_tokens": "Màx. Tokens d'Entrada",
-          "max_output_tokens": "Màx. Tokens de Sortida"
+          "generic_openai_validation_endpoint": "Punt Final de Validació (hauria de acabar amb 'models')",
+          "generic_openai_enable_validation": "Activar Validació",
+          "max_input_tokens": "Tokens d'Entrada Màxims",
+          "max_output_tokens": "Tokens de Sortida Màxims"
         }
       }
     },
@@ -195,10 +197,12 @@
           "openai_azure_endpoint": "Endpoint d'Azure",
           "openai_azure_api_version": "Versió API d'Azure",
           "openai_azure_temperature": "Temperatura (OpenAI Azure)",
-          "generic_openai_api_endpoint": "Punt Final Complet de l'API d'OpenAI Genèric",
+          "generic_openai_api_endpoint": "Punt Final Complet de l'API d'OpenAI Genèric (hauria de acabar amb 'completions')",
           "generic_openai_api_key": "Clau API d'OpenAI Genèric",
           "generic_openai_model": "Model OpenAI Genèric",
           "generic_openai_temperature": "Temperatura (OpenAI Genèric)",
+          "generic_openai_validation_endpoint": "Punt Final de Validació (OpenAI Genèric, hauria de acabar amb 'models')",
+          "generic_openai_enable_validation": "Activar Validació (OpenAI Genèric)",
           "max_input_tokens": "Màx Tokens d'Entrada",
           "max_output_tokens": "Màx Tokens de Sortida"
         },

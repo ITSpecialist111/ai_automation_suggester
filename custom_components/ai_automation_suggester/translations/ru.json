@@ -123,19 +123,21 @@
           "openai_azure_endpoint": "Конечная точка Azure",
           "openai_azure_api_version": "Версия API Azure",
           "openai_azure_temperature": "Температура",
-          "max_input_tokens": "Макс. входных токенов",
-          "max_output_tokens": "Макс. выходных токенов"
+          "max_input_tokens": "Максимальное количество входных токенов",
+          "max_output_tokens": "Максимальное количество выходных токенов"
         }
       },
       "generic_openai": {
-        "title": "Настройка Общего OpenAI",
+        "title": "Настройка универсального OpenAI",
         "data": {
-          "generic_openai_api_endpoint": "Полная конечная точка API для Общего OpenAI",
-          "generic_openai_api_key": "Ключ API Общего OpenAI (Необязательно)",
-          "generic_openai_model": "Модель Общего OpenAI",
+          "generic_openai_api_endpoint": "Полный API-эндпоинт универсального OpenAI (должен заканчиваться на 'completions')",
+          "generic_openai_api_key": "Ключ API универсального OpenAI (опционально)",
+          "generic_openai_model": "Модель универсального OpenAI",
           "generic_openai_temperature": "Температура",
-          "max_input_tokens": "Макс. входных токенов",
-          "max_output_tokens": "Макс. выходных токенов"
+          "generic_openai_validation_endpoint": "Конечная точка валидации (должна заканчиваться на 'models')",
+          "generic_openai_enable_validation": "Включить валидацию",
+          "max_input_tokens": "Максимальное количество входных токенов",
+          "max_output_tokens": "Максимальное количество выходных токенов"
         }
       }
     },
@@ -195,10 +197,13 @@
           "openai_azure_endpoint": "Endpoint Azure",
           "openai_azure_api_version": "Версия API Azure",
           "openai_azure_temperature": "Температура (OpenAI Azure)",
-          "generic_openai_api_endpoint": "Полная конечная точка API для Общего OpenAI",
+          "openai_azure_enable_validation": "Включить валидацию (OpenAI Azure)",
+          "generic_openai_api_endpoint": "Полная конечная точка API для Общего OpenAI (должна заканчиваться на 'completions')",
           "generic_openai_api_key": "Ключ API Общего OpenAI",
           "generic_openai_model": "Модель Общего OpenAI",
           "generic_openai_temperature": "Температура (Общий OpenAI)",
+          "generic_openai_validation_endpoint": "Конечная точка валидации (Общий OpenAI, должна заканчиваться на 'models')",
+          "generic_openai_enable_validation": "Включить валидацию (Общий OpenAI)",
           "max_input_tokens": "Макс. Входных Токенов",
           "max_output_tokens": "Макс. Выходных Токенов"
         },

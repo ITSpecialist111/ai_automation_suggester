@@ -130,10 +130,12 @@
       "generic_openai": {
         "title": "配置通用 OpenAI",
         "data": {
-          "generic_openai_api_endpoint": "通用 OpenAI API 完整端点",
+          "generic_openai_api_endpoint": "通用 OpenAI 完整 API 端点（应以 'completions' 结尾）",
           "generic_openai_api_key": "通用 OpenAI API 密钥（可选）",
           "generic_openai_model": "通用 OpenAI 模型",
           "generic_openai_temperature": "温度",
+          "generic_openai_validation_endpoint": "验证端点（应以 'models' 结尾）",
+          "generic_openai_enable_validation": "启用验证",
           "max_input_tokens": "最大输入令牌数",
           "max_output_tokens": "最大输出令牌数"
         }
@@ -195,10 +197,12 @@
           "openai_azure_endpoint": "Azure 端点",
           "openai_azure_api_version": "Azure API 版本",
           "openai_azure_temperature": "温度 (OpenAI Azure)",
-          "generic_openai_api_endpoint": "通用 OpenAI API 完整端点",
+          "generic_openai_api_endpoint": "通用 OpenAI API 完整端点 (应以 'completions' 结尾)",
           "generic_openai_api_key": "通用 OpenAI API 密钥",
           "generic_openai_model": "通用 OpenAI 模型",
           "generic_openai_temperature": "温度 (通用 OpenAI)",
+          "generic_openai_validation_endpoint": "验证端点 (通用 OpenAI，应以 'models' 结尾)",
+          "generic_openai_enable_validation": "启用验证 (通用 OpenAI)",
           "max_input_tokens": "最大输入令牌数",
           "max_output_tokens": "最大输出令牌数"
         },

@@ -108,6 +108,8 @@ CONF_GENERIC_OPENAI_ENDPOINT = "generic_openai_api_endpoint"
 CONF_GENERIC_OPENAI_API_KEY = "generic_openai_api_key"
 CONF_GENERIC_OPENAI_MODEL = "generic_openai_model"
 CONF_GENERIC_OPENAI_TEMPERATURE = "generic_openai_temperature"
+CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT = "generic_openai_validation_endpoint"
+CONF_GENERIC_OPENAI_ENABLE_VALIDATION = "generic_openai_enable_validation"
 
 # ─────────────────────────────────────────────────────────────
 # Model defaults per provider

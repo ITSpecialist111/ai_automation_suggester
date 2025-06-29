@@ -120,7 +120,7 @@
         "data": {
           "openai_azure_api_key": "Azure OpenAI API-sleutel",
           "openai_azure_deployment_id": "Azure Implementatie-ID",
-          "openai_azure_endpoint": "Azure Eindpunt",
+          "openai_azure_endpoint": "Azure Endpoint",
           "openai_azure_api_version": "Azure API-versie",
           "openai_azure_temperature": "Temperatuur",
           "max_input_tokens": "Max Invoer Tokens",
@@ -130,10 +130,12 @@
       "generic_openai": {
         "title": "Configureer Generieke OpenAI",
         "data": {
-          "generic_openai_api_endpoint": "Volledig API-eindpunt voor Generieke OpenAI",
+          "generic_openai_api_endpoint": "Volledige API Endpoint Generieke OpenAI (moet eindigen op 'completions')",
           "generic_openai_api_key": "Generieke OpenAI API-sleutel (Optioneel)",
-          "generic_openai_model": "Generiek OpenAI-model",
+          "generic_openai_model": "Generiek OpenAI Model",
           "generic_openai_temperature": "Temperatuur",
+          "generic_openai_validation_endpoint": "Validatie Endpoint (moet eindigen op 'models')",
+          "generic_openai_enable_validation": "Validatie Inschakelen",
           "max_input_tokens": "Max Invoer Tokens",
           "max_output_tokens": "Max Uitvoer Tokens"
         }
@@ -195,10 +197,12 @@
           "openai_azure_endpoint": "Azure Eindpunt",
           "openai_azure_api_version": "Azure API Versie",
           "openai_azure_temperature": "Temperatuur (OpenAI Azure)",
-          "generic_openai_api_endpoint": "Volledig API-eindpunt voor Generieke OpenAI",
+          "generic_openai_api_endpoint": "Volledig API-eindpunt voor Generieke OpenAI (moet eindigen op 'completions')",
           "generic_openai_api_key": "Generieke OpenAI API-sleutel",
           "generic_openai_model": "Generiek OpenAI-model",
           "generic_openai_temperature": "Temperatuur (Generieke OpenAI)",
+          "generic_openai_validation_endpoint": "Validatie Endpoint (Generieke OpenAI, moet eindigen op 'models')",
+          "generic_openai_enable_validation": "Validatie Inschakelen (Generieke OpenAI)",
           "max_input_tokens": "Max Input Tokens",
           "max_output_tokens": "Max Output Tokens"
         },

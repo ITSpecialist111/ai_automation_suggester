@@ -113,6 +113,21 @@ class ProviderValidator:
         except Exception as err:
             return str(err)
 
+    async def validate_generic_openai(self, endpoint: str, api_key: str | None, enable_validation: bool, validation_endpoint: str | None) -> Optional[str]:
+        hdr = {"Content-Type": "application/json"}
+        if api_key:
+            hdr["Authorization"] = f"Bearer {api_key}"
+        try:
+            resp = await self.session.get(f"{endpoint}", headers=hdr)
+            if resp.status == 200:
+                if enable_validation and validation_endpoint:
+                    # Validate the validation endpoint
+                    val_resp = await self.session.get(f"{validation_endpoint}", headers=hdr)
+                    return None if val_resp.status == 200 else await val_resp.text()
+                return None
+            return await resp.text()
+        except Exception as err:
+
 
 # ─────────────────────────────────────────────────────────────
 # Config‑flow main class
@@ -442,9 +457,9 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         schema = {
             vol.Required(CONF_OPENAI_AZURE_API_KEY): TextSelector(TextSelectorConfig(type="password")),
-            vol.Optional(CONF_OPENAI_AZURE_DEPLOYMENT_ID, default=DEFAULT_MODELS["OpenAI Azure"]): str,
-            vol.Optional(CONF_OPENAI_AZURE_ENDPOINT, default="{your-resource-name}.openai.azure.com"): str,
-            vol.Optional(CONF_OPENAI_AZURE_API_VERSION, default="2025-01-01-preview"): str,
+            vol.Required(CONF_OPENAI_AZURE_DEPLOYMENT_ID, default=DEFAULT_MODELS["OpenAI Azure"]): str,
+            vol.Required(CONF_OPENAI_AZURE_ENDPOINT, default="{your-resource-name}.openai.azure.com"): str,
+            vol.Required(CONF_OPENAI_AZURE_API_VERSION, default="2025-01-01-preview"): str,
             vol.Optional(CONF_OPENAI_AZURE_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0)),
         }
         self._add_token_fields(schema)
@@ -461,15 +476,20 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_generic_openai(self, user_input=None):
         """Handle the Generic OpenAI API configuration."""
         async def _v(ui):
-            if not ui.get(CONF_GENERIC_OPENAI_ENDPOINT) or not ui.get(CONF_GENERIC_OPENAI_API_KEY):
-                return "API URL and API Key are required"
-            return await self.validator.validate_custom_openai(ui[CONF_GENERIC_OPENAI_ENDPOINT], ui[CONF_GENERIC_OPENAI_API_KEY])
+            if not ui.get(CONF_GENERIC_OPENAI_ENDPOINT):
+                return "API URL is required"
+            if ui.get(CONF_GENERIC_OPENAI_ENABLE_VALIDATION, False):
+                if not ui.get(CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT):
+                    return "Validation endpoint is required when validation is enabled"
+                return await self.validator.validate_generic_openai(ui[CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT], ui.get(CONF_GENERIC_OPENAI_API_KEY))
 
         schema = {
             vol.Required(CONF_GENERIC_OPENAI_ENDPOINT): str,
             vol.Required(CONF_GENERIC_OPENAI_API_KEY): TextSelector(TextSelectorConfig(type="password")),
-            vol.Optional(CONF_GENERIC_OPENAI_MODEL, default=DEFAULT_MODELS["Generic OpenAI"]): str,
+            vol.Required(CONF_GENERIC_OPENAI_MODEL, default=DEFAULT_MODELS["Generic OpenAI"]): str,
             vol.Optional(CONF_GENERIC_OPENAI_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0)),
+            vol.Optional(CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT, default=""): str,
+            vol.Optional(CONF_GENERIC_OPENAI_ENABLE_VALIDATION, default=False): bool,
         }
         self._add_token_fields(schema)
         return await self._provider_form(
@@ -587,5 +607,7 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_GENERIC_OPENAI_ENDPOINT, default=self._get_option(CONF_GENERIC_OPENAI_ENDPOINT))] = str
             schema[vol.Optional(CONF_GENERIC_OPENAI_MODEL, default=self._get_option(CONF_GENERIC_OPENAI_MODEL, DEFAULT_MODELS["Generic OpenAI"]))] = str
             schema[vol.Optional(CONF_GENERIC_OPENAI_TEMPERATURE, default=self._get_option(CONF_GENERIC_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+            schema[vol.Optional(CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT, default=self._get_option(CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT, ""))] = str
+            schema[vol.Optional(CONF_GENERIC_OPENAI_ENABLE_VALIDATION, default=self._get_option(CONF_GENERIC_OPENAI_ENABLE_VALIDATION, False))] = bool
 
         return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))
