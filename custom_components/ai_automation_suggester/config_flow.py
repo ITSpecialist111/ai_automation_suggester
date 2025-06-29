@@ -127,6 +127,7 @@ class ProviderValidator:
                 return None
             return await resp.text()
         except Exception as err:
+            return str(err)
 
 
 # ─────────────────────────────────────────────────────────────
