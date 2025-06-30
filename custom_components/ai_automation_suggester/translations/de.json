@@ -1,5 +1,5 @@
 {
-  "title": "KI Automatisierungs-Vorschlag",
+  "title": "AI Automation Suggester",
   "config": {
     "step": {
       "user": {
@@ -14,8 +14,8 @@
           "openai_api_key": "OpenAI API-Schlüssel",
           "openai_model": "OpenAI-Modell",
           "openai_temperature": "Temperatur",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       },
       "anthropic": {
@@ -24,8 +24,8 @@
           "anthropic_api_key": "Anthropic API-Schlüssel",
           "anthropic_model": "Anthropic-Modell",
           "anthropic_temperature": "Temperatur",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       },
       "google": {
@@ -34,8 +34,8 @@
           "google_api_key": "Google API-Schlüssel",
           "google_model": "Google-Modell",
           "google_temperature": "Temperatur",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       },
       "groq": {
@@ -44,8 +44,8 @@
           "groq_api_key": "Groq API-Schlüssel",
           "groq_model": "Groq-Modell",
           "groq_temperature": "Temperatur",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       },
       "localai": {
@@ -56,8 +56,8 @@
           "localai_https": "HTTPS für LocalAI verwenden",
           "localai_model": "LocalAI-Modell",
           "localai_temperature": "Temperatur",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       },
       "ollama": {
@@ -69,8 +69,8 @@
           "ollama_model": "Ollama-Modell",
           "ollama_temperature": "Temperatur",
           "ollama_disable_think": "Denkmodus deaktivieren (Ollama)",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       },
       "custom_openai": {
@@ -80,8 +80,8 @@
           "custom_openai_api_key": "Benutzerdefinierter OpenAI API-Schlüssel (Optional)",
           "custom_openai_model": "Benutzerdefiniertes OpenAI-Modell",
           "custom_openai_temperature": "Temperatur",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       },
       "mistral": {
@@ -90,8 +90,8 @@
           "mistral_api_key": "Mistral API-Schlüssel",
           "mistral_model": "Mistral-Modell",
           "mistral_temperature": "Temperatur",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       },
       "perplexity": {
@@ -100,8 +100,8 @@
           "perplexity_api_key": "Perplexity API-Schlüssel",
           "perplexity_model": "Perplexity-Modell",
           "perplexity_temperature": "Temperatur",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       },
       "openrouter": {
@@ -109,22 +109,35 @@
         "data": {
           "openrouter_api_key": "OpenRouter API-Schlüssel",
           "openrouter_model": "OpenRouter-Modell",
-          "openrouter_reasoning_max_tokens": "Max. Tokens für Schlussfolgerungen (OpenRouter)",
+          "openrouter_reasoning_max_tokens": "Maximale Tokens für Schlussfolgerungen (OpenRouter)",
           "openrouter_temperature": "Temperatur",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       },
       "openai_azure": {
         "title": "OpenAI Azure konfigurieren",
         "data": {
           "openai_azure_api_key": "Azure OpenAI API-Schlüssel",
-          "openai_azure_deployment_id": "Azure Deployment-ID",
+          "openai_azure_deployment_id": "Azure Bereitstellungs-ID",
           "openai_azure_endpoint": "Azure-Endpunkt",
           "openai_azure_api_version": "Azure API-Version",
           "openai_azure_temperature": "Temperatur",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
+        }
+      },
+      "generic_openai": {
+        "title": "Generisches OpenAI konfigurieren",
+        "data": {
+          "generic_openai_api_endpoint": "Vollständige API-URL für generisches OpenAI (sollte auf 'completions' enden)",
+          "generic_openai_api_key": "Generischer OpenAI API-Schlüssel (optional)",
+          "generic_openai_model": "Generisches OpenAI-Modell",
+          "generic_openai_temperature": "Temperatur",
+          "generic_openai_validation_endpoint": "Validierungs-URL (sollte auf 'models' enden)",
+          "generic_openai_enable_validation": "Validierung aktivieren",
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         }
       }
     },
@@ -140,7 +153,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Optionen für KI Automatisierungs-Vorschlag",
+        "title": "Optionen für KI-Automatisierungsvorschläge",
         "data": {
           "openai_api_key": "OpenAI API-Schlüssel",
           "openai_model": "OpenAI-Modell",
@@ -177,17 +190,23 @@
           "perplexity_temperature": "Temperatur (Perplexity AI)",
           "openrouter_api_key": "OpenRouter API-Schlüssel",
           "openrouter_model": "OpenRouter-Modell",
-          "openrouter_reasoning_max_tokens": "Max. Tokens für Schlussfolgerungen (OpenRouter)",
+          "openrouter_reasoning_max_tokens": "Maximale Tokens für Schlussfolgerungen (OpenRouter)",
           "openrouter_temperature": "Temperatur (OpenRouter)",
           "openai_azure_api_key": "Azure OpenAI API-Schlüssel",
-          "openai_azure_deployment_id": "Azure Deployment-ID",
+          "openai_azure_deployment_id": "Azure Bereitstellungs-ID",
           "openai_azure_endpoint": "Azure-Endpunkt",
           "openai_azure_api_version": "Azure API-Version",
           "openai_azure_temperature": "Temperatur (OpenAI Azure)",
-          "max_input_tokens": "Max. Eingabe-Tokens",
-          "max_output_tokens": "Max. Ausgabe-Tokens"
+          "generic_openai_api_endpoint": "Vollständige API-URL für generisches OpenAI (sollte auf 'completions' enden)",
+          "generic_openai_api_key": "Generischer OpenAI API-Schlüssel",
+          "generic_openai_model": "Generisches OpenAI-Modell",
+          "generic_openai_temperature": "Temperatur (Generisches OpenAI)",
+          "generic_openai_validation_endpoint": "Validierungs-URL (Generisches OpenAI, sollte auf 'models' enden)",
+          "generic_openai_enable_validation": "Validierung aktivieren (Generisches OpenAI)",
+          "max_input_tokens": "Maximale Eingabe-Tokens",
+          "max_output_tokens": "Maximale Ausgabe-Tokens"
         },
-        "description": "Passen Sie die Einstellungen für Ihre KI-Anbieter an. Es werden die für Ihren konfigurierten Anbieter relevanten Felder verwendet. Allgemeine Einstellungen wie Token-Limits werden pro Anbieter konfiguriert."
+        "description": "Passen Sie die Einstellungen für Ihre KI-Anbieter an. Es werden nur die für den konfigurierten Anbieter relevanten Felder verwendet. Allgemeine Einstellungen wie Token-Limits werden pro Anbieter festgelegt."
       }
     },
     "error": {
@@ -205,7 +224,7 @@
         },
         "custom_prompt": {
           "name": "Benutzerdefinierter Prompt",
-          "description": "Optionaler benutzerdefinierter Prompt, um den Standard-System-Prompt zu überschreiben oder die Vorschläge auf bestimmte Themen auszurichten"
+          "description": "Optionaler benutzerdefinierter Prompt, um den Standard-System-Prompt zu überschreiben oder die Vorschläge auf bestimmte Themen auszurichten."
         },
         "all_entities": {
           "name": "Alle Entitäten berücksichtigen",
@@ -221,10 +240,10 @@
         },
         "automation_read_yaml": {
           "name": "Datei 'automations.yaml' lesen",
-          "description": "Liest und hängt den YAML-Code der in der Datei automations.yaml gefundenen Automatisierungen an. Diese Aktion verbraucht viele Eingabe-Tokens. Verwenden Sie sie mit Bedacht und mit Modellen mit einem großen Eingabefenster (z.B. Gemini)."
+          "description": "Liest den YAML-Code der in der 'automations.yaml'-Datei gefundenen Automatisierungen und fügt ihn an. Diese Aktion verbraucht viele Eingabe-Tokens. Verwenden Sie sie mit Vorsicht und mit Modellen, die ein großes Kontextfenster haben (z.B. Gemini)."
         },
         "automation_limit": {
-          "name": "Automatisierungslimit",
+          "name": "Limit für Automatisierungen",
           "description": "Maximale Anzahl der zu analysierenden Automatisierungen (Standard: 100)."
         }
       }

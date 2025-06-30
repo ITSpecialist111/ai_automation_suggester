@@ -23,70 +23,7 @@ from homeassistant.helpers import (
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import (  # noqa: E501
-    DOMAIN,
-    CONF_PROVIDER,
-    # New token knobs
-    CONF_MAX_INPUT_TOKENS,
-    CONF_MAX_OUTPUT_TOKENS,
-    # Legacy fallback
-    CONF_MAX_TOKENS,
-    DEFAULT_MAX_TOKENS,
-    DEFAULT_TEMPERATURE,
-    DEFAULT_MODELS,
-    # Provider‑specific keys + endpoints
-    CONF_OPENAI_API_KEY,
-    CONF_OPENAI_MODEL,
-    CONF_OPENAI_TEMPERATURE,
-    ENDPOINT_OPENAI,
-    CONF_ANTHROPIC_API_KEY,
-    CONF_ANTHROPIC_MODEL,
-    VERSION_ANTHROPIC,
-    ENDPOINT_ANTHROPIC,
-    CONF_ANTHROPIC_TEMPERATURE,
-    CONF_GOOGLE_API_KEY,
-    CONF_GOOGLE_MODEL,
-    CONF_GOOGLE_TEMPERATURE,
-    CONF_GROQ_API_KEY,
-    CONF_GROQ_MODEL,
-    CONF_GROQ_TEMPERATURE,
-    ENDPOINT_GROQ,
-    CONF_LOCALAI_IP_ADDRESS,
-    CONF_LOCALAI_PORT,
-    CONF_LOCALAI_HTTPS,
-    CONF_LOCALAI_MODEL,
-    CONF_LOCALAI_TEMPERATURE,
-    ENDPOINT_LOCALAI,
-    CONF_OLLAMA_IP_ADDRESS,
-    CONF_OLLAMA_PORT,
-    CONF_OLLAMA_HTTPS,
-    CONF_OLLAMA_MODEL,
-    CONF_OLLAMA_TEMPERATURE,
-    CONF_OLLAMA_DISABLE_THINK,
-    ENDPOINT_OLLAMA,
-    CONF_CUSTOM_OPENAI_ENDPOINT,
-    CONF_CUSTOM_OPENAI_API_KEY,
-    CONF_CUSTOM_OPENAI_MODEL,
-    CONF_CUSTOM_OPENAI_TEMPERATURE,
-    CONF_MISTRAL_API_KEY,
-    CONF_MISTRAL_MODEL,
-    CONF_MISTRAL_TEMPERATURE,
-    ENDPOINT_MISTRAL,
-    CONF_PERPLEXITY_API_KEY,
-    CONF_PERPLEXITY_MODEL,
-    CONF_PERPLEXITY_TEMPERATURE,
-    ENDPOINT_PERPLEXITY,
-    CONF_OPENROUTER_API_KEY,
-    CONF_OPENROUTER_MODEL,
-    CONF_OPENROUTER_REASONING_MAX_TOKENS,
-    CONF_OPENROUTER_TEMPERATURE,
-    ENDPOINT_OPENROUTER,
-    CONF_OPENAI_AZURE_API_KEY,
-    CONF_OPENAI_AZURE_DEPLOYMENT_ID,
-    CONF_OPENAI_AZURE_API_VERSION,
-    CONF_OPENAI_AZURE_ENDPOINT,
-    CONF_OPENAI_AZURE_TEMPERATURE,
-)
+from .const import *
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -445,6 +382,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Perplexity AI": self._perplexity,
                 "OpenRouter": self._openrouter,
                 "OpenAI Azure": self._openai_azure,
+                "Generic OpenAI": self._generic_openai,
             }[provider](prompt)
         except KeyError:
             self._last_error = f"Unknown provider '{provider}'"
@@ -481,8 +419,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Content-Type": "application/json",
             }
 
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_OPENAI, headers=headers, json=body
+                ENDPOINT_OPENAI, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = (
@@ -546,7 +486,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "temperature": temperature,
             }
 
-            async with self.session.post(endpoint, headers=headers, json=body) as resp:
+            timeout = aiohttp.ClientTimeout(total=900)
+
+            async with self.session.post(endpoint, headers=headers, json=body, timeout=timeout) as resp:
                 if resp.status != 200:
                     self._last_error = (
                         f"OpenAI Azure error {resp.status}: {await resp.text()}"
@@ -580,6 +522,73 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             _LOGGER.exception("Unexpected error in OpenAI Azure API call:")
             return None
 
+    # ---------------- Generic OpenAI ---------------------------------------------
+    async def _generic_openai(self, prompt: str) -> str | None:
+        try:
+            endpoint = self._opt(CONF_GENERIC_OPENAI_ENDPOINT) 
+            if not endpoint:
+                raise ValueError("Generic OpenAI endpoint not configured")
+
+            # Remove trailing slash if present
+            endpoint = endpoint.rstrip('/')
+            
+            # Ensure the endpoint is a valid URL
+            if not re.match(r"^https?://", endpoint):
+                raise ValueError("Generic OpenAI endpoint must start with http:// or https://")
+
+            api_key = self._opt(CONF_GENERIC_OPENAI_API_KEY)
+            model = self._opt(CONF_GENERIC_OPENAI_MODEL, DEFAULT_MODELS["Generic OpenAI"])
+            temperature = self._opt(CONF_GENERIC_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE)
+            in_budget, out_budget = self._budgets()
+
+            if len(prompt) // 4 > in_budget:
+                prompt = prompt[: in_budget * 4]
+
+            headers = {"Content-Type": "application/json"}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+
+            body = {
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": out_budget,
+                "temperature": temperature,
+            }
+            timeout = aiohttp.ClientTimeout(total=900)
+            async with self.session.post(endpoint, headers=headers, json=body, timeout=timeout) as resp:
+                if resp.status != 200:
+                    self._last_error = (
+                        f"Generic OpenAI error {resp.status}: {await resp.text()}"
+                    )
+                    _LOGGER.error(self._last_error)
+                    return None
+                
+                res = await resp.json()
+
+            if not isinstance(res, dict):
+                raise ValueError(f"Unexpected response format: {res}")
+                
+            if "choices" not in res:
+                raise ValueError(f"Response missing 'choices' array: {res}")
+                
+            if not res["choices"] or not isinstance(res["choices"], list):
+                raise ValueError(f"Empty or invalid 'choices' array: {res}")
+                
+            if "message" not in res["choices"][0]:
+                raise ValueError(f"First choice missing 'message': {res['choices'][0]}")
+                
+            if "content" not in res["choices"][0]["message"]:
+                raise ValueError(f"Message missing 'content': {res['choices'][0]['message']}")
+                
+            return res["choices"][0]["message"]["content"]
+        
+        except Exception as err:
+            self._last_error = f"Generic OpenAI processing error: {str(err)}"
+            _LOGGER.error(self._last_error)
+            # Log stack trace for unexpected errors
+            _LOGGER.exception("Unexpected error in Generic OpenAI API call:")
+            return None
+
     # ---------------- Anthropic ------------------------------------------------
     async def _anthropic(self, prompt: str) -> str | None:
         try:
@@ -607,8 +616,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "temperature": temperature,
             }
 
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_ANTHROPIC, headers=headers, json=body
+                ENDPOINT_ANTHROPIC, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = (
@@ -733,8 +744,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Content-Type": "application/json",
             }
 
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_GROQ, headers=headers, json=body
+                ENDPOINT_GROQ, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = f"Groq error {resp.status}: {await resp.text()}"
@@ -791,7 +804,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": out_budget,
                 "temperature": temperature,
             }
-            async with self.session.post(endpoint, json=body) as resp:
+
+            timeout = aiohttp.ClientTimeout(total=900)
+
+            async with self.session.post(endpoint, json=body, timeout=timeout) as resp:
                 if resp.status != 200:
                     self._last_error = (
                         f"LocalAI error {resp.status}: {await resp.text()}"
@@ -858,7 +874,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     "num_predict": out_budget,
                 },
             }
-            async with self.session.post(endpoint, json=body) as resp:
+
+            timeout = aiohttp.ClientTimeout(total=900)
+
+            async with self.session.post(endpoint, json=body, timeout=timeout) as resp:
                 if resp.status != 200:
                     self._last_error = (
                         f"Ollama error {resp.status}: {await resp.text()}"
@@ -915,7 +934,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": out_budget,
                 "temperature": temperature,
             }
-            async with self.session.post(endpoint, headers=headers, json=body) as resp:
+            timeout = aiohttp.ClientTimeout(total=900)
+            async with self.session.post(endpoint, headers=headers, json=body, timeout=timeout) as resp:
                 if resp.status != 200:
                     self._last_error = (
                         f"Custom OpenAI error {resp.status}: {await resp.text()}"
@@ -972,8 +992,11 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "temperature": temperature,
                 "max_tokens": out_budget,
             }
+
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_MISTRAL, headers=headers, json=body
+                ENDPOINT_MISTRAL, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = (
@@ -1031,8 +1054,11 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "max_tokens": out_budget,
                 "temperature": temperature,
             }
+
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_PERPLEXITY, headers=headers, json=body
+                ENDPOINT_PERPLEXITY, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = (
@@ -1097,8 +1123,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             if reasoning_max_tokens > 0:
                 body["reasoning"] = {"max_tokens": reasoning_max_tokens}
 
+            timeout = aiohttp.ClientTimeout(total=900)
+
             async with self.session.post(
-                ENDPOINT_OPENROUTER, headers=headers, json=body
+                ENDPOINT_OPENROUTER, headers=headers, json=body, timeout=timeout
             ) as resp:
                 if resp.status != 200:
                     self._last_error = (

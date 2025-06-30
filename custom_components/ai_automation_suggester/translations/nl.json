@@ -1,5 +1,5 @@
 {
-  "title": "AI Automatisering Suggester",
+  "title": "AI Automation Suggester",
   "config": {
     "step": {
       "user": {
@@ -14,8 +14,8 @@
           "openai_api_key": "OpenAI API-sleutel",
           "openai_model": "OpenAI Model",
           "openai_temperature": "Temperatuur",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       },
       "anthropic": {
@@ -24,8 +24,8 @@
           "anthropic_api_key": "Anthropic API-sleutel",
           "anthropic_model": "Anthropic Model",
           "anthropic_temperature": "Temperatuur",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       },
       "google": {
@@ -34,8 +34,8 @@
           "google_api_key": "Google API-sleutel",
           "google_model": "Google Model",
           "google_temperature": "Temperatuur",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       },
       "groq": {
@@ -44,8 +44,8 @@
           "groq_api_key": "Groq API-sleutel",
           "groq_model": "Groq Model",
           "groq_temperature": "Temperatuur",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       },
       "localai": {
@@ -56,8 +56,8 @@
           "localai_https": "Gebruik HTTPS voor LocalAI",
           "localai_model": "LocalAI Model",
           "localai_temperature": "Temperatuur",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       },
       "ollama": {
@@ -69,8 +69,8 @@
           "ollama_model": "Ollama Model",
           "ollama_temperature": "Temperatuur",
           "ollama_disable_think": "Denkmodus uitschakelen (Ollama)",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       },
       "custom_openai": {
@@ -80,8 +80,8 @@
           "custom_openai_api_key": "Aangepaste OpenAI API-sleutel (Optioneel)",
           "custom_openai_model": "Aangepast OpenAI Model",
           "custom_openai_temperature": "Temperatuur",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       },
       "mistral": {
@@ -90,8 +90,8 @@
           "mistral_api_key": "Mistral API-sleutel",
           "mistral_model": "Mistral Model",
           "mistral_temperature": "Temperatuur",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       },
       "perplexity": {
@@ -100,8 +100,8 @@
           "perplexity_api_key": "Perplexity API-sleutel",
           "perplexity_model": "Perplexity Model",
           "perplexity_temperature": "Temperatuur",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       },
       "openrouter": {
@@ -111,8 +111,8 @@
           "openrouter_model": "OpenRouter Model",
           "openrouter_reasoning_max_tokens": "OpenRouter Redenering Max Tokens",
           "openrouter_temperature": "Temperatuur",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       },
       "openai_azure": {
@@ -120,11 +120,24 @@
         "data": {
           "openai_azure_api_key": "Azure OpenAI API-sleutel",
           "openai_azure_deployment_id": "Azure Implementatie-ID",
-          "openai_azure_endpoint": "Azure Eindpunt",
-          "openai_azure_api_version": "Azure API Versie",
+          "openai_azure_endpoint": "Azure Endpoint",
+          "openai_azure_api_version": "Azure API-versie",
           "openai_azure_temperature": "Temperatuur",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
+        }
+      },
+      "generic_openai": {
+        "title": "Configureer Generieke OpenAI",
+        "data": {
+          "generic_openai_api_endpoint": "Volledige API-URL voor generieke OpenAI (moet eindigen op 'completions')",
+          "generic_openai_api_key": "Generieke OpenAI API-sleutel (Optioneel)",
+          "generic_openai_model": "Generiek OpenAI Model",
+          "generic_openai_temperature": "Temperatuur",
+          "generic_openai_validation_endpoint": "Validatie-URL (moet eindigen op 'models')",
+          "generic_openai_enable_validation": "Validatie Inschakelen",
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         }
       }
     },
@@ -184,10 +197,16 @@
           "openai_azure_endpoint": "Azure Eindpunt",
           "openai_azure_api_version": "Azure API Versie",
           "openai_azure_temperature": "Temperatuur (OpenAI Azure)",
-          "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "generic_openai_api_endpoint": "Volledige API-URL voor generieke OpenAI (moet eindigen op 'completions')",
+          "generic_openai_api_key": "Generieke OpenAI API-sleutel",
+          "generic_openai_model": "Generiek OpenAI-model",
+          "generic_openai_temperature": "Temperatuur (Generieke OpenAI)",
+          "generic_openai_validation_endpoint": "Validatie-URL (Generieke OpenAI, moet eindigen op 'models')",
+          "generic_openai_enable_validation": "Validatie Inschakelen (Generieke OpenAI)",
+          "max_input_tokens": "Maximaal aantal invoertokens",
+          "max_output_tokens": "Maximaal aantal uitvoertokens"
         },
-        "description": "Pas instellingen aan voor uw AI-providers. Velden die relevant zijn voor uw geconfigureerde provider worden gebruikt. Gemeenschappelijke instellingen zoals tokenlimieten worden per provider geconfigureerd."
+        "description": "Pas de instellingen voor uw AI-providers aan. Alleen de velden die relevant zijn voor uw geconfigureerde provider worden gebruikt. Algemene instellingen zoals tokenlimieten worden per provider geconfigureerd."
       }
     },
     "error": {
@@ -205,7 +224,7 @@
         },
         "custom_prompt": {
           "name": "Aangepaste Prompt",
-          "description": "Optioneel een aangepaste prompt om de standaard systeemprompt te overschrijven of om de suggesties op specifieke thema's te richten (bijv. energiebesparing)"
+          "description": "Optionele aangepaste prompt om de standaardsysteemprompt te overschrijven of de suggesties naar specifieke thema's te leiden."
         },
         "all_entities": {
           "name": "Alle Entiteiten Beschouwen",
@@ -221,7 +240,7 @@
         },
         "automation_read_yaml": {
           "name": "Lees 'automations.yaml' bestand",
-          "description": "Leest en voegt de yaml-code van de automatiseringen in het bestand automations.yaml toe. Deze actie zal veel input tokens gebruiken, gebruik het voorzichtig en met modellen met een groot input venster (bijv. Gemini)."
+          "description": "Leest en voegt de YAML-code van de automatiseringen uit het 'automations.yaml'-bestand toe. Deze actie verbruikt veel invoertokens, gebruik deze voorzichtig en met modellen met een groot contextvenster (bijv. Gemini)."
         },
         "automation_limit": {
           "name": "Automatiseringslimiet",

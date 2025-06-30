@@ -126,6 +126,19 @@
           "max_input_tokens": "Max Input Tokens",
           "max_output_tokens": "Max Output Tokens"
         }
+      },
+      "generic_openai": {
+        "title": "Configure Generic OpenAI",
+        "data": {
+          "generic_openai_api_endpoint": "Generic OpenAI API Full URL (should end with 'completions')",
+          "generic_openai_api_key": "Generic OpenAI API Key (Optional)",
+          "generic_openai_model": "Generic OpenAI Model",
+          "generic_openai_temperature": "Temperature",
+          "generic_openai_validation_endpoint": "Validation URL (should end with 'models')",
+          "generic_openai_enable_validation": "Enable Validation",
+          "max_input_tokens": "Max Input Tokens",
+          "max_output_tokens": "Max Output Tokens"
+        }
       }
     },
     "error": {
@@ -184,6 +197,12 @@
           "openai_azure_endpoint": "Azure Endpoint",
           "openai_azure_api_version": "Azure API Version",
           "openai_azure_temperature": "Temperature (OpenAI Azure)",
+          "generic_openai_api_endpoint": "Generic OpenAI API Full URL (should end with 'completions')",
+          "generic_openai_api_key": "Generic OpenAI API Key",
+          "generic_openai_model": "Generic OpenAI Model",
+          "generic_openai_temperature": "Temperature (Generic OpenAI)",
+          "generic_openai_validation_endpoint": "Validation URL (Generic OpenAI, should end with 'models')",
+          "generic_openai_enable_validation": "Enable Validation (Generic OpenAI)",
           "max_input_tokens": "Max Input Tokens",
           "max_output_tokens": "Max Output Tokens"
         },
@@ -221,7 +240,7 @@
         },
         "automation_read_yaml": {
           "name": "Read 'automations.yaml' file",
-          "description": "Reads and appends the yaml code of the automations found in the automations.yaml file. This action will use a lot of input tokens, use it with care and with models with a large input window (e.g. Gemini)."
+          "description": "Reads and appends the YAML code of the automations found in the 'automations.yaml' file. This action will use a lot of input tokens, use it with care and with models with a large context window (e.g. Gemini)."
         },
         "automation_limit": {
           "name": "Automation Limit",
