@@ -119,6 +119,7 @@ DEFAULT_MODELS = {
     "Google": "gemini-2.0-flash",
     "Groq": "llama3-8b-8192",
     "LocalAI": "llama3",
+    "ZhipuAI": "glm-4-flash-250414",
     "Ollama": "llama2",
     "Custom OpenAI": "gpt-3.5-turbo",
     "Mistral AI": "mistral-medium",

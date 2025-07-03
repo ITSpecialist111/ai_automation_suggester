@@ -154,6 +154,15 @@ class ProviderValidator:
         except Exception as err:
             return str(err)
 
+    async def validate_zhipuai(self, endpoint: str, api_key: str, model: str) -> Optional[str]:
+        hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        payload = {"model": model, "messages": [{"role": "user", "content": "hello"}], "max_tokens": 1}
+        try:
+            resp = await self.session.post(endpoint, headers=hdr, json=payload)
+            return None if resp.status == 200 else await resp.text()
+        except Exception as err:  # noqa: BLE001
+            return str(err)
+
     async def validate_perplexity(self, api_key: str, model: str) -> Optional[str]:
         hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {"model": model, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 1}
@@ -207,6 +216,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "LocalAI": self.async_step_localai,
                     "Ollama": self.async_step_ollama,
                     "Custom OpenAI": self.async_step_custom_openai,
+                    "ZhipuAI": self.async_step_zhipuai,
                     "Mistral AI": self.async_step_mistral,
                     "Perplexity AI": self.async_step_perplexity,
                     "OpenRouter": self.async_step_openrouter,
@@ -226,6 +236,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "LocalAI",
                             "Ollama",
                             "Custom OpenAI",
+                            "ZhipuAI",  
                             "Mistral AI",
                             "Perplexity AI",
                             "OpenRouter",
@@ -425,6 +436,28 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input,
         )
 
+    # ZhipuAI
+    async def async_step_zhipuai(self, user_input=None):
+        async def _v(ui):
+            return await self.validator.validate_zhipuai(ui[CONF_ZHIPUAI_ENDPOINT], ui.get(CONF_ZHIPUAI_API_KEY), ui.get(CONF_ZHIPUAI_MODEL))
+
+        schema = {
+            vol.Required(CONF_ZHIPUAI_ENDPOINT): str,
+            vol.Optional(CONF_ZHIPUAI_API_KEY): TextSelector(TextSelectorConfig(type="password")),
+            vol.Optional(CONF_ZHIPUAI_MODEL, default=DEFAULT_MODELS["ZhipuAI"]): str,
+            vol.Optional(CONF_ZHIPUAI_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=1.0)),
+        }
+        self._add_token_fields(schema)
+        return await self._provider_form(
+            "zhipuai",
+            vol.Schema(schema),
+            _v,
+            "AI Automation Suggester (ZHIPUAI)",
+            {},
+            {},
+            user_input,
+        )
+        
     # Mistral: no live validation needed
     async def async_step_mistral(self, user_input=None):
         if user_input:
@@ -602,8 +635,8 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
         elif provider == "ZHIPUAI":
             schema[vol.Optional(CONF_ZHIPUAI_ENDPOINT, default=self._get_option(CONF_ZHIPUAI_ENDPOINT))] = str
             schema[vol.Optional(CONF_ZHIPUAI_API_KEY, default=self._get_option(CONF_ZHIPUAI_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
-            schema[vol.Optional(CONF_ZHIPUAI_MODEL, default=self._get_option(CONF_ZHIPUAI_MODEL, DEFAULT_MODELS["Custom OpenAI"]))] = str
-            schema[vol.Optional(CONF_ZHIPUAI_TEMPERATURE, default=self._get_option(CONF_ZHIPUAI_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+            schema[vol.Optional(CONF_ZHIPUAI_MODEL, default=self._get_option(CONF_ZHIPUAI_MODEL, DEFAULT_MODELS["ZhipuAI"]))] = str
+            schema[vol.Optional(CONF_ZHIPUAI_TEMPERATURE, default=self._get_option(CONF_ZHIPUAI_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=1.0))
         elif provider == "Mistral AI":
             schema[vol.Optional(CONF_MISTRAL_API_KEY, default=self._get_option(CONF_MISTRAL_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_MISTRAL_MODEL, default=self._get_option(CONF_MISTRAL_MODEL, DEFAULT_MODELS["Mistral AI"]))] = str

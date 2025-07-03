@@ -66,6 +66,7 @@ PROVIDER_TO_MODEL_KEY_MAP: dict[str, str] = {
     "LocalAI": CONF_LOCALAI_MODEL,
     "Ollama": CONF_OLLAMA_MODEL,
     "Custom OpenAI": CONF_CUSTOM_OPENAI_MODEL,
+    "ZhipuAI": CONF_ZHIPUAI_MODEL,
     "Mistral AI": CONF_MISTRAL_MODEL,
     "Perplexity AI": CONF_PERPLEXITY_MODEL,
     "OpenRouter": CONF_OPENROUTER_MODEL,

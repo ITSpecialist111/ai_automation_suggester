@@ -72,7 +72,6 @@ from .const import (  # noqa: E501
     CONF_ZHIPUAI_API_KEY,
     CONF_ZHIPUAI_MODEL,
     CONF_ZHIPUAI_TEMPERATURE,
-    ENDPOINT_ZHIPUAI,
     CONF_MISTRAL_API_KEY,
     CONF_MISTRAL_MODEL,
     CONF_MISTRAL_TEMPERATURE,
@@ -446,6 +445,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "LocalAI": self._localai,
                 "Ollama": self._ollama,
                 "Custom OpenAI": self._custom_openai,
+                "ZhipuAI": self._zhipuai,
                 "Mistral AI": self._mistral,
                 "Perplexity AI": self._perplexity,
                 "OpenRouter": self._openrouter,
@@ -955,7 +955,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
         
     # ---------------- ZHIPUAI -------------------------------
-    async def _custom_openai(self, prompt: str) -> str | None:
+    async def _zhipuai(self, prompt: str) -> str | None:
         try:
             endpoint = self._opt(CONF_ZHIPUAI_ENDPOINT)
             if not endpoint:
@@ -965,7 +965,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 endpoint = endpoint.rstrip("/") + "/v4/chat/completions"
 
             api_key  = self._opt(CONF_ZHIPUAI_API_KEY)
-            model    = self._opt(CONF_ZHIPUAI_MODEL, DEFAULT_MODELS["ZHIPUAI"])
+            model    = self._opt(CONF_ZHIPUAI_MODEL, DEFAULT_MODELS["ZhipuAI"])
             temperature = self._opt(CONF_ZHIPUAI_TEMPERATURE, DEFAULT_TEMPERATURE)
             in_budget, out_budget = self._budgets()
 
