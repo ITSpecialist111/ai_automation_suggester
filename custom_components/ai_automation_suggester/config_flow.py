@@ -53,6 +53,10 @@ from .const import (  # noqa: E501  (long import list)
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_MODEL,
     CONF_CUSTOM_OPENAI_TEMPERATURE,
+    CONF_ZHIPUAI_ENDPOINT,
+    CONF_ZHIPUAI_API_KEY,
+    CONF_ZHIPUAI_MODEL,
+    CONF_ZHIPUAI_TEMPERATURE,
     CONF_MISTRAL_API_KEY,
     CONF_MISTRAL_MODEL,
     CONF_MISTRAL_TEMPERATURE,
@@ -595,6 +599,11 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_CUSTOM_OPENAI_API_KEY, default=self._get_option(CONF_CUSTOM_OPENAI_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_CUSTOM_OPENAI_MODEL, default=self._get_option(CONF_CUSTOM_OPENAI_MODEL, DEFAULT_MODELS["Custom OpenAI"]))] = str
             schema[vol.Optional(CONF_CUSTOM_OPENAI_TEMPERATURE, default=self._get_option(CONF_CUSTOM_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+        elif provider == "ZHIPUAI":
+            schema[vol.Optional(CONF_ZHIPUAI_ENDPOINT, default=self._get_option(CONF_ZHIPUAI_ENDPOINT))] = str
+            schema[vol.Optional(CONF_ZHIPUAI_API_KEY, default=self._get_option(CONF_ZHIPUAI_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_ZHIPUAI_MODEL, default=self._get_option(CONF_ZHIPUAI_MODEL, DEFAULT_MODELS["Custom OpenAI"]))] = str
+            schema[vol.Optional(CONF_ZHIPUAI_TEMPERATURE, default=self._get_option(CONF_ZHIPUAI_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
         elif provider == "Mistral AI":
             schema[vol.Optional(CONF_MISTRAL_API_KEY, default=self._get_option(CONF_MISTRAL_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_MISTRAL_MODEL, default=self._get_option(CONF_MISTRAL_MODEL, DEFAULT_MODELS["Mistral AI"]))] = str
