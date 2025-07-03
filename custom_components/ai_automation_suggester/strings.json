@@ -84,6 +84,17 @@
           "max_output_tokens": "Max Output Tokens"
         }
       },
+      "zhipuai": {
+        "title": "Configure ZhipuAI",
+        "data": {
+          "zhipuai_endpoint": "ZhipuAI Endpoint",
+          "zhipuai_api_key": "ZhipuAI API Key (Optional)",
+          "zhipuai_model": "ZhipuAI Model",
+          "zhipuai_temperature": "Temperature",
+          "max_input_tokens": "Max Input Tokens",
+          "max_output_tokens": "Max Output Tokens"
+        }
+      },
       "mistral": {
         "title": "Configure Mistral AI",
         "data": {

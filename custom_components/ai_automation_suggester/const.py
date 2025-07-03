@@ -81,6 +81,12 @@ CONF_CUSTOM_OPENAI_API_KEY = "custom_openai_api_key"
 CONF_CUSTOM_OPENAI_MODEL = "custom_openai_model"
 CONF_CUSTOM_OPENAI_TEMPERATURE = "custom_openai_temperature"
 
+# ZhipuAI
+CONF_ZHIPUAI_ENDPOINT = "zhipuai_endpoint"
+CONF_ZHIPUAI_API_KEY = "zhipuai_api_key"
+CONF_ZHIPUAI_MODEL = "zhipuai_model"
+CONF_ZHIPUAI_TEMPERATURE = "zhipuai_temperature"
+
 # Mistral AI
 CONF_MISTRAL_API_KEY = "mistral_api_key"
 CONF_MISTRAL_MODEL = "mistral_model"
@@ -113,6 +119,7 @@ DEFAULT_MODELS = {
     "Google": "gemini-2.0-flash",
     "Groq": "llama3-8b-8192",
     "LocalAI": "llama3",
+    "ZhipuAI": "glm-4-flash-250414",
     "Ollama": "llama2",
     "Custom OpenAI": "gpt-3.5-turbo",
     "Mistral AI": "mistral-medium",
@@ -148,6 +155,7 @@ ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"
 ENDPOINT_MISTRAL = "https://api.mistral.ai/v1/chat/completions"
 ENDPOINT_PERPLEXITY = "https://api.perplexity.ai/chat/completions"
 ENDPOINT_OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
+ENDPOINT_ZHIPUAI = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
 
 
 # ─────────────────────────────────────────────────────────────
