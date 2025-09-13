@@ -45,6 +45,7 @@ from .const import (
     CONF_PERPLEXITY_MODEL,
     CONF_OPENROUTER_MODEL,
     CONF_OPENAI_AZURE_DEPLOYMENT_ID,
+    CONF_GENERIC_OPENAI_MODEL,
     DEFAULT_MODELS,
     # Sensor Keys from const.py
     SENSOR_KEY_SUGGESTIONS,
@@ -68,7 +69,8 @@ PROVIDER_TO_MODEL_KEY_MAP: dict[str, str] = {
     "Mistral AI": CONF_MISTRAL_MODEL,
     "Perplexity AI": CONF_PERPLEXITY_MODEL,
     "OpenRouter": CONF_OPENROUTER_MODEL,
-    "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,  
+    "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
+    "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
 }
 
 SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
@@ -169,7 +171,7 @@ class AIBaseSensor(CoordinatorEntity[DataUpdateCoordinator], SensorEntity):
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.entity_description = description
-        self._attr_unique_id = f"{entry.entry_id}_{description.key}"        
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
         self._entry = entry
         self._provider_name = entry.data.get(CONF_PROVIDER, "Unknown Provider")
 
@@ -266,7 +268,7 @@ class AISuggestionsSensor(AIBaseSensor):
             "last_update": data.get("last_update"),
             "entities_processed": data.get("entities_processed", []),
             "provider": self._entry.data.get(CONF_PROVIDER, "unknown"),
-            "entities_processed_count": len(data.get("entities_processed", [])),            
+            "entities_processed_count": len(data.get("entities_processed", [])),
         }
 
 # ─────────────────────────────────────────────────────────────
