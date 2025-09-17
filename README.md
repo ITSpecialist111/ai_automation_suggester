@@ -107,7 +107,7 @@ Leveraging the AI Automation Suggester provides several key benefits:
 * **Persistent Notifications:** Receive suggestions directly in your Home Assistant interface.
 * **Service Call Integration:** Manually trigger suggestions via the `ai_automation_suggester.generate_suggestions` service with full parameter control.
 * **Diagnostics Sensors:** Monitor suggestion status and provider connection health.
-* **Example Automations:** Includes built-in examples for new entity detection and weekly reviews.
+* **Example Automations:** Includes built-in examples for new entity detection and weekly reviews. - This is found in the code base
 * **Dashboard-Friendly Output:** Sensor attributes provide description and YAML blocks ready for Lovelace cards.
 
 ---
