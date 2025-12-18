@@ -9,7 +9,7 @@
         }
       },
       "provider_config": {
-       "title": "Configurar Proveïdor d'IA (Actual: {provider})",
+        "title": "Configurar Proveïdor d'IA (Actual: {provider})",
         "description": "Si us plau, introdueix els detalls del proveïdor seleccionat.",
         "data": {
           "api_key": "Clau de l'API",
@@ -127,6 +127,14 @@
         "automation_limit": {
           "name": "Límit d'automatitzacions",
           "description": "Nombre màxim d'automatitzacions a analitzar (per defecte: 100)."
+        },
+        "script_read_yaml": {
+          "name": "Llegir l'arxiu 'scripts.yaml'",
+          "description": "Llegeix i afegeix el codi YAML dels scripts trobats a l'arxiu 'scripts.yaml'. Aquesta acció utilitzarà molts tokens d'entrada, utilitzeu-la amb cura i amb models amb una finestra de context gran (per exemple, Gemini)."
+        },
+        "script_limit": {
+          "name": "Límit de Scripts",
+          "description": "Nombre màxim de scripts a analitzar (per defecte: 100)."
         },
         "include_entity_details": {
           "name": "Incloure detalls de l'entitat",

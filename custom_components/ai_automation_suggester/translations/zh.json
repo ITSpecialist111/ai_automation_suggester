@@ -9,7 +9,7 @@
         }
       },
       "provider_config": {
-       "title": "配置 AI 提供商 (当前: {provider})",
+        "title": "配置 AI 提供商 (当前: {provider})",
         "description": "请输入您选择的提供商的详细信息。",
         "data": {
           "api_key": "API 密钥",
@@ -127,6 +127,14 @@
         "automation_limit": {
           "name": "自动化数量上限",
           "description": "要分析的自动化最大数量（默认：100）。"
+        },
+        "script_read_yaml": {
+          "name": "读取 'scripts.yaml' 文件",
+          "description": "读取并附加 'scripts.yaml' 文件中找到的脚本的 YAML 代码。此操作将消耗大量输入令牌，请在使用大上下文窗口模型（例如 Gemini）时谨慎使用。"
+        },
+        "script_limit": {
+          "name": "脚本限制",
+          "description": "要分析的最大脚本数量（默认：100）。"
         },
         "include_entity_details": {
           "name": "包含实体详情",

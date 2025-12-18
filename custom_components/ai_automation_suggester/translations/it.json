@@ -9,7 +9,7 @@
         }
       },
       "provider_config": {
-       "title": "Configura Provider AI (Attuale: {provider})",
+        "title": "Configura Provider AI (Attuale: {provider})",
         "description": "Inserisci i dettagli del provider selezionato.",
         "data": {
           "api_key": "Chiave API",
@@ -127,6 +127,14 @@
         "automation_limit": {
           "name": "Limite Automazioni",
           "description": "Numero massimo di automazioni da analizzare (predefinito: 100)."
+        },
+        "script_read_yaml": {
+          "name": "Leggi il file 'scripts.yaml'",
+          "description": "Legge e aggiunge il codice YAML degli script trovati nel file 'scripts.yaml'. Questa azione utilizzerà molti token di input, usala con cura e con modelli con una grande finestra di contesto (es. Gemini)."
+        },
+        "script_limit": {
+          "name": "Limite Script",
+          "description": "Numero massimo di script da analizzare (predefinito: 100)."
         },
         "include_entity_details": {
           "name": "Includi Dettagli Entità",

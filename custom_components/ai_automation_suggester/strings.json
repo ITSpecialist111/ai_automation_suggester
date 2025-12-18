@@ -9,7 +9,7 @@
         }
       },
       "provider_config": {
-       "title": "Configure AI Provider (Current: {provider})",
+        "title": "Configure AI Provider (Current: {provider})",
         "description": "Please enter the details for your selected provider.",
         "data": {
           "api_key": "API Key",
@@ -127,7 +127,15 @@
         "automation_limit": {
           "name": "Automation Limit",
           "description": "Maximum number of automations to analyze (default: 100)."
-                },
+        },
+        "script_read_yaml": {
+          "name": "Read 'scripts.yaml' file",
+          "description": "Reads and appends the YAML code of the scripts found in the 'scripts.yaml' file. This action will use a lot of input tokens, use it with care and with models with a large context window (e.g. Gemini)."
+        },
+        "script_limit": {
+          "name": "Script Limit",
+          "description": "Maximum number of scripts to analyze (default: 100)."
+        },
         "include_entity_details": {
           "name": "Include Entity Details",
           "description": "Include detailed entity information (attributes and device info) in the prompt. Disabling this reduces token usage but provides less context to the AI."

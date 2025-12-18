@@ -9,7 +9,7 @@
         }
       },
       "provider_config": {
-       "title": "AI-provider configureren (Huidig: {provider})",
+        "title": "AI-provider configureren (Huidig: {provider})",
         "description": "Voer de details van uw geselecteerde provider in.",
         "data": {
           "api_key": "API-sleutel",
@@ -123,6 +123,14 @@
         "automation_limit": {
           "name": "Automatisering Limiet",
           "description": "Maximaal aantal te analyseren automatiseringen (standaard: 100)."
+        },
+        "script_read_yaml": {
+          "name": "'scripts.yaml' bestand lezen",
+          "description": "Leest de YAML-code van de scripts in het 'scripts.yaml' bestand en voegt deze toe. Deze actie verbruikt veel invoertokens, wees voorzichtig en gebruik modellen met een groot contextvenster (bijv. Gemini)."
+        },
+        "script_limit": {
+          "name": "Scriptlimiet",
+          "description": "Maximum aantal te analyseren scripts (standaard: 100)."
         },
         "include_entity_details": {
           "name": "Entiteitsdetails opnemen",

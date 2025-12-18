@@ -95,6 +95,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         entity_limit = call.data.get("entity_limit", 200)
         automation_read_yaml = call.data.get("automation_read_yaml", False)
         automation_limit = call.data.get("automation_limit", 100)
+        script_read_yaml = call.data.get("script_read_yaml", False)
+        script_limit = call.data.get("script_limit", 100)
         include_entity_details = call.data.get("include_entity_details", True)
 
         # Parse domains if provided as a string or dict
@@ -128,6 +130,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             coordinator.entity_limit = entity_limit
             coordinator.automation_read_file = automation_read_yaml
             coordinator.automation_limit = automation_limit
+            coordinator.script_read_file = script_read_yaml
+            coordinator.script_limit = script_limit
             coordinator.include_entity_details = include_entity_details
 
             try:
@@ -140,6 +144,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 coordinator.entity_limit = 200
                 coordinator.automation_read_file = False
                 coordinator.automation_limit = 100
+                coordinator.script_read_file = False
+                coordinator.script_limit = 100
                 coordinator.include_entity_details = True
 
         except KeyError:

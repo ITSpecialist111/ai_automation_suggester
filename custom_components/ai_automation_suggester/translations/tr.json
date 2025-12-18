@@ -245,6 +245,14 @@
         "automation_limit": {
           "name": "Otomasyon Limiti",
           "description": "Analiz edilecek maksimum otomasyon sayısı (varsayılan: 100)."
+        },
+        "script_read_yaml": {
+          "name": "'scripts.yaml' dosyasını oku",
+          "description": "'scripts.yaml' dosyasında bulunan betiklerin YAML kodunu okur ve ekler. Bu işlem çok sayıda giriş belirteci kullanacaktır, dikkatli olun ve büyük bağlam penceresine sahip modellerle (örneğin Gemini) kullanın."
+        },
+        "script_limit": {
+          "name": "Betik Sınırı",
+          "description": "Analiz edilecek maksimum betik sayısı (varsayılan: 100)."
         }
       }
     }

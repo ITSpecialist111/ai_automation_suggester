@@ -70,6 +70,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.entity_limit = 200
         self.automation_read_file = False  # Default automation reading mode
         self.automation_limit = 100
+        self.script_read_file = False  # Default script reading mode
+        self.script_limit = 100
         self.include_entity_details = True  # Default to include detailed entity info
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
@@ -295,6 +297,30 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "Please propose detailed automations and improvements that reference only the entity_ids above."
             )
 
+        # -------------------------------------------------- gather scripts
+        MAX_SCRIPTS = getattr(self, "script_limit", 100)
+        if self.script_read_file:
+            script_sections = self._read_scripts_default(MAX_SCRIPTS, MAX_ATTR)
+            script_codes = await self._read_scripts_file_method(MAX_SCRIPTS, MAX_ATTR)
+
+            builded_prompt += (
+                "\n\nExisting Scripts Overview:\n"
+                f"{''.join(script_sections) if script_sections else 'None found.'}\n\n"
+                "Scripts YAML Code (for analysis and improvement):\n"
+                f"{''.join(script_codes) if script_codes else 'No scripts YAML code available.'}\n\n"
+                "Please also analyze the existing scripts. "
+                "Propose detailed improvements to existing scripts and suggest new ones "
+                "that reference only the entity_ids shown above."
+            )
+        else:
+            script_sections = self._read_scripts_default(MAX_SCRIPTS, MAX_ATTR)
+            if script_sections:
+                builded_prompt += (
+                    "\n\nExisting Scripts:\n"
+                    f"{''.join(script_sections)}\n\n"
+                    "Please also propose improvements to existing scripts or suggest new ones."
+                )
+
         return builded_prompt
 
     def _format_entity_detailed(self, eid: str, meta: dict, max_attr: int) -> str:
@@ -446,6 +472,85 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Error parsing automations.yaml: %s", err)
 
         return autom_codes
+
+    def _read_scripts_default(self, max_scripts: int, max_attr: int) -> list[str]:
+        """Default method for reading scripts."""
+        script_sections: list[str] = []
+        for sid in self.hass.states.async_entity_ids("script")[:max_scripts]:
+            st = self.hass.states.get(sid)
+            if st:
+                attr = str(st.attributes)
+                if len(attr) > max_attr:
+                    attr = f"{attr[:max_attr]}...(truncated)"
+                script_sections.append(
+                    f"Entity: {sid}\n"
+                    f"Friendly Name: {st.attributes.get('friendly_name', sid)}\n"
+                    f"State: {st.state}\n"
+                    f"Attributes: {attr}\n"
+                    "---\n"
+                )
+        return script_sections
+
+    async def _read_scripts_file_method(self, max_scripts: int, max_attr: int) -> list[str]:
+        """File method for reading scripts."""
+        scripts_file = Path(self.hass.config.path()) / "scripts.yaml"
+        script_codes: list[str] = []
+
+        try:
+            async with await anyio.open_file(
+                scripts_file, "r", encoding="utf-8"
+            ) as file:
+                content = await file.read()
+                scripts = yaml.safe_load(content)
+
+            if isinstance(scripts, dict):
+                # scripts.yaml can be a dict where keys are the script IDs
+                count = 0
+                for sid, script in scripts.items():
+                    if count >= max_scripts:
+                        break
+                    
+                    alias = script.get("alias", sid)
+                    description = script.get("description", "")
+                    sequence = script.get("sequence", [])
+
+                    code_block = (
+                        f"Script Code for script.{sid}:\n"
+                        "```yaml\n"
+                        f"{sid}:\n"
+                        f"  alias: '{alias}'\n"
+                        f"  description: '{description}'\n"
+                        f"  sequence: {sequence}\n"
+                        "```\n"
+                        "---\n"
+                    )
+                    script_codes.append(code_block)
+                    count += 1
+            elif isinstance(scripts, list):
+                # or a list (less common for scripts.yaml, but possible in some setups)
+                for script in scripts[:max_scripts]:
+                    sid = script.get("id", "unknown_id")
+                    alias = script.get("alias", sid)
+                    description = script.get("description", "")
+                    sequence = script.get("sequence", [])
+
+                    code_block = (
+                        f"Script Code for script.{sid}:\n"
+                        "```yaml\n"
+                        f"- alias: '{alias}'\n"
+                        f"  description: '{description}'\n"
+                        f"  sequence: {sequence}\n"
+                        "```\n"
+                        "---\n"
+                    )
+                    script_codes.append(code_block)
+
+        except FileNotFoundError:
+            _LOGGER.error("The scripts.yaml file was not found.")
+        except yaml.YAMLError as err:
+            _LOGGER.error("Error parsing scripts.yaml: %s", err)
+
+        return script_codes
 
     # ---------------------------------------------------------------------
     # Provider dispatcher
