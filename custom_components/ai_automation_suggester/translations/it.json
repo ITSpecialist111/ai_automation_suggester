@@ -139,6 +139,32 @@
         "include_entity_details": {
           "name": "Includi Dettagli Entità",
           "description": "Includere informazioni dettagliate sulle entità (attributi e informazioni sul dispositivo) nel prompt. Disabilitare questa opzione riduce l'utilizzo dei token ma fornisce meno contesto all'IA."
+        },
+        "debug_mode": {
+          "name": "Modalità debug",
+          "description": "Se vero, restituisce il prompt finale inviato all'IA nell'attributo descrizione per scopi di debug."
+        }
+      }
+    },
+    "analyze_error": {
+      "name": "Analizza errore (Fix It)",
+      "description": "Analizza un log degli errori di Home Assistant e suggerisce una correzione per un'automazione o uno script specifico.",
+      "fields": {
+        "provider_config": {
+          "name": "Configurazione del provider",
+          "description": "Quale configurazione del provider utilizzare"
+        },
+        "error_log": {
+          "name": "Log degli errori",
+          "description": "Il messaggio di errore o la voce di log di Home Assistant."
+        },
+        "automation_id": {
+          "name": "ID automazione",
+          "description": "Opzionale. L'ID dell'automazione da analizzare (se applicabile)."
+        },
+        "script_id": {
+          "name": "ID script",
+          "description": "Opzionale. L'ID dello script da analizzare (se applicabile)."
         }
       }
     }

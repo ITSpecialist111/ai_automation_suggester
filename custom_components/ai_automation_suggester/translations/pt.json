@@ -253,6 +253,36 @@
         "script_limit": {
           "name": "Limite de Scripts",
           "description": "Número máximo de scripts a analisar (predefinição: 100)."
+        },
+        "include_entity_details": {
+          "name": "Incluir Detalhes da Entidade",
+          "description": "Inclui informações detalhadas da entidade (atributos e informações do dispositivo) no prompt. Desativar isso reduz o uso de tokens, mas fornece menos contexto para a IA."
+        },
+        "debug_mode": {
+          "name": "Modo de Depuração",
+          "description": "Se verdadeiro, retorna o prompt final enviado para a IA no atributo de descrição para fins de depuração."
+        }
+      }
+    },
+    "analyze_error": {
+      "name": "Analisar Erro (Fix It)",
+      "description": "Analisa um log de erros do Home Assistant e sugere uma correção para uma automação ou script específico.",
+      "fields": {
+        "provider_config": {
+          "name": "Configuração do Fornecedor",
+          "description": "Qual configuração de fornecedor utilizar"
+        },
+        "error_log": {
+          "name": "Log de Erros",
+          "description": "A mensagem de erro ou entrada de log do Home Assistant."
+        },
+        "automation_id": {
+          "name": "ID da Automação",
+          "description": "Opcional. O ID da automação para analisar (se aplicável)."
+        },
+        "script_id": {
+          "name": "ID do Script",
+          "description": "Opcional. O ID do script para analisar (se aplicável)."
         }
       }
     }

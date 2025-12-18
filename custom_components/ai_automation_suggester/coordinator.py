@@ -262,6 +262,86 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             self.data["last_error"] = self._last_error
             return self.data
 
+    async def async_analyze_error(self, error_log: str, automation_id: str | None = None, script_id: str | None = None):
+        """Analyze an error log and suggest a fix."""
+        _LOGGER.debug("Starting error analysis for log: %s", error_log)
+        code_context = ""
+        
+        # 1. Try to find automation code
+        if automation_id:
+            automations_file = Path(self.hass.config.path()) / "automations.yaml"
+            try:
+                async with await anyio.open_file(automations_file, "r", encoding="utf-8") as file:
+                    content = await file.read()
+                    automations = yaml.safe_load(content)
+                    if isinstance(automations, list):
+                        for auto in automations:
+                            if str(auto.get("id")) == str(automation_id) or auto.get("alias") == automation_id:
+                                code_context = f"Automation Code:\n```yaml\n{yaml.dump(auto, allow_unicode=True)}\n```"
+                                break
+            except Exception as err:
+                _LOGGER.error("Error reading automation for analysis: %s", err)
+        
+        # 2. Try to find script code if automation not found or not provided
+        if script_id and not code_context:
+            scripts_file = Path(self.hass.config.path()) / "scripts.yaml"
+            try:
+                async with await anyio.open_file(scripts_file, "r", encoding="utf-8") as file:
+                    content = await file.read()
+                    scripts = yaml.safe_load(content)
+                    if isinstance(scripts, dict) and script_id in scripts:
+                        code_context = f"Script Code for {script_id}:\n```yaml\n{script_id}:\n{yaml.dump(scripts[script_id], allow_unicode=True)}\n```"
+                    elif isinstance(scripts, list):
+                        for scr in scripts:
+                            if str(scr.get("id")) == str(script_id) or scr.get("alias") == script_id:
+                                code_context = f"Script Code:\n```yaml\n{yaml.dump(scr, allow_unicode=True)}\n```"
+                                break
+            except Exception as err:
+                _LOGGER.error("Error reading script for analysis: %s", err)
+
+        # 3. Build specialized prompt
+        prompt = (
+            "You are a Home Assistant expert debugger. I've encountered an error in my configuration.\n\n"
+            f"ERROR LOG:\n{error_log}\n\n"
+        )
+        
+        if code_context:
+            prompt += f"CONTEXT CODE:\n{code_context}\n\n"
+        
+        prompt += (
+            "INSTRUCTIONS:\n"
+            "1. Analyze the error log and the provided code (if any).\n"
+            "2. Identify the root cause of the error.\n"
+            "3. Provide the CORRECTED YAML block inside ```yaml blocks.\n"
+            "4. Provide a clear explanation of what was wrong and how you fixed it.\n"
+            "5. If you need more context about specific entities, mention it, but try to fix it with the information provided."
+        )
+
+        # 4. Dispatch to AI
+        response = await self._dispatch(prompt)
+        
+        if response:
+            # 5. Create notification with the fix
+            persistent_notification.async_create(
+                self.hass,
+                message=response,
+                title="AI Error Analysis (Fix It)",
+                notification_id=f"ai_fix_it_{datetime.now().timestamp()}",
+            )
+            # Also update the sensor description so the user can easily copy/paste from the UI if needed
+            self.data.update({
+                "last_fix_explanation": response,
+                "provider": self._opt(CONF_PROVIDER, "unknown"),
+            })
+            self.async_set_updated_data(self.data)
+        else:
+            persistent_notification.async_create(
+                self.hass,
+                message="AI failed to generate a fix. Check the logs for more details.",
+                title="AI Fix It Failed",
+                notification_id="ai_fix_it_failed",
+            )
+
     # ---------------------------------------------------------------------
     # Prompt builder (updated)
     # ---------------------------------------------------------------------

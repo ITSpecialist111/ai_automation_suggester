@@ -134,7 +134,33 @@
         },
         "include_entity_details": {
           "name": "Entiteitsdetails opnemen",
-          "description": "Neem gedetailleerde entiteitsinformatie (attributen en apparaatinformatie) op in de prompt. Uitschakelen vermindert het tokengebruik, maar biedt minder context aan de AI."
+          "description": "Neem gedetailleerde entiteitsinformatie (attributie en apparaatinformatie) op in de prompt. Uitschakelen vermindert het tokengebruik, maar biedt minder context aan de AI."
+        },
+        "debug_mode": {
+          "name": "Debug-modus",
+          "description": "Indien waar, wordt de uiteindelijke prompt die naar de AI is gestuurd, geretourneerd in het beschrijvingskenmerk voor debugging-doeleinden."
+        }
+      }
+    },
+    "analyze_error": {
+      "name": "Fout analyseren (Fix It)",
+      "description": "Analyseert een Home Assistant-foutlogboek en stelt een oplossing voor voor een specifieke automatisering of script.",
+      "fields": {
+        "provider_config": {
+          "name": "Providerconfiguratie",
+          "description": "Welke providerconfiguratie te gebruiken"
+        },
+        "error_log": {
+          "name": "Foutlogboek",
+          "description": "Het foutbericht of logboekitem van Home Assistant."
+        },
+        "automation_id": {
+          "name": "Automatisering-ID",
+          "description": "Optioneel. De ID van de automatisering om te analyseren (indien van toepassing)."
+        },
+        "script_id": {
+          "name": "Script-ID",
+          "description": "Optioneel. De ID van het script om te analyseren (indien van toepassing)."
         }
       }
     }

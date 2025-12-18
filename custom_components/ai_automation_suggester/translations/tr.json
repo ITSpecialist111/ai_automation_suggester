@@ -253,6 +253,36 @@
         "script_limit": {
           "name": "Betik Sınırı",
           "description": "Analiz edilecek maksimum betik sayısı (varsayılan: 100)."
+        },
+        "include_entity_details": {
+          "name": "Varlık Ayrıntılarını Dahil Et",
+          "description": "İsteme ayrıntılı varlık bilgilerini (öznitelikler ve cihaz bilgileri) dahil eder. Bunu devre dışı bırakmak belirteç kullanımını azaltır ancak yapay zekaya daha az bağlam sağlar."
+        },
+        "debug_mode": {
+          "name": "Hata Ayıklama Modu",
+          "description": "Doğruysa, hata ayıklama amacıyla AI'ya gönderilen son istemi açıklama özniteliğinde döndürür."
+        }
+      }
+    },
+    "analyze_error": {
+      "name": "Hatayı Analiz Et (Düzelt)",
+      "description": "Bir Home Assistant hata günlüğünü analiz eder ve belirli bir otomasyon veya betik için bir düzeltme önerir.",
+      "fields": {
+        "provider_config": {
+          "name": "Sağlayıcı Yapılandırması",
+          "description": "Hangi sağlayıcı yapılandırmasının kullanılacağı"
+        },
+        "error_log": {
+          "name": "Hata Günlüğü",
+          "description": "Home Assistant'tan gelen hata mesajı veya günlük girişi."
+        },
+        "automation_id": {
+          "name": "Otomasyon Kimliği",
+          "description": "İsteğe bağlı. Analiz edilecek otomasyonun kimliği (varsa)."
+        },
+        "script_id": {
+          "name": "Betik Kimliği",
+          "description": "İsteğe bağlı. Analiz edilecek betiğin kimliği (varsa)."
         }
       }
     }

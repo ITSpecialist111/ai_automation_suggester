@@ -117,6 +117,7 @@ DEFAULT_MODELS = {
 ATTR_PROVIDER_CONFIG = "provider_config"
 ATTR_CUSTOM_PROMPT = "custom_prompt"
 SERVICE_GENERATE_SUGGESTIONS = "generate_suggestions"
+SERVICE_ANALYZE_ERROR = "analyze_error"
 ATTR_INCLUDE_ENTITY_DETAILS = "include_entity_details"
 
 # ─────────────────────────────────────────────────────────────

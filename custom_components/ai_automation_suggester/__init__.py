@@ -10,6 +10,7 @@ from .const import (
     PLATFORMS,
     CONF_PROVIDER,
     SERVICE_GENERATE_SUGGESTIONS,
+    SERVICE_ANALYZE_ERROR,
     ATTR_PROVIDER_CONFIG,
     ATTR_CUSTOM_PROMPT,
     CONFIG_VERSION
@@ -156,11 +157,51 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         except Exception as err:
             raise ServiceValidationError(f"Failed to generate suggestions: {err}")
 
-    # Register the service
+    async def handle_analyze_error(call: ServiceCall) -> None:
+        """Handle the analyze_error service call."""
+        provider_config = call.data.get(ATTR_PROVIDER_CONFIG)
+        error_log = call.data.get("error_log")
+        automation_id = call.data.get("automation_id")
+        script_id = call.data.get("script_id")
+
+        if not error_log:
+            raise ServiceValidationError("error_log is required")
+
+        try:
+            coordinator = None
+            if provider_config:
+                coordinator = hass.data[DOMAIN].get(provider_config)
+            else:
+                for entry_id, coord in hass.data[DOMAIN].items():
+                    if isinstance(coord, AIAutomationCoordinator):
+                        coordinator = coord
+                        break
+
+            if coordinator is None:
+                raise ServiceValidationError("No AI Automation Suggester provider configured")
+
+            await coordinator.async_analyze_error(
+                error_log=error_log,
+                automation_id=automation_id,
+                script_id=script_id
+            )
+
+        except KeyError:
+            raise ServiceValidationError("Provider configuration not found")
+        except Exception as err:
+            _LOGGER.exception("Error during analyze_error service call")
+            raise ServiceValidationError(f"Failed to analyze error: {err}")
+
+    # Register the services
     hass.services.async_register(
         DOMAIN,
         SERVICE_GENERATE_SUGGESTIONS,
         handle_generate_suggestions
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ANALYZE_ERROR,
+        handle_analyze_error
     )
 
     return True

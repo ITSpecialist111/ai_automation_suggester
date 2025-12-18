@@ -139,6 +139,32 @@
         "include_entity_details": {
           "name": "Entitätsdetails einschließen",
           "description": "Detaillierte Entitätsinformationen (Attribute und Geräteinformationen) in den Prompt aufnehmen. Das Deaktivieren reduziert den Token-Verbrauch, bietet der KI aber weniger Kontext."
+        },
+        "debug_mode": {
+          "name": "Debug-Modus",
+          "description": "Wenn wahr, wird der endgültige an die KI gesendete Prompt im Beschreibungsattribut zu Debug-Zwecken zurückgegeben."
+        }
+      }
+    },
+    "analyze_error": {
+      "name": "Fehler analysieren (Reparieren)",
+      "description": "Analysiert ein Home Assistant-Fehlerprotokoll und schlägt eine Korrektur für eine bestimmte Automatisierung oder ein Skript vor.",
+      "fields": {
+        "provider_config": {
+          "name": "Anbieterkonfiguration",
+          "description": "Welche Anbieterkonfiguration verwendet werden soll"
+        },
+        "error_log": {
+          "name": "Fehlerprotokoll",
+          "description": "Die Fehlermeldung oder der Protokolleintrag von Home Assistant."
+        },
+        "automation_id": {
+          "name": "Automatisierungs-ID",
+          "description": "Optional. Die ID der zu analysierenden Automatisierung (falls zutreffend)."
+        },
+        "script_id": {
+          "name": "Skript-ID",
+          "description": "Optional. Die ID des zu analysierenden Skripts (falls zutreffend)."
         }
       }
     }

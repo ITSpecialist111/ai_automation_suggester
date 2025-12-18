@@ -139,6 +139,32 @@
         "include_entity_details": {
           "name": "Incloure detalls de l'entitat",
           "description": "Inclou informació detallada de l'entitat (atributs i informació del dispositiu) al prompt. Deshabilitar això redueix l'ús de tokens, però proporciona menys context a l'IA."
+        },
+        "debug_mode": {
+          "name": "Mode de depuració",
+          "description": "Si és cert, retorna el prompt final enviat a la IA a l'atribut de descripció per a finalitats de depuració."
+        }
+      }
+    },
+    "analyze_error": {
+      "name": "Analitzar error (Arreglar-ho)",
+      "description": "Analitza un registre d'errors de Home Assistant i suggereix una solució per a una automatització o script específic.",
+      "fields": {
+        "provider_config": {
+          "name": "Configuració del proveïdor",
+          "description": "Quina configuració del proveïdor utilitzar"
+        },
+        "error_log": {
+          "name": "Registre d'errors",
+          "description": "El missatge d'error o entrada del registre de Home Assistant."
+        },
+        "automation_id": {
+          "name": "ID d'automatització",
+          "description": "Opcional. L'ID de l'automatització a analitzar (si s'escau)."
+        },
+        "script_id": {
+          "name": "ID d'script",
+          "description": "Opcional. L'ID de l'script a analitzar (si s'escau)."
         }
       }
     }

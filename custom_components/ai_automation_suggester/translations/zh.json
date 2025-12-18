@@ -139,6 +139,32 @@
         "include_entity_details": {
           "name": "包含实体详情",
           "description": "在提示中包含详细的实体信息（属性和设备信息）。禁用此选项可减少令牌使用，但为 AI 提供的上下文较少。"
+        },
+        "debug_mode": {
+          "name": "调试模式",
+          "description": "如果为 true，则在描述属性中返回发送给 AI 的最终提示，以便进行调试。"
+        }
+      }
+    },
+    "analyze_error": {
+      "name": "分析错误 (修复它)",
+      "description": "分析 Home Assistant 错误日志并为特定自动化或脚本提供修复建议。",
+      "fields": {
+        "provider_config": {
+          "name": "提供商配置",
+          "description": "使用哪个提供商配置"
+        },
+        "error_log": {
+          "name": "错误日志",
+          "description": "来自 Home Assistant 的错误消息或日志条目。"
+        },
+        "automation_id": {
+          "name": "自动化 ID",
+          "description": "可选。要分析的自动化 ID（如果适用）。"
+        },
+        "script_id": {
+          "name": "脚本 ID",
+          "description": "可选。要分析的脚本 ID（如果适用）。"
         }
       }
     }
