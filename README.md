@@ -11,7 +11,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/ITSpecialist111/ai_automation_suggester?style=for-the-badge)]()
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)]()
 
-An **AI‑powered assistant** for Home Assistant that leverages large language models to understand your unique smart home environment – your entities, areas, devices, **and** existing automations. It proposes intelligent, actionable YAML suggestions tailored to your specific setup, helping you unlock your home's full potential.
+An **AI‑powered assistant** for Home Assistant that leverages large language models to understand your unique smart home environment – your entities, areas, devices, automations, **and** scripts. It proposes intelligent, actionable YAML suggestions tailored to your specific setup, helping you unlock your home's full potential.
 
 ---
 
@@ -30,9 +30,9 @@ The result is often an **under-automated house** despite having powerful hardwar
 
 The AI Automation Suggester integration solves these challenges by acting as a personal automation consultant. It intelligently analyzes your Home Assistant instance to:
 
-1.  **Analyze your home's state:** Understand your devices, their capabilities, locations, and existing automations.
+1.  **Analyze your home's state:** Understand your devices, their capabilities, locations, existing automations, and scripts.
 2.  **Identify opportunities:** Spot gaps, synergies, and potential improvements for energy saving, security, comfort, and convenience.
-3.  **Draft ready-to-paste YAML:** Provide concrete, tailored automation ideas as YAML snippets you can review, tweak, and implement directly.
+3.  **Draft ready-to-paste YAML:** Provide concrete, tailored automation and script ideas as YAML snippets you can review, tweak, and implement directly.
 
 **In essence,** this integration turns the complexity of a large Home Assistant environment into actionable insights and tangible benefits, guiding you toward a more efficient, comfortable, and secure smart home.
 
@@ -44,7 +44,7 @@ The integration follows a simple, effective process:
 
 | Step | What happens? | Details |
 |------|---------------|---------|
-| **1&nbsp;· Snapshot** | Collects data about your home. | On manual trigger or schedule, the integration gathers information on your entities (including attributes), devices, areas, **and** existing automations. You can control the scope using filters and limits. |
+| **1&nbsp;· Snapshot** | Collects data about your home. | On manual trigger or schedule, the integration gathers information on your entities (including attributes), devices, areas, automations, **and** scripts. You can control the scope using filters and limits. |
 | **2&nbsp;· Prompt Building** | Structures the data for the AI. | This snapshot is embedded into a detailed system prompt describing your specific Home Assistant setup. You can enhance this with a *custom prompt* to steer suggestions towards specific goals (e.g., "focus on presence lighting"). |
 | **3&nbsp;· Provider Call** | Sends the prompt to the AI. | The crafted prompt is sent to your configured AI provider (OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, Open Web UI, Codestral, Venice AI). |
 | **4&nbsp;· Parsing** | Processes the AI's response. | The raw response from the AI is parsed to extract key information: a human-readable `description` of the suggestion, the actual `yaml_block` code, and potentially other details. This information is stored on sensor attributes. |
@@ -101,7 +101,7 @@ Leveraging the AI Automation Suggester provides several key benefits:
     * Secure API key storage
     * Custom endpoints for compatible providers
     * Advanced options like Ollama's think mode control
-* **Customizable Prompts and Filters:** Tailor suggestions using system prompts, domain filters, and entity limits.
+* **Customizable Prompts and Filters:** Tailor suggestions using system prompts, domain filters, and entity limits for both automations and scripts.
 * **Randomized Entity Selection:** Prevent repetitive suggestions and discover new opportunities.
 * **Context-Rich Insights:** Incorporates device and area information for smarter, more relevant ideas.
 * **Persistent Notifications:** Receive suggestions directly in your Home Assistant interface.
@@ -201,6 +201,10 @@ You can trigger the suggestion generation manually using the service call:
     * `domains` (list of strings, optional): Limit the analysis to entities within specific domains (e.g., `['light', 'sensor']`).
     * `entity_limit` (integer, optional): Set a maximum number of entities the AI should consider in this run. Useful for controlling prompt length and cost.
     * `custom_prompt` (string, optional): Add a specific instruction for this particular run (e.g., "Suggest security automations for doors and windows.").
+    * `automation_read_yaml` (boolean, default: `false`): Include actual YAML code from `automations.yaml` for analysis.
+    * `automation_limit` (integer, default: 100): Max automations to analyze.
+    * `script_read_yaml` (boolean, default: `false`): Include actual YAML code from `scripts.yaml` for analysis.
+    * `script_limit` (integer, default: 100): Max scripts to analyze.
 
 ### Dashboard Snippets
 

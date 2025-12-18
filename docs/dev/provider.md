@@ -532,7 +532,7 @@ DEFAULT_MODELS = {
 4. **Coordinator's Role in Provider Integration**
 
 The `AIAutomationCoordinator` handles:
-1. Gathering entity/automation data
+1. Gathering entity/automation/script data
 2. Building prompts with token budgeting
 3. Dispatching requests to the correct provider
 4. Processing responses and extracting YAML
