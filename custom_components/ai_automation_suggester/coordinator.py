@@ -20,6 +20,8 @@ from homeassistant.helpers import (
     area_registry as ar,
     device_registry as dr,
     entity_registry as er,
+    floor_registry as fr,
+    label_registry as lr,
 )
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -73,6 +75,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.script_read_file = False  # Default script reading mode
         self.script_limit = 100
         self.include_entity_details = True  # Default to include detailed entity info
+        self.debug_mode = False  # If true, return prompt in description
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
@@ -93,6 +96,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.device_registry: dr.DeviceRegistry | None = None
         self.entity_registry: er.EntityRegistry | None = None
         self.area_registry: ar.AreaRegistry | None = None
+        self.floor_registry: fr.FloorRegistry | None = None
+        self.label_registry: lr.LabelRegistry | None = None
 
     # ---------------------------------------------------------------------
     # Utility – options‑first lookup
@@ -162,6 +167,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.device_registry = dr.async_get(self.hass)
         self.entity_registry = er.async_get(self.hass)
         self.area_registry = ar.async_get(self.hass)
+        self.floor_registry = fr.async_get(self.hass)
+        self.label_registry = lr.async_get(self.hass)
 
     async def async_shutdown(self):
         return
@@ -215,6 +222,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 yaml_block = match.group(1).strip() if match else None
                 description = YAML_RE.sub("", response).strip() if match else None
 
+                if self.debug_mode:
+                    description = f"DEBUG PROMPT SENT TO AI:\n{prompt}\n\n---\n\nORIGINAL DESCRIPTION:\n{description}"
+
                 persistent_notification.async_create(
                     self.hass,
                     message=response,
@@ -260,6 +270,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         MAX_ATTR = 500
         MAX_AUTOM = getattr(self, "automation_limit", 100)
 
+        person_context = self._get_person_context()
+
         ent_sections: list[str] = []
         for eid, meta in random.sample(
             list(entities.items()), min(len(entities), self.entity_limit)
@@ -278,6 +290,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             builded_prompt = (
                 f"{self.SYSTEM_PROMPT}\n\n"
                 f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
+                f"{person_context}\n"
                 "Existing Automations Overview:\n"
                 f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
                 "Automations YAML Code (for analysis and improvement):\n"
@@ -292,6 +305,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             builded_prompt = (
                 f"{self.SYSTEM_PROMPT}\n\n"
                 f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
+                f"{person_context}\n"
                 "Existing Automations:\n"
                 f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
                 "Please propose detailed automations and improvements that reference only the entity_ids above."
@@ -359,6 +373,17 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             f"Area: {area_name}\n"
         )
 
+        if ent_entry and ent_entry.labels and self.label_registry:
+            labels = [self.label_registry.get_label(l_id).name for l_id in ent_entry.labels if self.label_registry.get_label(l_id)]
+            block += f"Labels: {', '.join(labels)}\n"
+
+        if area_id and self.area_registry:
+            ar_entry = self.area_registry.async_get_area(area_id)
+            if ar_entry and ar_entry.floor_id and self.floor_registry:
+                floor = self.floor_registry.async_get_floor(ar_entry.floor_id)
+                if floor:
+                    block += f"Floor: {floor.name}\n"
+
         if dev_entry:
             block += (
                 "Device Info:\n"
@@ -374,6 +399,19 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "---\n"
         )
         return block
+
+    def _get_person_context(self) -> str:
+        """Fetch all person entities and their zone states."""
+        persons = []
+        for eid in self.hass.states.async_entity_ids("person"):
+            st = self.hass.states.get(eid)
+            if st:
+                persons.append(f"- {st.attributes.get('friendly_name', eid)} is at {st.state}")
+        
+        if not persons:
+            return ""
+        
+        return "Current location of people:\n" + "\n".join(persons) + "\n"
 
     def _format_entity_summarized(self, eid: str, meta: dict) -> str:
         """Format entity with summarized information (no attributes or device info)."""

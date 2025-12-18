@@ -89,3 +89,11 @@ generate_suggestions:
       example: true
       selector:
         boolean: {}
+    debug_mode:
+      name: Debug Mode
+      description: "If true, returns the final prompt sent to the AI in the description attribute for debugging purposes."
+      required: false
+      default: false
+      example: false
+      selector:
+        boolean: {}
