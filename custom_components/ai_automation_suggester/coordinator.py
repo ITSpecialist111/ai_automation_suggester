@@ -86,6 +86,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "suggestions": "No suggestions yet",
             "description": None,
             "yaml_block": None,
+            "debug_prompt": None,
             "last_update": None,
             "entities_processed": [],
             "provider": self._opt(CONF_PROVIDER, "unknown"),
@@ -222,12 +223,14 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 yaml_block = match.group(1).strip() if match else None
                 description = YAML_RE.sub("", response).strip() if match else None
 
+                notification_message = response
                 if self.debug_mode:
-                    description = f"DEBUG PROMPT SENT TO AI:\n{prompt}\n\n---\n\nORIGINAL DESCRIPTION:\n{description}"
+                    debug_info = f"\n\n---\n\nDEBUG PROMPT SENT TO AI:\n{prompt}"
+                    notification_message = f"{response}{debug_info}"
 
                 persistent_notification.async_create(
                     self.hass,
-                    message=response,
+                    message=notification_message,
                     title="AI Automation Suggestions (%s)" % self._opt(CONF_PROVIDER, "unknown"),
                     notification_id=f"ai_automation_suggestions_{now.timestamp()}",
                 )
@@ -236,6 +239,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     "suggestions": response,
                     "description": description,
                     "yaml_block": yaml_block,
+                    "debug_prompt": prompt if self.debug_mode else None,
                     "last_update": now,
                     "entities_processed": list(picked.keys()),
                     "provider": self._opt(CONF_PROVIDER, "unknown"),
@@ -321,16 +325,21 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         response = await self._dispatch(prompt)
         
         if response:
+            notification_message = response
+            if self.debug_mode:
+                notification_message = f"{response}\n\n---\n\nDEBUG PROMPT SENT TO AI:\n{prompt}"
+
             # 5. Create notification with the fix
             persistent_notification.async_create(
                 self.hass,
-                message=response,
+                message=notification_message,
                 title="AI Error Analysis (Fix It)",
                 notification_id=f"ai_fix_it_{datetime.now().timestamp()}",
             )
             # Also update the sensor description so the user can easily copy/paste from the UI if needed
             self.data.update({
                 "last_fix_explanation": response,
+                "debug_prompt": prompt if self.debug_mode else None,
                 "provider": self._opt(CONF_PROVIDER, "unknown"),
             })
             self.async_set_updated_data(self.data)

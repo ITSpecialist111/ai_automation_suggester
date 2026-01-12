@@ -228,8 +228,10 @@ class AISuggestionsSensor(AIBaseSensor):
         # Initialize state with default values
         self._attr_native_value = "No Suggestions"
         self._attr_extra_state_attributes = {
+            "suggestions": "No suggestions yet",
             "description": None,
             "yaml_block": None,
+            "debug_prompt": None,
             "last_update": None,
             "entities_processed": [],
             "provider": self._entry.data.get(CONF_PROVIDER, "unknown"),
@@ -266,8 +268,10 @@ class AISuggestionsSensor(AIBaseSensor):
             return val
 
         self._attr_extra_state_attributes = {
+            "suggestions": suggestions,
             "description": truncate(data.get("description")),
             "yaml_block": truncate(data.get("yaml_block")),
+            "debug_prompt": truncate(data.get("debug_prompt")),
             "last_update": data.get("last_update"),
             "entities_processed": data.get("entities_processed", [])[:50],  # Limit to 50 entities
             "provider": self._entry.data.get(CONF_PROVIDER, "unknown"),
