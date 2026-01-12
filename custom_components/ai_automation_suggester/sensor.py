@@ -49,6 +49,7 @@ from .const import (
     SENSOR_KEY_LAST_ERROR,
     SENSOR_KEY_TIMEOUT,
     SENSOR_KEY_TEMPERATURE,
+    MAX_ATTRIBUTE_SIZE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -227,7 +228,6 @@ class AISuggestionsSensor(AIBaseSensor):
         # Initialize state with default values
         self._attr_native_value = "No Suggestions"
         self._attr_extra_state_attributes = {
-            "suggestions": "No suggestions yet",
             "description": None,
             "yaml_block": None,
             "last_update": None,
@@ -260,12 +260,16 @@ class AISuggestionsSensor(AIBaseSensor):
         else:
             self._attr_native_value = "No Suggestions"
 
+        def truncate(val):
+            if isinstance(val, str) and len(val) > MAX_ATTRIBUTE_SIZE:
+                return val[:MAX_ATTRIBUTE_SIZE] + "... (truncated)"
+            return val
+
         self._attr_extra_state_attributes = {
-            "suggestions": suggestions,
-            "description": data.get("description"),
-            "yaml_block": data.get("yaml_block"),
+            "description": truncate(data.get("description")),
+            "yaml_block": truncate(data.get("yaml_block")),
             "last_update": data.get("last_update"),
-            "entities_processed": data.get("entities_processed", []),
+            "entities_processed": data.get("entities_processed", [])[:50],  # Limit to 50 entities
             "provider": self._entry.data.get(CONF_PROVIDER, "unknown"),
             "entities_processed_count": len(data.get("entities_processed", [])),
         }
@@ -300,8 +304,13 @@ class AIProviderStatusSensor(AIBaseSensor):
         else:
             self._attr_native_value = PROVIDER_STATUS_DISCONNECTED
 
+        def truncate(val):
+            if isinstance(val, str) and len(val) > MAX_ATTRIBUTE_SIZE:
+                return val[:MAX_ATTRIBUTE_SIZE] + "... (truncated)"
+            return val
+
         self._attr_extra_state_attributes = {
-            "last_error_message": data.get("last_error", None),
+            "last_error_message": truncate(data.get("last_error")),
             "last_attempted_update": data.get("last_update"),
         }
 
@@ -404,9 +413,15 @@ class AILastErrorSensor(AIBaseSensor):
         """Update sensor state with the last error message."""
         data = self.coordinator.data or {}
         last_error = data.get("last_error")
-        self._attr_native_value = str(last_error) if last_error else "No Error"
+        def truncate(val):
+            if isinstance(val, str) and len(val) > MAX_ATTRIBUTE_SIZE:
+                return val[:MAX_ATTRIBUTE_SIZE] + "... (truncated)"
+            return val
+
+        self._attr_native_value = str(last_error)[:254] if last_error else "No Error"
         self._attr_extra_state_attributes = {
              "last_error_timestamp": data.get("last_update") if last_error else None,
+             "full_error": truncate(str(last_error)) if last_error else None,
         }
 
 # ─────────────────────────────────────────────────────────────

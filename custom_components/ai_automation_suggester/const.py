@@ -159,3 +159,8 @@ SENSOR_KEY_MODEL = "model"
 SENSOR_KEY_LAST_ERROR = "last_error"
 SENSOR_KEY_TIMEOUT = "timeout"
 SENSOR_KEY_TEMPERATURE = "temperature"
+
+# ─────────────────────────────────────────────────────────────
+# Recorder Limits
+# ─────────────────────────────────────────────────────────────
+MAX_ATTRIBUTE_SIZE = 6000  # Safe limit per attribute to stay under HA's total 16KB recorder limit
