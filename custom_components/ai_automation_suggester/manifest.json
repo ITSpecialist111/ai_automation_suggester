@@ -1,7 +1,10 @@
 {
   "domain": "ai_automation_suggester",
   "name": "AI Automation Suggester",
-  "codeowners": ["@ITSpecialist111"],
+  "codeowners": [
+    "@ITSpecialist111",
+    "@RmG152"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/ITSpecialist111/ai_automation_suggester",
