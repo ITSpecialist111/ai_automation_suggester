@@ -165,6 +165,10 @@
         "script_id": {
           "name": "脚本 ID",
           "description": "可选。要分析的脚本 ID（如果适用）。"
+        },
+        "debug_mode": {
+          "name": "调试模式",
+          "description": "如果为 true，则在描述属性中返回发送给 AI 的最终提示，以便进行调试。"
         }
       }
     }

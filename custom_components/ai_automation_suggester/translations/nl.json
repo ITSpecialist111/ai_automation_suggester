@@ -161,6 +161,10 @@
         "script_id": {
           "name": "Script-ID",
           "description": "Optioneel. De ID van het script om te analyseren (indien van toepassing)."
+        },
+        "debug_mode": {
+          "name": "Debug-modus",
+          "description": "Indien waar, wordt de uiteindelijke prompt die naar de AI is gestuurd, geretourneerd in het beschrijvingskenmerk voor debugging-doeleinden."
         }
       }
     }

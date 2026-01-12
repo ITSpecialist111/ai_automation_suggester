@@ -157,6 +157,10 @@
         "script_id": {
           "name": "ID de Script",
           "description": "Opcional. El ID del script a analizar (si procede)."
+        },
+        "debug_mode": {
+          "name": "Modo de Depuración",
+          "description": "Si es verdadero, devuelve el mensaje final enviado a la IA en el atributo de descripción para fines de depuración."
         }
       }
     }

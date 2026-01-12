@@ -165,6 +165,10 @@
         "script_id": {
           "name": "Script ID",
           "description": "Optional. The ID of the script to analyze (if applicable)."
+        },
+        "debug_mode": {
+          "name": "Debug Mode",
+          "description": "If true, returns the final prompt sent to the AI in the description attribute for debugging purposes."
         }
       }
     }

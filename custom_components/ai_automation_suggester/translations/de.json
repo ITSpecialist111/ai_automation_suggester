@@ -165,6 +165,10 @@
         "script_id": {
           "name": "Skript-ID",
           "description": "Optional. Die ID des zu analysierenden Skripts (falls zutreffend)."
+        },
+        "debug_mode": {
+          "name": "Debug-Modus",
+          "description": "Wenn wahr, wird der endgültige an die KI gesendete Prompt im Beschreibungsattribut zu Debug-Zwecken zurückgegeben."
         }
       }
     }

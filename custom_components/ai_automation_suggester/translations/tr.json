@@ -283,6 +283,10 @@
         "script_id": {
           "name": "Betik Kimliği",
           "description": "İsteğe bağlı. Analiz edilecek betiğin kimliği (varsa)."
+        },
+        "debug_mode": {
+          "name": "Hata Ayıklama Modu",
+          "description": "Doğruysa, hata ayıklama amacıyla AI'ya gönderilen son istemi açıklama özniteliğinde döndürür."
         }
       }
     }

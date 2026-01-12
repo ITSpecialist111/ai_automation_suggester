@@ -165,6 +165,10 @@
         "script_id": {
           "name": "ID script",
           "description": "Opzionale. L'ID dello script da analizzare (se applicabile)."
+        },
+        "debug_mode": {
+          "name": "Modalità debug",
+          "description": "Se vero, restituisce il prompt finale inviato all'IA nell'attributo descrizione per scopi di debug."
         }
       }
     }

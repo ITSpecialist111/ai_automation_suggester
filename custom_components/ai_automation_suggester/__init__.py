@@ -163,6 +163,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         error_log = call.data.get("error_log")
         automation_id = call.data.get("automation_id")
         script_id = call.data.get("script_id")
+        debug_mode = call.data.get("debug_mode", False)
 
         if not error_log:
             raise ServiceValidationError("error_log is required")
@@ -180,11 +181,15 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             if coordinator is None:
                 raise ServiceValidationError("No AI Automation Suggester provider configured")
 
-            await coordinator.async_analyze_error(
-                error_log=error_log,
-                automation_id=automation_id,
-                script_id=script_id
-            )
+            coordinator.debug_mode = debug_mode
+            try:
+                await coordinator.async_analyze_error(
+                    error_log=error_log,
+                    automation_id=automation_id,
+                    script_id=script_id
+                )
+            finally:
+                coordinator.debug_mode = False
 
         except KeyError:
             raise ServiceValidationError("Provider configuration not found")

@@ -165,6 +165,10 @@
         "script_id": {
           "name": "ID d'script",
           "description": "Opcional. L'ID de l'script a analitzar (si s'escau)."
+        },
+        "debug_mode": {
+          "name": "Mode de depuració",
+          "description": "Si és cert, retorna el prompt final enviat a la IA a l'atribut de descripció per a finalitats de depuració."
         }
       }
     }
