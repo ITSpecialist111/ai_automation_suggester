@@ -97,8 +97,8 @@
           "description": "Qué configuración de proveedor usar (si tienes varias)"
         },
         "custom_prompt": {
-          "name": "Mensaje personalizado",
-          "description": "Mensaje personalizado opcional para anular el mensaje predeterminado del sistema o guiar las sugerencias hacia temas específicos"
+          "name": "Prompt personalizado",
+          "description": "Prompt personalizado opcional para anular el prompt predeterminado del sistema o guiar las sugerencias hacia temas específicos"
         },
         "all_entities": {
           "name": "Considerar Todas las Entidades",
@@ -139,7 +139,7 @@
       }
     },
     "analyze_error": {
-      "name": "Analizar Error (Fix It)",
+      "name": "Analizar Error (Solucionar)",
       "description": "Analiza un registro de errores de Home Assistant y sugiere una solución para una automatización o script específico.",
       "fields": {
         "provider_config": {

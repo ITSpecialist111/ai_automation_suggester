@@ -147,7 +147,7 @@
       }
     },
     "analyze_error": {
-      "name": "Analisar Erro (Fix It)",
+      "name": "Analisar Erro (Corrigir)",
       "description": "Analisa um log de erros do Home Assistant e sugere uma correção para uma automação ou script específico.",
       "fields": {
         "provider_config": {

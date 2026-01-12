@@ -143,7 +143,7 @@
       }
     },
     "analyze_error": {
-      "name": "Fout analyseren (Fix It)",
+      "name": "Fout analyseren (Herstellen)",
       "description": "Analyseert een Home Assistant-foutlogboek en stelt een oplossing voor voor een specifieke automatisering of script.",
       "fields": {
         "provider_config": {
