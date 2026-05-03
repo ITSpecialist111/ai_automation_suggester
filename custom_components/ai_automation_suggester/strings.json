@@ -204,7 +204,14 @@
           "generic_openai_validation_endpoint": "Validation URL (Generic OpenAI, should end with 'models')",
           "generic_openai_enable_validation": "Enable Validation (Generic OpenAI)",
           "max_input_tokens": "Max Input Tokens",
-          "max_output_tokens": "Max Output Tokens"
+          "max_output_tokens": "Max Output Tokens",
+          "custom_system_prompt": "Persistent Custom System Prompt",
+          "excluded_domains": "Excluded Domains",
+          "excluded_entities": "Excluded Entities",
+          "excluded_areas": "Excluded Areas",
+          "history_retention": "Suggestion History Retention",
+          "request_timeout": "Provider Request Timeout",
+          "openai_reasoning_effort": "OpenAI Reasoning Effort"
         },
         "description": "Adjust settings for your AI providers. Fields relevant to your configured provider will be used. Common settings like token limits are configured per provider."
       }
@@ -245,6 +252,36 @@
         "automation_limit": {
           "name": "Automation Limit",
           "description": "Maximum number of automations to analyze (default: 100)."
+        },
+        "exclude_domains": {
+          "name": "Exclude Domains",
+          "description": "Domains to exclude from analysis."
+        },
+        "exclude_entities": {
+          "name": "Exclude Entities",
+          "description": "Entity IDs to exclude from analysis."
+        },
+        "exclude_areas": {
+          "name": "Exclude Areas",
+          "description": "Areas to exclude from analysis."
+        }
+      }
+    },
+    "clear_history": {
+      "name": "Clear Suggestion History",
+      "description": "Clear all stored AI automation suggestions."
+    },
+    "update_suggestion": {
+      "name": "Update Suggestion",
+      "description": "Update the review status for a stored AI automation suggestion.",
+      "fields": {
+        "suggestion_id": {
+          "name": "Suggestion ID",
+          "description": "The suggestion ID to update."
+        },
+        "status": {
+          "name": "Status",
+          "description": "The new review status."
         }
       }
     }

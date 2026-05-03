@@ -1,8 +1,13 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import { applyHass } from 'custom-card-helpers'; // For hass object
-@customElement('ai-automation-suggester-card')
-export class AiAutomationSuggesterCard extends LitElement {
+import { LitElement, html, css } from "lit";
+
+class AiAutomationSuggesterCard extends LitElement {
+  static properties = {
+    hass: { attribute: false },
+    suggestions: { state: true },
+    loading: { state: true },
+    error: { state: true },
+  };
+
   static styles = css`
     :host {
       display: block;
@@ -10,70 +15,96 @@ export class AiAutomationSuggesterCard extends LitElement {
     ha-card {
       padding: 16px;
     }
+    .toolbar {
+      align-items: center;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
     ul {
       list-style: none;
+      margin: 0;
       padding: 0;
     }
     li {
-      margin-bottom: 16px;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 16px;
+      border-top: 1px solid var(--divider-color, #ddd);
+      padding: 12px 0;
+    }
+    li:first-child {
+      border-top: 0;
     }
     pre {
-      background-color: #f0f0f0;
-      padding: 10px;
+      background: var(--code-editor-background-color, #f5f5f5);
+      border-radius: 6px;
       overflow-x: auto;
-      border-radius: 4px;
+      padding: 12px;
+      white-space: pre-wrap;
+    }
+    .meta {
+      color: var(--secondary-text-color);
+      font-size: 0.9em;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
       margin-top: 8px;
     }
-    .details {
-      display: none; /* Initially hidden */
-    }
-    .details[open] {
-      display: block;
-    }
     .error {
-      color: red;
+      color: var(--error-color, #b00020);
     }
   `;
-  @property({ type: Object }) hass; // Home Assistant object
-  @property({ type: Array }) suggestions = [];
-  @state() loading = true;
-  @state() error = null;
+
+  constructor() {
+    super();
+    this.suggestions = [];
+    this.loading = true;
+    this.error = null;
+  }
+
   connectedCallback() {
     super.connectedCallback();
     this.fetchData();
   }
+
+  setConfig(config) {
+    this.config = config;
+  }
+
   async fetchData() {
+    if (!this.hass) {
+      return;
+    }
     this.loading = true;
     this.error = null;
     try {
-      const response = await this.hass.callApi('GET', '/api/ai_automation_suggester/suggestions');
-      this.suggestions = response;
+      this.suggestions = await this.hass.callApi("GET", "ai_automation_suggester/suggestions");
     } catch (err) {
-      this.error = err.message || 'Failed to fetch suggestions.';
+      this.error = err.message || "Failed to fetch suggestions.";
     } finally {
       this.loading = false;
     }
   }
-  toggleDetails(suggestion) {
-    suggestion.showDetails = !suggestion.showDetails;
-    this.requestUpdate(); // Ensure re-render
+
+  async copyYaml(yaml) {
+    await navigator.clipboard.writeText(yaml || "");
+    this.dispatchEvent(
+      new CustomEvent("hass-notification", {
+        detail: { type: "info", message: "YAML copied to clipboard." },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
-  copyYaml(yaml) {
-    navigator.clipboard.writeText(yaml);
-    this.dispatchEvent(new CustomEvent('hass-notification', {
-      detail: {
-        type: 'info',
-        message: 'YAML code copied to clipboard!',
-      },
-    }));
-  }
+
   async handleSuggestionAction(suggestionId, action) {
     try {
-      const response = await this.hass.callApi('POST', `/api/ai_automation_suggester/${action}/${suggestionId}`);
+      const response = await this.hass.callApi(
+        "POST",
+        `ai_automation_suggester/${action}/${suggestionId}`,
+      );
       if (response.success) {
-        this.fetchData(); // Refresh suggestions after action
+        await this.fetchData();
       } else {
         this.error = response.error || `Failed to ${action} suggestion.`;
       }
@@ -81,48 +112,48 @@ export class AiAutomationSuggesterCard extends LitElement {
       this.error = err.message || `Failed to ${action} suggestion.`;
     }
   }
+
+  renderSuggestion(suggestion) {
+    const yamlCode = suggestion.yamlCode || suggestion.yaml_block || "";
+    return html`
+      <li>
+        <h3>${suggestion.title || "AI automation suggestion"}</h3>
+        <p>${suggestion.shortDescription || suggestion.description || "No description returned."}</p>
+        <p class="meta">
+          ${suggestion.provider || "Unknown provider"} - ${suggestion.model || "Unknown model"} -
+          ${suggestion.status || "new"}
+        </p>
+        ${yamlCode ? html`<pre><code>${yamlCode}</code></pre>` : html`<p class="meta">No YAML was returned.</p>`}
+        ${(suggestion.warnings || []).length
+          ? html`<p class="meta">${suggestion.warnings.join(" ")}</p>`
+          : ""}
+        <div class="actions">
+          <ha-button @click=${() => this.copyYaml(yamlCode)} .disabled=${!yamlCode}>Copy YAML</ha-button>
+          <ha-button @click=${() => this.handleSuggestionAction(suggestion.id, "accept")}>Accept</ha-button>
+          <ha-button @click=${() => this.handleSuggestionAction(suggestion.id, "decline")}>Decline</ha-button>
+          <ha-button @click=${() => this.handleSuggestionAction(suggestion.id, "dismiss")}>Dismiss</ha-button>
+        </div>
+      </li>
+    `;
+  }
+
   render() {
     return html`
       <ha-card>
-        <div>
+        <div class="toolbar">
           <h2>AI Automation Suggestions</h2>
-          ${this.loading
-            ? html`<p>Loading suggestions...</p>`
-            : this.error
-              ? html`<p class="error">Error: ${this.error}</p>`
-              : html`
-                  <ul>
-                    ${this.suggestions.map(suggestion => html`
-                      <li>
-                        <h3>${suggestion.title}</h3>
-                        <p>${suggestion.shortDescription}</p>
-                        <button @click="${() => this.toggleDetails(suggestion)}">Details</button>
-                        <div class="details" ?open="${suggestion.showDetails}">
-                          <p>${suggestion.detailedDescription}</p>
-                          <pre><code class="language-yaml">${suggestion.yamlCode}</code></pre>
-                          <button @click="${() => this.copyYaml(suggestion.yamlCode)}">Copy YAML</button>
-                          <button @click="${() => this.handleSuggestionAction(suggestion.id, 'accept')}">Accept</button>
-                          <button @click="${() => this.handleSuggestionAction(suggestion.id, 'decline')}">Decline</button>
-                        </div>
-                      </li>
-                    `)}
-                  </ul>
-                `}
+          <ha-button @click=${this.fetchData}>Refresh</ha-button>
         </div>
+        ${this.loading
+          ? html`<p>Loading suggestions...</p>`
+          : this.error
+            ? html`<p class="error">${this.error}</p>`
+            : this.suggestions.length
+              ? html`<ul>${this.suggestions.map((suggestion) => this.renderSuggestion(suggestion))}</ul>`
+              : html`<p>No stored suggestions yet.</p>`}
       </ha-card>
     `;
   }
-  setConfig(config) {
-    // Optional: Handle any configuration options passed to the card
-  }
-  set hass(hass) {
-    applyHass(this, hass);
-  }
-  get hass() {
-    return this._hass;
-  }
 }
-// Provide a fallback registration if the module is loaded directly
-if (customElements.get('ai-automation-suggester-card') === undefined) {
-  customElements.define('ai-automation-suggester-card', AiAutomationSuggesterCard);
-}
+
+customElements.define("ai-automation-suggester-card", AiAutomationSuggesterCard);

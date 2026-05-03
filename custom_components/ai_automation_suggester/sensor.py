@@ -54,6 +54,7 @@ from .const import (
     SENSOR_KEY_OUTPUT_TOKENS,
     SENSOR_KEY_MODEL,
     SENSOR_KEY_LAST_ERROR,
+    SENSOR_KEY_HISTORY_COUNT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -113,6 +114,13 @@ SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
         icon="mdi:alert-circle-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    SensorEntityDescription(
+        key=SENSOR_KEY_HISTORY_COUNT,
+        name="Suggestion History Count",
+        icon="mdi:history",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
 )
 
 async def async_setup_entry(
@@ -149,6 +157,8 @@ async def async_setup_entry(
             entities.append(AIModelSensor(coordinator, entry, specific_description))
         elif description.key == SENSOR_KEY_LAST_ERROR:
             entities.append(AILastErrorSensor(coordinator, entry, specific_description))
+        elif description.key == SENSOR_KEY_HISTORY_COUNT:
+            entities.append(AIHistoryCountSensor(coordinator, entry, specific_description))
         else:
             entities.append(AIBaseSensor(coordinator, entry, specific_description))
 
@@ -235,6 +245,8 @@ class AISuggestionsSensor(AIBaseSensor):
             "entities_processed": [],
             "provider": self._entry.data.get(CONF_PROVIDER, "unknown"),
             "entities_processed_count": 0,
+            "suggestion_count": 0,
+            "warnings": [],
         }
 
     async def async_added_to_hass(self) -> None:
@@ -268,7 +280,11 @@ class AISuggestionsSensor(AIBaseSensor):
             "last_update": data.get("last_update"),
             "entities_processed": data.get("entities_processed", []),
             "provider": self._entry.data.get(CONF_PROVIDER, "unknown"),
+            "model": data.get("model"),
             "entities_processed_count": len(data.get("entities_processed", [])),
+            "suggestion": data.get("suggestion"),
+            "suggestion_count": data.get("suggestion_count", 0),
+            "warnings": data.get("warnings", []),
         }
 
 # ─────────────────────────────────────────────────────────────
@@ -304,6 +320,10 @@ class AIProviderStatusSensor(AIBaseSensor):
         self._attr_extra_state_attributes = {
             "last_error_message": data.get("last_error", None),
             "last_attempted_update": data.get("last_update"),
+            "provider": data.get("provider", self._provider_name),
+            "model": data.get("model"),
+            "warnings": data.get("warnings", []),
+            "response_metadata": data.get("response_metadata", {}),
         }
 
 # ─────────────────────────────────────────────────────────────
@@ -409,4 +429,27 @@ class AILastErrorSensor(AIBaseSensor):
         self._attr_native_value = str(last_error) if last_error else "No Error"
         self._attr_extra_state_attributes = {
              "last_error_timestamp": data.get("last_update") if last_error else None,
+        }
+
+
+class AIHistoryCountSensor(AIBaseSensor):
+    """Shows how many suggestions are retained in history."""
+    _attr_should_poll = False
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        entry: ConfigEntry,
+        description: SensorEntityDescription,
+    ) -> None:
+        super().__init__(coordinator, entry, description)
+        self._update_state_and_attributes()
+
+    def _update_state_and_attributes(self) -> None:
+        """Update state from coordinator history data."""
+        data = self.coordinator.data or {}
+        self._attr_native_value = data.get("suggestion_count", 0)
+        self._attr_extra_state_attributes = {
+            "latest_suggestion_id": (data.get("suggestion") or {}).get("id"),
+            "latest_suggestion_status": (data.get("suggestion") or {}).get("status"),
         }

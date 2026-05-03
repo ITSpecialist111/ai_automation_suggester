@@ -46,9 +46,9 @@ The integration follows a simple, effective process:
 |------|---------------|---------|
 | **1&nbsp;· Snapshot** | Collects data about your home. | On manual trigger or schedule, the integration gathers information on your entities (including attributes), devices, areas, **and** existing automations. You can control the scope using filters and limits. |
 | **2&nbsp;· Prompt Building** | Structures the data for the AI. | This snapshot is embedded into a detailed system prompt describing your specific Home Assistant setup. You can enhance this with a *custom prompt* to steer suggestions towards specific goals (e.g., "focus on presence lighting"). |
-| **3&nbsp;· Provider Call** | Sends the prompt to the AI. | The crafted prompt is sent to your configured AI provider (OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity). |
-| **4&nbsp;· Parsing** | Processes the AI's response. | The raw response from the AI is parsed to extract key information: a human-readable `description` of the suggestion, the actual `yaml_block` code, and potentially other details. This information is stored on sensor attributes. |
-| **5&nbsp;· Surface** | Delivers the suggestions. | Suggestions appear as Home Assistant persistent notifications. You can also use sensor attributes to display suggestions on custom dashboards for easy review and implementation. |
+| **3&nbsp;· Provider Call** | Sends the prompt to the AI. | The crafted prompt is sent to your configured AI provider (OpenAI, Azure OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, OpenRouter, or another OpenAI-compatible endpoint). |
+| **4&nbsp;· Parsing** | Processes the AI's response. | The integration asks capable providers for structured JSON, falls back to fenced YAML parsing, validates returned YAML, and records warnings for missing or possibly truncated output. |
+| **5&nbsp;· Surface** | Delivers and stores the suggestions. | Suggestions appear as Home Assistant persistent notifications, sensor attributes, and stored history that can be used by the bundled dashboard card or your own cards. |
 
 Randomized entity selection (configurable) helps ensure each analysis run can surface fresh ideas rather than repeating the same suggestions.
 
@@ -102,6 +102,8 @@ Leveraging the AI Automation Suggester provides several key benefits:
     * Custom endpoints for compatible providers
     * Advanced options like Ollama's think mode control
 * **Customizable Prompts and Filters:** Tailor suggestions using system prompts, domain filters, and entity limits.
+* **Persistent Suggestion History:** Retain recent suggestions with provider/model metadata, review status, warnings, and generated YAML.
+* **Review Actions:** Mark stored suggestions as accepted, declined, or dismissed through services or the bundled dashboard card.
 * **Randomized Entity Selection:** Prevent repetitive suggestions and discover new opportunities.
 * **Context-Rich Insights:** Incorporates device and area information for smarter, more relevant ideas.
 * **Persistent Notifications:** Receive suggestions directly in your Home Assistant interface.
@@ -114,7 +116,7 @@ Leveraging the AI Automation Suggester provides several key benefits:
 
 ## 🛠️ Prerequisites
 
-* **Home Assistant:** Version 2023.5 or later.
+* **Home Assistant:** Version 2024.1 or later.
 * **AI Provider Setup:** You will need access to an AI model.
     * For cloud providers (OpenAI, Anthropic, Google, Groq, Mistral, Perplexity), you’ll need API keys.
     * For local models (LocalAI, Ollama), ensure the local servers are running and accessible from Home Assistant.
@@ -131,6 +133,8 @@ Leveraging the AI Automation Suggester provides several key benefits:
 4.  Select the integration and click **Download**.
 5.  **Restart Home Assistant**.
 6.  Go to Settings → Devices & Services → **+ Add Integration** and search for `AI Automation Suggester`.
+
+When a GitHub release is published, HACS can detect the new version and show it as an available update. Update through HACS, then restart Home Assistant so the custom integration is reloaded.
 
 ### Manual Installation
 
@@ -177,6 +181,32 @@ You can adjust these settings later via the integration options in Settings → 
     * Prevents excessive API usage
     * Optimizes response length
 
+* **History and Filtering:**
+    * Persistent custom system prompt
+    * Excluded domains, entities, and areas
+    * Stored suggestion history retention
+    * Provider request timeout for slow local or research models
+
+---
+
+## Supported Providers and Model Notes
+
+Model APIs change quickly, so the integration keeps a compatibility catalog and still allows custom model names. Existing configured model values are preserved on upgrade.
+
+| Provider | New default for new configs | Compatibility notes |
+|----------|-----------------------------|---------------------|
+| OpenAI | `gpt-5.4-mini` | GPT-5-style models use the Responses API, `max_output_tokens`, and reasoning effort. Temperature is not sent to models known to reject it. `gpt-5.5` and `gpt-5.5-pro` are supported when available on your account. |
+| Azure OpenAI | `gpt-5.4-mini` deployment name | Azure uses deployment names. Configure the deployment ID, endpoint, and API version that match your Azure resource. |
+| Anthropic | `claude-sonnet-4-6` | Supports current Claude Sonnet/Opus model IDs such as `claude-sonnet-4-6` and `claude-opus-4-7`. |
+| Google Gemini | `gemini-2.5-flash` | Replaces the stale `gemini-2.0-flash` default. Gemini 3 preview IDs can be entered manually. |
+| Groq | `llama-3.3-70b-versatile` | Replaces the stale `llama3-8b-8192` default. Custom Groq model IDs are still allowed. |
+| Mistral AI | `mistral-small-latest` | Supports current `*-latest` aliases and custom published IDs. |
+| Perplexity AI | `sonar` | Supports Sonar, Sonar Pro, reasoning, and research-style model IDs where your account has access. |
+| OpenRouter | `openai/gpt-5.4-mini` | OpenRouter remains dynamic. Use provider-prefixed IDs from OpenRouter's model catalog. |
+| LocalAI/Ollama/custom OpenAI-compatible | User configured | Custom model names remain valid and are treated conservatively. |
+
+For maximum stability, prefer stable model IDs over preview or `latest` aliases unless you intentionally want fast-moving behavior.
+
 ---
 
 ## ✍️ Usage
@@ -199,8 +229,23 @@ You can trigger the suggestion generation manually using the service call:
 3.  Call the service. You can pass parameters to customize the request:
     * `all_entities` (boolean, default: `false`): Set to `true` to consider all eligible entities, `false` to only consider entities added since the last successful run.
     * `domains` (list of strings, optional): Limit the analysis to entities within specific domains (e.g., `['light', 'sensor']`).
+    * `exclude_domains` (list of strings, optional): Exclude domains even when considering all entities.
+    * `exclude_entities` (list of entity IDs, optional): Exclude specific entities from analysis.
+    * `exclude_areas` (list of area IDs/names, optional): Exclude areas from analysis.
     * `entity_limit` (integer, optional): Set a maximum number of entities the AI should consider in this run. Useful for controlling prompt length and cost.
     * `custom_prompt` (string, optional): Add a specific instruction for this particular run (e.g., "Suggest security automations for doors and windows.").
+    * `automation_read_yaml` (boolean, optional): Include YAML from `automations.yaml` for deeper review.
+    * `automation_limit` (integer, optional): Limit how many automations are included.
+
+### Suggestion Review Services
+
+* `ai_automation_suggester.clear_history`: Clears stored suggestion history.
+* `ai_automation_suggester.update_suggestion`: Updates a stored suggestion status. Supported statuses are `new`, `accepted`, `declined`, and `dismissed`.
+
+The bundled dashboard card also uses these stored suggestion APIs:
+
+* `GET /api/ai_automation_suggester/suggestions`
+* `POST /api/ai_automation_suggester/{accept|decline|dismiss}/{suggestion_id}`
 
 ### Dashboard Snippets
 
@@ -230,6 +275,8 @@ The integration provides several sensors for monitoring:
         * `last_update`: Timestamp of last update
         * `entities_processed`: List of analyzed entities
         * `entities_processed_count`: Number of entities analyzed
+        * `suggestion_count`: Number of retained suggestions
+        * `warnings`: Parsing, model, or truncation warnings
 
 * **AI Provider Status:** (`sensor.ai_provider_status_<provider_name>`)
     * State: `connected`, `error`, `disconnected`, `initializing`
@@ -244,6 +291,10 @@ The integration provides several sensors for monitoring:
 * **AI Model:** (`sensor.ai_model_in_use_<provider_name>`)
     * Shows current model configuration
     * Useful for multi-instance setups
+
+* **Suggestion History Count:** (`sensor.suggestion_history_count_<provider_name>`)
+    * Shows how many suggestions are stored in history
+    * Includes latest suggestion ID and review status as attributes
 
 * **Last Error:** (`sensor.last_error_message_<provider_name>`)
     * Detailed error tracking
@@ -274,9 +325,10 @@ The integration provides several sensors for monitoring:
 
 ## 🔒 Security Notes
 
-* All API keys are stored securely using Home Assistant's secure storage
-* Password fields are properly masked in the UI
-* Local providers (Ollama, LocalAI) can be used for complete data privacy
+* API keys are stored in Home Assistant config entries and password fields are masked in the UI.
+* Cloud providers may receive entity IDs, states, attributes, device/area context, automation metadata, and prompt text.
+* Local providers such as Ollama and LocalAI can keep model processing on your own network.
+* Suggestions are review-only. This integration does not automatically create, accept, or modify automations.
 
 ---
 

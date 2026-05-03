@@ -1,22 +1,30 @@
 """The AI Automation Suggester integration."""
 import logging
+import voluptuous as vol
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
 from homeassistant.helpers.typing import ConfigType
 
+from .api import async_register_http_views
 from .const import (
     DOMAIN,
     PLATFORMS,
     CONF_PROVIDER,
+    SERVICE_CLEAR_HISTORY,
     SERVICE_GENERATE_SUGGESTIONS,
+    SERVICE_UPDATE_SUGGESTION,
     ATTR_PROVIDER_CONFIG,
     ATTR_CUSTOM_PROMPT,
     CONFIG_VERSION
 )
 from .coordinator import AIAutomationCoordinator
+from .store import async_get_suggestion_store
 
 _LOGGER = logging.getLogger(__name__)
+
+CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Migrate old config entry if necessary."""
@@ -27,34 +35,55 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         new_data = {**config_entry.data}
         new_data.pop('scan_frequency', None)
         new_data.pop('initial_lag_time', None)
-        config_entry.version = CONFIG_VERSION
-        hass.config_entries.async_update_entry(config_entry, data=new_data)
+        hass.config_entries.async_update_entry(config_entry, data=new_data, version=CONFIG_VERSION)
         _LOGGER.debug("Migration successful")
         return True
     return True
 
+
+def _listish(value):
+    """Schema helper for service fields that can be a CSV string, list, or object."""
+
+    if value is None:
+        return []
+    if isinstance(value, (str, list, tuple, dict)):
+        return value
+    raise vol.Invalid("expected a list, comma-separated string, or object")
+
+
+GENERATE_SUGGESTIONS_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_PROVIDER_CONFIG): str,
+        vol.Optional(ATTR_CUSTOM_PROMPT): str,
+        vol.Optional("all_entities", default=False): bool,
+        vol.Optional("domains", default=[]): _listish,
+        vol.Optional("exclude_domains", default=[]): _listish,
+        vol.Optional("exclude_entities", default=[]): _listish,
+        vol.Optional("exclude_areas", default=[]): _listish,
+        vol.Optional("entity_limit", default=200): vol.All(vol.Coerce(int), vol.Range(min=1, max=2000)),
+        vol.Optional("automation_read_yaml", default=False): bool,
+        vol.Optional("automation_limit", default=100): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000)),
+    }
+)
+
+
+UPDATE_SUGGESTION_SCHEMA = vol.Schema(
+    {
+        vol.Required("suggestion_id"): str,
+        vol.Required("status"): vol.In(["accepted", "declined", "dismissed", "new"]),
+    }
+)
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the AI Automation Suggester component."""
     hass.data.setdefault(DOMAIN, {})
+    async_register_http_views(hass)
 
     async def handle_generate_suggestions(call: ServiceCall) -> None:
         """Handle the generate_suggestions service call."""
-        provider_config = call.data.get(ATTR_PROVIDER_CONFIG)
-        custom_prompt = call.data.get(ATTR_CUSTOM_PROMPT)
-        all_entities = call.data.get("all_entities", False)
-        domains = call.data.get("domains", {})
-        entity_limit = call.data.get("entity_limit", 200)
-        automation_read_yaml = call.data.get("automation_read_yaml", False)
-        automation_limit = call.data.get("automation_limit", 100)
-
-        # Parse domains if provided as a string or dict
-        if isinstance(domains, str):
-            domains = [d.strip() for d in domains.split(',') if d.strip()]
-        elif isinstance(domains, dict):
-            domains = list(domains.keys())
-
         try:
             coordinator = None
+            provider_config = call.data.get(ATTR_PROVIDER_CONFIG)
             if provider_config:
                 coordinator = hass.data[DOMAIN].get(provider_config)
             else:
@@ -67,39 +96,54 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             if coordinator is None:
                 raise ServiceValidationError("No AI Automation Suggester provider configured")
 
-            if custom_prompt:
-                original_prompt = coordinator.SYSTEM_PROMPT
-                coordinator.SYSTEM_PROMPT = f"{coordinator.SYSTEM_PROMPT}\n\nAdditional instructions:\n{custom_prompt}"
-            else:
-                original_prompt = None
-
-            coordinator.scan_all = all_entities
-            coordinator.selected_domains = domains
-            coordinator.entity_limit = entity_limit
-            coordinator.automation_read_file = automation_read_yaml
-            coordinator.automation_limit = automation_limit
-
-            try:
-                await coordinator.async_request_refresh()
-            finally:
-                if original_prompt is not None:
-                    coordinator.SYSTEM_PROMPT = original_prompt
-                coordinator.scan_all = False
-                coordinator.selected_domains = []
-                coordinator.entity_limit = 200
-                coordinator.automation_read_file = False
-                coordinator.automation_limit = 100
+            await coordinator.async_generate_suggestions(
+                custom_prompt=call.data.get(ATTR_CUSTOM_PROMPT),
+                all_entities=call.data.get("all_entities", False),
+                domains=call.data.get("domains", []),
+                exclude_domains=call.data.get("exclude_domains", []),
+                exclude_entities=call.data.get("exclude_entities", []),
+                exclude_areas=call.data.get("exclude_areas", []),
+                entity_limit=call.data.get("entity_limit", 200),
+                automation_read_yaml=call.data.get("automation_read_yaml", False),
+                automation_limit=call.data.get("automation_limit", 100),
+            )
 
         except KeyError:
             raise ServiceValidationError("Provider configuration not found")
         except Exception as err:
             raise ServiceValidationError(f"Failed to generate suggestions: {err}")
 
+    async def handle_clear_history(call: ServiceCall) -> None:
+        """Clear stored suggestion history."""
+
+        await async_get_suggestion_store(hass).async_clear()
+
+    async def handle_update_suggestion(call: ServiceCall) -> None:
+        """Update a stored suggestion status."""
+
+        suggestion = await async_get_suggestion_store(hass).async_update_status(
+            call.data["suggestion_id"], call.data["status"]
+        )
+        if suggestion is None:
+            raise ServiceValidationError("Suggestion not found")
+
     # Register the service
     hass.services.async_register(
         DOMAIN,
         SERVICE_GENERATE_SUGGESTIONS,
-        handle_generate_suggestions
+        handle_generate_suggestions,
+        schema=GENERATE_SUGGESTIONS_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_CLEAR_HISTORY,
+        handle_clear_history,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UPDATE_SUGGESTION,
+        handle_update_suggestion,
+        schema=UPDATE_SUGGESTION_SCHEMA,
     )
 
     return True
@@ -130,9 +174,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.async_create_task(coordinator_request_all_suggestions())
 
         async def coordinator_request_all_suggestions():
-            coordinator.scan_all = True
-            await coordinator.async_request_refresh()
-            coordinator.scan_all = False
+            await coordinator.async_generate_suggestions(all_entities=True)
 
         entry.async_on_unload(hass.bus.async_listen("ai_automation_suggester_update", handle_custom_event))
 
