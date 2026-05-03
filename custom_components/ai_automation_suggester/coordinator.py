@@ -25,6 +25,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import *
+from .endpoint_utils import ollama_api_candidates, ollama_base_url, openai_chat_endpoint
 from .model_catalog import (
     chat_token_parameter,
     compatibility_warnings,
@@ -762,10 +763,14 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
     async def _ollama(self, prompt: str) -> str | None:
         ip = self._opt(CONF_OLLAMA_IP_ADDRESS)
         port = self._opt(CONF_OLLAMA_PORT)
-        if not ip or not port:
-            raise ValueError("Ollama not fully configured")
-        proto = "https" if self._opt(CONF_OLLAMA_HTTPS, False) else "http"
-        endpoint = ENDPOINT_OLLAMA.format(protocol=proto, ip_address=ip, port=port)
+        base = ollama_base_url(
+            base_url=self._opt(CONF_OLLAMA_BASE_URL),
+            ip_address=ip,
+            port=port,
+            https=self._opt(CONF_OLLAMA_HTTPS, False),
+        )
+        if not base:
+            raise ValueError("Ollama host/port or base URL is not configured")
         messages = []
         if self._opt(CONF_OLLAMA_DISABLE_THINK, False):
             messages.append({"role": "system", "content": "/no_think"})
@@ -780,7 +785,11 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "num_predict": out_budget,
             },
         }
-        response = await self._post_json(endpoint, body=body, provider_label="Ollama")
+        response = None
+        for endpoint in ollama_api_candidates(base, "api/chat"):
+            response = await self._post_json(endpoint, body=body, provider_label="Ollama")
+            if response:
+                break
         if not response:
             return None
         self._last_response_metadata = {"done_reason": response.get("done_reason"), "usage": response.get("eval_count")}
@@ -790,12 +799,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         endpoint = str(self._opt(CONF_CUSTOM_OPENAI_ENDPOINT) or "").rstrip("/")
         if not endpoint:
             raise ValueError("Custom OpenAI endpoint not configured")
-        if endpoint.endswith("/chat/completions"):
-            completions_endpoint = endpoint
-        elif endpoint.endswith("/v1"):
-            completions_endpoint = f"{endpoint}/chat/completions"
-        else:
-            completions_endpoint = f"{endpoint}/v1/chat/completions"
+        completions_endpoint = openai_chat_endpoint(endpoint)
         headers = {"Content-Type": "application/json"}
         api_key = self._opt(CONF_CUSTOM_OPENAI_API_KEY)
         if api_key:

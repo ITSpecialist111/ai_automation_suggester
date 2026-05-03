@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.5.3 - 2026-05-03
+
+### Added
+
+- Added an optional Ollama/Open WebUI base URL field so users can configure native Ollama, proxied Ollama, and Open WebUI-style deployments without relying only on host and port fields.
+- Added endpoint normalization tests for OpenAI-compatible and Ollama-compatible provider URLs.
+- Added a feature-request plan for the remaining larger GitHub issues.
+
+### Changed
+
+- Provider setup validation now uses the configured request timeout and model-listing endpoints where possible instead of tiny generation calls for Anthropic and Gemini.
+- Custom OpenAI-compatible setup validation now accepts base URLs, `/v1` URLs, exact `/chat/completions` URLs, and common Open WebUI model-listing paths.
+
+### Fixed
+
+- Improved Ollama validation and requests for Open WebUI proxy paths such as `/ollama/api/tags` and `/ollama/api/chat`.
+- Improved OpenRouter setup validation by applying the configured timeout to avoid hanging validation requests.
+
 ## 1.5.2 - 2026-05-03
 
 ### Changed
