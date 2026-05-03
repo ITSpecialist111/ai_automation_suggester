@@ -30,6 +30,7 @@ from .language_utils import suggestion_language_instruction
 from .model_catalog import (
     chat_token_parameter,
     compatibility_warnings,
+    google_json_schema_response_format,
     json_schema_response_format,
     model_uses_responses_api,
     should_send_temperature,
@@ -711,7 +712,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         }
         if supports_json_schema("Google", model):
             generation_config["responseMimeType"] = "application/json"
-            generation_config["responseSchema"] = json_schema_response_format()["json_schema"]["schema"]
+            generation_config["responseSchema"] = google_json_schema_response_format()["json_schema"]["schema"]
         body = {"contents": [{"parts": [{"text": self._trim_prompt(prompt)}]}], "generationConfig": generation_config}
         endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         response = await self._post_json(endpoint, body=body, provider_label="Google")

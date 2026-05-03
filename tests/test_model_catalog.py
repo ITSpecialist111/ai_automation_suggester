@@ -34,3 +34,22 @@ def test_unknown_local_model_is_allowed_as_custom():
     capabilities = model_catalog.get_model_capabilities("Ollama", "my-local-model")
     assert capabilities.model == "my-local-model"
     assert capabilities.status == model_catalog.STATUS_CUSTOM
+
+
+def test_google_json_schema_strips_additional_properties():
+    schema = model_catalog.google_json_schema_response_format()["json_schema"]["schema"]
+
+    def contains_key(value, target_key: str) -> bool:
+        if isinstance(value, dict):
+            return target_key in value or any(contains_key(item, target_key) for item in value.values())
+        if isinstance(value, list):
+            return any(contains_key(item, target_key) for item in value)
+        return False
+
+    assert not contains_key(schema, "additionalProperties")
+
+
+def test_openai_json_schema_keeps_additional_properties():
+    schema = model_catalog.json_schema_response_format()["json_schema"]["schema"]
+
+    assert "additionalProperties" in schema
