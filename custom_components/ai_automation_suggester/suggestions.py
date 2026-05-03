@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import textwrap
 from datetime import datetime
 from typing import Any
 from uuid import uuid4
@@ -12,6 +13,7 @@ import yaml
 
 YAML_RE = re.compile(r"```(?:yaml|yml)\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
 JSON_RE = re.compile(r"```json\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
+STRING_FIELDS_AFTER_YAML = "entities_used|automation_ids_used|confidence|warnings"
 
 
 STRUCTURED_OUTPUT_INSTRUCTIONS = """
@@ -61,6 +63,87 @@ def _try_json_loads(raw_response: str) -> dict | list | None:
             except json.JSONDecodeError:
                 return None
     return None
+
+
+def _decode_jsonish_string(value: str) -> str:
+    """Decode a JSON string fragment when possible."""
+
+    try:
+        return str(json.loads(f'"{value}"'))
+    except json.JSONDecodeError:
+        return value.replace('\\"', '"').replace("\\n", "\n").strip()
+
+
+def _extract_string_field(segment: str, field: str) -> str | None:
+    match = re.search(rf'"{re.escape(field)}"\s*:\s*"((?:\\.|[^"\\])*)"', segment)
+    return _decode_jsonish_string(match.group(1)).strip() if match else None
+
+
+def _extract_array_field(segment: str, field: str) -> list:
+    match = re.search(rf'"{re.escape(field)}"\s*:\s*(\[[\s\S]*?\])', segment)
+    if not match:
+        return []
+    try:
+        value = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return []
+    return value if isinstance(value, list) else []
+
+
+def _extract_number_field(segment: str, field: str) -> float | None:
+    match = re.search(rf'"{re.escape(field)}"\s*:\s*(-?\d+(?:\.\d+)?)', segment)
+    return float(match.group(1)) if match else None
+
+
+def _extract_yaml_field(segment: str) -> str | None:
+    malformed = re.search(
+        rf'"yaml"\s*:\s*""\s*\r?\n(?P<yaml>[\s\S]*?)\r?\n\s*""\s*,?\s*(?=\r?\n\s*"(?:{STRING_FIELDS_AFTER_YAML})"|\r?\n\s*\}})',
+        segment,
+    )
+    if malformed:
+        return textwrap.dedent(malformed.group("yaml")).strip() or None
+
+    valid = re.search(r'"yaml"\s*:\s*"((?:\\.|[^"\\])*)"', segment)
+    if valid:
+        return _decode_jsonish_string(valid.group(1)).strip() or None
+    return None
+
+
+def _try_loose_structured_items(raw_response: str) -> list[dict[str, Any]]:
+    """Extract suggestions from malformed JSON-like provider responses."""
+
+    if '"suggestions"' not in raw_response and '"title"' not in raw_response:
+        return []
+
+    title_matches = list(re.finditer(r'"title"\s*:', raw_response))
+    items: list[dict[str, Any]] = []
+    for index, match in enumerate(title_matches):
+        start = raw_response.rfind("{", 0, match.start())
+        if start == -1:
+            start = match.start()
+        end = title_matches[index + 1].start() if index + 1 < len(title_matches) else len(raw_response)
+        segment = raw_response[start:end]
+
+        title = _extract_string_field(segment, "title")
+        description = _extract_string_field(segment, "description")
+        yaml_code = _extract_yaml_field(segment)
+        if not any((title, description, yaml_code)):
+            continue
+
+        item: dict[str, Any] = {
+            "title": title,
+            "description": description,
+            "yaml": yaml_code,
+            "entities_used": _extract_array_field(segment, "entities_used"),
+            "automation_ids_used": _extract_array_field(segment, "automation_ids_used"),
+            "warnings": _extract_array_field(segment, "warnings"),
+        }
+        confidence = _extract_number_field(segment, "confidence")
+        if confidence is not None:
+            item["confidence"] = confidence
+        items.append(item)
+
+    return items
 
 
 def _validate_yaml(yaml_code: str | None) -> list[str]:
@@ -163,10 +246,46 @@ def parse_suggestion_response(
         ]
         if suggestions:
             return suggestions
+    elif isinstance(structured, list):
+        suggestions = [
+            _normalise_suggestion(
+                item if isinstance(item, dict) else {"description": str(item)},
+                provider=provider,
+                model=model,
+                created_at=created_at,
+                entities_processed=entities_processed,
+                inherited_warnings=inherited,
+                response_metadata=metadata,
+            )
+            for item in structured
+        ]
+        if suggestions:
+            return suggestions
+
+    loose_items = _try_loose_structured_items(raw_response)
+    if loose_items:
+        loose_warnings = [*inherited, "The provider returned malformed JSON; suggestions were parsed best-effort."]
+        return [
+            _normalise_suggestion(
+                item,
+                provider=provider,
+                model=model,
+                created_at=created_at,
+                entities_processed=entities_processed,
+                inherited_warnings=loose_warnings,
+                response_metadata=metadata,
+            )
+            for item in loose_items
+        ]
 
     yaml_match = YAML_RE.search(raw_response)
     yaml_code = yaml_match.group(1).strip() if yaml_match else None
-    description = YAML_RE.sub("", raw_response).strip() if yaml_match else raw_response.strip()
+    if yaml_match:
+        description = YAML_RE.sub("", raw_response).strip()
+    elif raw_response.lstrip().startswith(("{", "[")) or '"suggestions"' in raw_response:
+        description = "The provider returned structured output that could not be parsed. Try regenerating with a lower entity limit or a newer model."
+    else:
+        description = raw_response.strip()
     return [
         _normalise_suggestion(
             {
