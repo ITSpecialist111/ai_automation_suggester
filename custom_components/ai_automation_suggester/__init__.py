@@ -24,6 +24,8 @@ from .store import async_get_suggestion_store
 
 _LOGGER = logging.getLogger(__name__)
 
+CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
+
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Migrate old config entry if necessary."""
     _LOGGER.debug(f"async_migrate_entry {config_entry.version}")
