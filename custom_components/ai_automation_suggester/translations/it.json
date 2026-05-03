@@ -63,6 +63,8 @@
       "ollama": {
         "title": "Configura Ollama",
         "data": {
+          "ollama_base_url": "URL base Ollama/Open WebUI",
+          "ollama_api_key": "Chiave API Ollama/Open WebUI (opzionale)",
           "ollama_ip": "Indirizzo IP Ollama",
           "ollama_port": "Porta Ollama",
           "ollama_https": "Usa HTTPS per Ollama",
@@ -172,6 +174,8 @@
           "localai_https": "Usa HTTPS per LocalAI",
           "localai_model": "Modello LocalAI",
           "localai_temperature": "Temperatura (LocalAI)",
+          "ollama_base_url": "URL base Ollama/Open WebUI",
+          "ollama_api_key": "Chiave API Ollama/Open WebUI (opzionale)",
           "ollama_ip": "Indirizzo IP Ollama",
           "ollama_port": "Porta Ollama",
           "ollama_https": "Usa HTTPS per Ollama",
@@ -204,7 +208,14 @@
           "generic_openai_validation_endpoint": "URL di validazione (OpenAI Generico, deve terminare con 'models')",
           "generic_openai_enable_validation": "Abilita Validazione (OpenAI Generico)",
           "max_input_tokens": "Numero massimo di token di input",
-          "max_output_tokens": "Numero massimo di token di output"
+          "max_output_tokens": "Numero massimo di token di output",
+          "custom_system_prompt": "Prompt di sistema personalizzato persistente",
+          "excluded_domains": "Domini esclusi",
+          "excluded_entities": "Entità escluse",
+          "excluded_areas": "Aree escluse",
+          "history_retention": "Conservazione cronologia suggerimenti",
+          "request_timeout": "Timeout richiesta provider",
+          "openai_reasoning_effort": "Intensità di ragionamento OpenAI"
         },
         "description": "Regola le impostazioni per i tuoi provider di IA. Verranno utilizzati i campi pertinenti al provider configurato. Le impostazioni comuni, come i limiti dei token, sono configurate per ciascun provider."
       }
@@ -245,6 +256,36 @@
         "automation_limit": {
           "name": "Limite Automazioni",
           "description": "Numero massimo di automazioni da analizzare (predefinito: 100)."
+        },
+        "exclude_domains": {
+          "name": "Escludi domini",
+          "description": "Domini da escludere dall'analisi."
+        },
+        "exclude_entities": {
+          "name": "Escludi entità",
+          "description": "ID entità da escludere dall'analisi."
+        },
+        "exclude_areas": {
+          "name": "Escludi aree",
+          "description": "Aree da escludere dall'analisi."
+        }
+      }
+    },
+    "clear_history": {
+      "name": "Cancella cronologia suggerimenti",
+      "description": "Cancella tutti i suggerimenti di automazione AI memorizzati."
+    },
+    "update_suggestion": {
+      "name": "Aggiorna suggerimento",
+      "description": "Aggiorna lo stato di revisione di un suggerimento di automazione AI memorizzato.",
+      "fields": {
+        "suggestion_id": {
+          "name": "ID suggerimento",
+          "description": "L'ID del suggerimento da aggiornare."
+        },
+        "status": {
+          "name": "Stato",
+          "description": "Il nuovo stato di revisione."
         }
       }
     }

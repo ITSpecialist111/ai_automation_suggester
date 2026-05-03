@@ -1,0 +1,293 @@
+{
+  "title": "AI Návrhář automatizací",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Vyberte poskytovatele AI",
+        "data": {
+          "provider": "Poskytovatel AI"
+        }
+      },
+      "openai": {
+        "title": "Nakonfigurovat OpenAI",
+        "data": {
+          "openai_api_key": "OpenAI API klíč",
+          "openai_model": "Model OpenAI",
+          "openai_temperature": "Teplota",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "anthropic": {
+        "title": "Nakonfigurovat Anthropic",
+        "data": {
+          "anthropic_api_key": "Anthropic API klíč",
+          "anthropic_model": "Model Anthropic",
+          "anthropic_temperature": "Teplota",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "google": {
+        "title": "Nakonfigurovat Google",
+        "data": {
+          "google_api_key": "Google API klíč",
+          "google_model": "Model Google",
+          "google_temperature": "Teplota",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "groq": {
+        "title": "Nakonfigurovat Groq",
+        "data": {
+          "groq_api_key": "Groq API klíč",
+          "groq_model": "Model Groq",
+          "groq_temperature": "Teplota",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "localai": {
+        "title": "Nakonfigurovat LocalAI",
+        "data": {
+          "localai_ip": "IP adresa LocalAI",
+          "localai_port": "Port LocalAI",
+          "localai_https": "Použít HTTPS pro LocalAI",
+          "localai_model": "Model LocalAI",
+          "localai_temperature": "Teplota",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "ollama": {
+        "title": "Nakonfigurovat Ollama",
+        "data": {
+          "ollama_base_url": "Základní URL Ollama/Open WebUI",
+          "ollama_api_key": "API klíč Ollama/Open WebUI (volitelné)",
+          "ollama_ip": "IP adresa Ollama",
+          "ollama_port": "Port Ollama",
+          "ollama_https": "Použít HTTPS pro Ollama",
+          "ollama_model": "Model Ollama",
+          "ollama_temperature": "Teplota",
+          "ollama_disable_think": "Zakázat režim přemýšlení (Ollama)",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "custom_openai": {
+        "title": "Nakonfigurovat vlastní OpenAI",
+        "data": {
+          "custom_openai_endpoint": "Koncový bod vlastního OpenAI",
+          "custom_openai_api_key": "API klíč vlastního OpenAI (volitelné)",
+          "custom_openai_model": "Model vlastního OpenAI",
+          "custom_openai_temperature": "Teplota",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "mistral": {
+        "title": "Nakonfigurovat Mistral AI",
+        "data": {
+          "mistral_api_key": "Mistral API klíč",
+          "mistral_model": "Model Mistral",
+          "mistral_temperature": "Teplota",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "perplexity": {
+        "title": "Nakonfigurovat Perplexity AI",
+        "data": {
+          "perplexity_api_key": "Perplexity API klíč",
+          "perplexity_model": "Model Perplexity",
+          "perplexity_temperature": "Teplota",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "openrouter": {
+        "title": "Nakonfigurovat OpenRouter",
+        "data": {
+          "openrouter_api_key": "OpenRouter API klíč",
+          "openrouter_model": "Model OpenRouter",
+          "openrouter_reasoning_max_tokens": "Maximální počet tokenů pro uvažování OpenRouter",
+          "openrouter_temperature": "Teplota",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "openai_azure": {
+        "title": "Nakonfigurovat Azure OpenAI",
+        "data": {
+          "openai_azure_api_key": "Azure OpenAI API klíč",
+          "openai_azure_deployment_id": "ID nasazení Azure",
+          "openai_azure_endpoint": "Koncový bod Azure",
+          "openai_azure_api_version": "Verze Azure API",
+          "openai_azure_temperature": "Teplota",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      },
+      "generic_openai": {
+        "title": "Nakonfigurovat obecné OpenAI",
+        "data": {
+          "generic_openai_api_endpoint": "Úplná URL adresa API obecného OpenAI (musí končit na 'completions')",
+          "generic_openai_api_key": "API klíč obecného OpenAI (volitelné)",
+          "generic_openai_model": "Model obecného OpenAI",
+          "generic_openai_temperature": "Teplota",
+          "generic_openai_validation_endpoint": "Ověřovací URL (musí končit na 'models')",
+          "generic_openai_enable_validation": "Povolit ověřování",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů"
+        }
+      }
+    },
+    "error": {
+      "api_error": "Ověření API se nezdařilo: {error_message}",
+      "cannot_connect": "Nepodařilo se připojit. Zkontrolujte nastavení a síť.",
+      "unknown": "Došlo k neznámé chybě. Podrobnosti najdete v logu."
+    },
+    "abort": {
+      "already_configured": "Tento poskytovatel AI je již nakonfigurován. Můžete jej upravit na stránce integrací."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Nastavení AI Návrháře automatizací",
+        "data": {
+          "openai_api_key": "OpenAI API klíč",
+          "openai_model": "Model OpenAI",
+          "openai_temperature": "Teplota (OpenAI)",
+          "anthropic_api_key": "Anthropic API klíč",
+          "anthropic_model": "Model Anthropic",
+          "anthropic_temperature": "Teplota (Anthropic)",
+          "google_api_key": "Google API klíč",
+          "google_model": "Model Google",
+          "google_temperature": "Teplota (Google)",
+          "groq_api_key": "Groq API klíč",
+          "groq_model": "Model Groq",
+          "groq_temperature": "Teplota (Groq)",
+          "localai_ip": "IP adresa LocalAI",
+          "localai_port": "Port LocalAI",
+          "localai_https": "Používat HTTPS pro LocalAI",
+          "localai_model": "Model LocalAI",
+          "localai_temperature": "Teplota (LocalAI)",
+          "ollama_base_url": "Základní URL Ollama/Open WebUI",
+          "ollama_api_key": "API klíč Ollama/Open WebUI (volitelné)",
+          "ollama_ip": "IP adresa Ollama",
+          "ollama_port": "Port Ollama",
+          "ollama_https": "Používat HTTPS pro Ollama",
+          "ollama_model": "Model Ollama",
+          "ollama_temperature": "Teplota (Ollama)",
+          "ollama_disable_think": "Zakázat režim přemýšlení (Ollama)",
+          "custom_openai_endpoint": "Koncový bod vlastního OpenAI",
+          "custom_openai_api_key": "API klíč vlastního OpenAI",
+          "custom_openai_model": "Model vlastního OpenAI",
+          "custom_openai_temperature": "Teplota (vlastní OpenAI)",
+          "mistral_api_key": "Mistral API klíč",
+          "mistral_model": "Model Mistral",
+          "mistral_temperature": "Teplota (Mistral AI)",
+          "perplexity_api_key": "Perplexity API klíč",
+          "perplexity_model": "Model Perplexity",
+          "perplexity_temperature": "Teplota (Perplexity AI)",
+          "openrouter_api_key": "OpenRouter API klíč",
+          "openrouter_model": "Model OpenRouter",
+          "openrouter_reasoning_max_tokens": "Maximální počet tokenů pro uvažování OpenRouter",
+          "openrouter_temperature": "Teplota (OpenRouter)",
+          "openai_azure_api_key": "Azure OpenAI API klíč",
+          "openai_azure_deployment_id": "ID nasazení Azure",
+          "openai_azure_endpoint": "Koncový bod Azure",
+          "openai_azure_api_version": "Verze Azure API",
+          "openai_azure_temperature": "Teplota (Azure OpenAI)",
+          "generic_openai_api_endpoint": "Úplná URL adresa API obecného OpenAI (musí končit na 'completions')",
+          "generic_openai_api_key": "API klíč obecného OpenAI",
+          "generic_openai_model": "Model obecného OpenAI",
+          "generic_openai_temperature": "Teplota (obecné OpenAI)",
+          "generic_openai_validation_endpoint": "Ověřovací URL (obecné OpenAI, musí končit na 'models')",
+          "generic_openai_enable_validation": "Povolit ověřování (obecné OpenAI)",
+          "max_input_tokens": "Maximální počet vstupních tokenů",
+          "max_output_tokens": "Maximální počet výstupních tokenů",
+          "custom_system_prompt": "Trvalý vlastní systémový prompt",
+          "excluded_domains": "Vyloučené domény",
+          "excluded_entities": "Vyloučené entity",
+          "excluded_areas": "Vyloučené oblasti",
+          "history_retention": "Uchování historie návrhů",
+          "request_timeout": "Časový limit požadavku na poskytovatele",
+          "openai_reasoning_effort": "Úroveň uvažování OpenAI"
+        },
+        "description": "Upravte nastavení svých poskytovatelů AI. Použijí se pole relevantní pro nakonfigurovaného poskytovatele. Běžná nastavení, jako jsou limity tokenů, se konfigurují pro každého poskytovatele zvlášť."
+      }
+    },
+    "error": {
+      "invalid_input": "Jedna nebo více hodnot je neplatná."
+    }
+  },
+  "services": {
+    "generate_suggestions": {
+      "name": "Generovat návrhy",
+      "description": "Ručně spustit návrhy automatizací AI.",
+      "fields": {
+        "provider_config": {
+          "name": "Konfigurace poskytovatele",
+          "description": "Kterou konfiguraci poskytovatele použít (pokud jich máte více)?"
+        },
+        "custom_prompt": {
+          "name": "Vlastní prompt",
+          "description": "Volitelný vlastní prompt pro přepsání výchozího systémového promptu nebo směrování návrhů k určitým tématům."
+        },
+        "all_entities": {
+          "name": "Zohlednit všechny entity",
+          "description": "Pokud je zapnuto, zohlední všechny entity místo pouze nových entit."
+        },
+        "domains": {
+          "name": "Domény",
+          "description": "Seznam domén ke zohlednění. Pokud je prázdný, zohlední všechny domény."
+        },
+        "entity_limit": {
+          "name": "Limit entit",
+          "description": "Maximální počet entit ke zohlednění (náhodně vybrané)."
+        },
+        "automation_read_yaml": {
+          "name": "Číst soubor 'automations.yaml'",
+          "description": "Přečte a přidá YAML kód automatizací nalezených v souboru 'automations.yaml'. Tato akce použije mnoho vstupních tokenů, používejte ji opatrně a s modely s velkým kontextovým oknem (např. Gemini)."
+        },
+        "automation_limit": {
+          "name": "Limit automatizací",
+          "description": "Maximální počet automatizací k analýze (výchozí: 100)."
+        },
+        "exclude_domains": {
+          "name": "Vyloučit domény",
+          "description": "Domény, které se mají vyloučit z analýzy."
+        },
+        "exclude_entities": {
+          "name": "Vyloučit entity",
+          "description": "ID entit, které se mají vyloučit z analýzy."
+        },
+        "exclude_areas": {
+          "name": "Vyloučit oblasti",
+          "description": "Oblasti, které se mají vyloučit z analýzy."
+        }
+      }
+    },
+    "clear_history": {
+      "name": "Vymazat historii návrhů",
+      "description": "Vymazat všechny uložené návrhy automatizací AI."
+    },
+    "update_suggestion": {
+      "name": "Aktualizovat návrh",
+      "description": "Aktualizovat stav kontroly uloženého návrhu automatizace AI.",
+      "fields": {
+        "suggestion_id": {
+          "name": "ID návrhu",
+          "description": "ID návrhu, který se má aktualizovat."
+        },
+        "status": {
+          "name": "Stav",
+          "description": "Nový stav kontroly."
+        }
+      }
+    }
+  }
+}
