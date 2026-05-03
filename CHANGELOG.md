@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.2 - 2026-05-03
+
+### Changed
+
+- Reworded parser-repair and truncated-response warnings in persistent notifications so they are user-facing instead of implementation-oriented.
+
+### Fixed
+
+- Normalized malformed-response parser regression test formatting.
+
 ## 1.5.1 - 2026-05-03
 
 ### Fixed

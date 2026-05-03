@@ -14,6 +14,7 @@ import yaml
 YAML_RE = re.compile(r"```(?:yaml|yml)\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
 JSON_RE = re.compile(r"```json\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
 STRING_FIELDS_AFTER_YAML = "entities_used|automation_ids_used|confidence|warnings"
+PARSE_REPAIR_WARNING = "The provider returned malformed JSON; suggestions were parsed best-effort."
 
 
 STRUCTURED_OUTPUT_INSTRUCTIONS = """
@@ -264,7 +265,7 @@ def parse_suggestion_response(
 
     loose_items = _try_loose_structured_items(raw_response)
     if loose_items:
-        loose_warnings = [*inherited, "The provider returned malformed JSON; suggestions were parsed best-effort."]
+        loose_warnings = [*inherited, PARSE_REPAIR_WARNING]
         return [
             _normalise_suggestion(
                 item,
@@ -315,5 +316,16 @@ def format_suggestion_notification(suggestion: dict[str, Any]) -> str:
         parts.append("```yaml\n" + str(yaml_code).strip() + "\n```")
     warnings = suggestion.get("warnings") or []
     if warnings:
-        parts.append("Warnings:\n" + "\n".join(f"- {warning}" for warning in warnings))
+        parts.append("Warnings:\n" + "\n".join(f"- {_format_notification_warning(warning)}" for warning in warnings))
     return "\n\n".join(parts)
+
+
+def _format_notification_warning(warning: Any) -> str:
+    """Return a concise user-facing warning for notifications."""
+
+    text = str(warning)
+    if text == PARSE_REPAIR_WARNING:
+        return "Provider response needed formatting repair before display. Review the YAML before using it."
+    if text == "The provider reported a length finish reason; the suggestion may be truncated.":
+        return "The AI response may have been cut off. Review the YAML before using it."
+    return text
