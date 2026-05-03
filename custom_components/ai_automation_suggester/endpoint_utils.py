@@ -87,6 +87,17 @@ def ollama_api_candidates(base_url: str, api_path: str) -> list[str]:
     return _dedupe(candidates)
 
 
+def bearer_auth_headers(api_key: str | None) -> dict[str, str] | None:
+    """Return bearer authorization headers for provider APIs that need a token."""
+
+    token = str(api_key or "").strip()
+    if not token:
+        return None
+    if token.lower().startswith("bearer "):
+        return {"Authorization": token}
+    return {"Authorization": f"Bearer {token}"}
+
+
 def _dedupe(values: list[str]) -> list[str]:
     seen: set[str] = set()
     deduped: list[str] = []

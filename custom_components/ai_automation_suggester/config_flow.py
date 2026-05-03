@@ -14,6 +14,7 @@ from homeassistant.helpers.selector import TextSelector, TextSelectorConfig
 
 from .const import *
 from .endpoint_utils import (
+    bearer_auth_headers,
     ensure_http_url,
     ollama_api_candidates,
     ollama_base_url,
@@ -84,14 +85,16 @@ class ProviderValidator:
         port: int | None,
         https: bool,
         base_url: str | None = None,
+        api_key: str | None = None,
     ) -> Optional[str]:
         base = ollama_base_url(base_url=base_url, ip_address=ip, port=port, https=https)
         if not base:
             return "Ollama host/port or base URL is required"
         last_error = None
+        headers = bearer_auth_headers(api_key)
         try:
             for endpoint in ollama_api_candidates(base, "api/tags"):
-                resp = await self.session.get(endpoint, timeout=self.timeout)
+                resp = await self.session.get(endpoint, headers=headers, timeout=self.timeout)
                 if resp.status == 200:
                     return None
                 last_error = f"{endpoint}: {resp.status} {await resp.text()}"
@@ -364,10 +367,12 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ui.get(CONF_OLLAMA_PORT),
                 ui.get(CONF_OLLAMA_HTTPS, False),
                 ui.get(CONF_OLLAMA_BASE_URL),
+                ui.get(CONF_OLLAMA_API_KEY),
             )
 
         schema = {
             vol.Optional(CONF_OLLAMA_BASE_URL, default=""): str,
+            vol.Optional(CONF_OLLAMA_API_KEY, default=""): TextSelector(TextSelectorConfig(type="password")),
             vol.Optional(CONF_OLLAMA_IP_ADDRESS, default="localhost"): str,
             vol.Optional(CONF_OLLAMA_PORT, default=11434): int,
             vol.Optional(CONF_OLLAMA_HTTPS, default=False): bool,
@@ -611,6 +616,7 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_LOCALAI_PORT, default=self._get_option(CONF_LOCALAI_PORT, 8080))] = int
         elif provider == "Ollama":
             schema[vol.Optional(CONF_OLLAMA_BASE_URL, default=self._get_option(CONF_OLLAMA_BASE_URL, ""))] = str
+            schema[vol.Optional(CONF_OLLAMA_API_KEY, default=self._get_option(CONF_OLLAMA_API_KEY, ""))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_OLLAMA_IP_ADDRESS, default=self._get_option(CONF_OLLAMA_IP_ADDRESS, "localhost"))] = str
             schema[vol.Optional(CONF_OLLAMA_PORT, default=self._get_option(CONF_OLLAMA_PORT, 11434))] = int
             schema[vol.Optional(CONF_OLLAMA_HTTPS, default=self._get_option(CONF_OLLAMA_HTTPS, False))] = bool
