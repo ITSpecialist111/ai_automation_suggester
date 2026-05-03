@@ -444,6 +444,37 @@ def json_schema_response_format() -> dict:
     }
 
 
+def _strip_schema_keys(value, unsupported_keys: set[str]):
+    """Return a copy of a schema value without unsupported keys."""
+
+    if isinstance(value, dict):
+        return {
+            key: _strip_schema_keys(schema_value, unsupported_keys)
+            for key, schema_value in value.items()
+            if key not in unsupported_keys
+        }
+    if isinstance(value, list):
+        return [_strip_schema_keys(item, unsupported_keys) for item in value]
+    return value
+
+
+def google_json_schema_response_format() -> dict:
+    """Return a Google Gemini-compatible JSON schema response format."""
+
+    response_format = json_schema_response_format()
+    return {
+        "type": response_format["type"],
+        "json_schema": {
+            "name": response_format["json_schema"]["name"],
+            "strict": response_format["json_schema"]["strict"],
+            "schema": _strip_schema_keys(
+                response_format["json_schema"]["schema"],
+                {"additionalProperties"},
+            ),
+        },
+    }
+
+
 def compatibility_warnings(provider: str, model: str | None) -> list[str]:
     """Return user-facing warnings for the selected provider/model."""
 

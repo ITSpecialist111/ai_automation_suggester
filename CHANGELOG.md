@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.6 - 2026-05-03
+
+### Fixed
+
+- Fixed Gemini 2.5 Flash requests failing with `additionalProperties` JSON schema validation errors by sending a Google-compatible response schema.
+
 ## 1.5.5 - 2026-05-03
 
 ### Added
