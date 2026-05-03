@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.5 - 2026-05-03
+
+### Added
+
+- Added Czech translations from the community contribution, updated for the current setup/options schema.
+- Added prompt localization so generated suggestion titles, descriptions, and warnings follow the configured Home Assistant language when it is not English.
+
+### Fixed
+
+- Completed missing Italian service and option translation keys, including newer exclusion, history, timeout, OpenAI reasoning, and Ollama/Open WebUI fields.
+- Fixed the reported spacing and capitalization typos in the contributed Czech wording.
+
 ## 1.5.4 - 2026-05-03
 
 ### Added

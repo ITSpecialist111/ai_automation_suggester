@@ -15,8 +15,7 @@ Targets: #116, #122, #123, #127, #132, #144, #145, #150, #153
 
 Targets: #133, #151
 
-- Audit translation loading for the existing Italian file and confirm Home Assistant displays localized strings correctly.
-- Add Czech translations once the submitted wording is reviewed.
+- Status: implemented in v1.5.5; awaiting reporter confirmation before closing any issue that needs a live Home Assistant retest.
 - Keep translation files structurally aligned when new setup/options keys are added.
 
 ## Phase 3: Provider Expansion

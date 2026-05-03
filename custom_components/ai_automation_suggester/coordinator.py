@@ -26,6 +26,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import *
 from .endpoint_utils import bearer_auth_headers, ollama_api_candidates, ollama_base_url, openai_chat_endpoint
+from .language_utils import suggestion_language_instruction
 from .model_catalog import (
     chat_token_parameter,
     compatibility_warnings,
@@ -413,10 +414,13 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         autom_codes: list[str] = []
         if self.automation_read_file:
             autom_codes = await self._read_automations_file_method(max_autom)
+        language_instruction = suggestion_language_instruction(getattr(self.hass.config, "language", None))
+        language_block = f"{language_instruction}\n\n" if language_instruction else ""
 
         return (
             f"{self.SYSTEM_PROMPT}\n\n"
             f"{STRUCTURED_OUTPUT_INSTRUCTIONS}\n\n"
+            f"{language_block}"
             f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
             "Existing Automations Overview:\n"
             f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"

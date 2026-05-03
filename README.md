@@ -352,6 +352,8 @@ The `entity_limit` parameter is crucial for managing prompt size, particularly w
 
 The `custom_prompt` parameter allows you to be very specific about the type of suggestions you want for a particular run. Combine it with domain filtering for highly targeted results (e.g., `domains: ['climate'], custom_prompt: "Suggest automations to optimize heating/cooling based on occupancy and weather."`).
 
+When Home Assistant is configured to a supported non-English language, generated suggestion titles, descriptions, and warnings are prompted in that language. YAML, entity IDs, service names, and code identifiers remain unchanged. Use the persistent custom system prompt or `custom_prompt` if you want to force a different output language for a specific provider or run.
+
 ---
 
 ## Implementing Automations
