@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.4 - 2026-05-03
+
+### Added
+
+- Added an optional Ollama/Open WebUI API key field for authenticated Open WebUI Ollama proxy endpoints.
+
+### Fixed
+
+- Sent bearer authorization headers during Ollama setup validation and suggestion generation when an Ollama/Open WebUI API key is configured.
+
 ## 1.5.3 - 2026-05-03
 
 ### Added

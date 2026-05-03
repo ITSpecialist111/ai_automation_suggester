@@ -52,3 +52,11 @@ def test_ollama_api_candidates_include_open_webui_proxy_path():
     assert endpoint_utils.ollama_api_candidates("http://localhost:3000/ollama", "api/chat") == [
         "http://localhost:3000/ollama/api/chat"
     ]
+
+
+def test_bearer_auth_headers_accepts_token_or_full_header():
+    assert endpoint_utils.bearer_auth_headers(None) is None
+    assert endpoint_utils.bearer_auth_headers("secret-token") == {"Authorization": "Bearer secret-token"}
+    assert endpoint_utils.bearer_auth_headers("Bearer already-formatted") == {
+        "Authorization": "Bearer already-formatted"
+    }

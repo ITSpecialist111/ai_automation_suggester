@@ -25,7 +25,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import *
-from .endpoint_utils import ollama_api_candidates, ollama_base_url, openai_chat_endpoint
+from .endpoint_utils import bearer_auth_headers, ollama_api_candidates, ollama_base_url, openai_chat_endpoint
 from .model_catalog import (
     chat_token_parameter,
     compatibility_warnings,
@@ -786,8 +786,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             },
         }
         response = None
+        headers = bearer_auth_headers(self._opt(CONF_OLLAMA_API_KEY))
         for endpoint in ollama_api_candidates(base, "api/chat"):
-            response = await self._post_json(endpoint, body=body, provider_label="Ollama")
+            response = await self._post_json(endpoint, headers=headers, body=body, provider_label="Ollama")
             if response:
                 break
         if not response:

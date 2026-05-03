@@ -64,6 +64,7 @@
         "title": "Configure Ollama",
         "data": {
           "ollama_base_url": "Ollama/Open WebUI Base URL",
+          "ollama_api_key": "Ollama/Open WebUI API Key (optional)",
           "ollama_ip": "Ollama IP Address",
           "ollama_port": "Ollama Port",
           "ollama_https": "Use HTTPS for Ollama",
@@ -174,6 +175,7 @@
           "localai_model": "LocalAI Model",
           "localai_temperature": "Temperature (LocalAI)",
           "ollama_base_url": "Ollama/Open WebUI Base URL",
+          "ollama_api_key": "Ollama/Open WebUI API Key (optional)",
           "ollama_ip": "Ollama IP Address",
           "ollama_port": "Ollama Port",
           "ollama_https": "Use HTTPS for Ollama",
