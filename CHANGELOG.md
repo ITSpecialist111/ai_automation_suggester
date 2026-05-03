@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.1 - 2026-05-03
+
+### Fixed
+
+- Fixed persistent notifications showing raw malformed JSON-like provider output when models returned unescaped multiline YAML inside structured responses.
+- Added best-effort parsing for malformed structured suggestions so title, description, YAML, entities, confidence, and warnings can still be recovered.
+- Replaced raw JSON-like fallback notification bodies with a short parse-failure message.
+
 ## 1.5.0 - 2026-05-03
 
 ### Added
