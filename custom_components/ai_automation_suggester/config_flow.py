@@ -130,7 +130,7 @@ class ProviderValidator:
 class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle integration setup via the UI."""
 
-    VERSION = 1
+    VERSION = CONFIG_VERSION
 
     def __init__(self) -> None:
         self.provider: str | None = None
@@ -143,24 +143,20 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input:
             self.provider = user_input[CONF_PROVIDER]
             self.data.update(user_input)
-
-            if any(ent.data.get(CONF_PROVIDER) == self.provider for ent in self._async_current_entries()):
-                errors["base"] = "already_configured"
-            else:
-                return await {
-                    "OpenAI": self.async_step_openai,
-                    "Anthropic": self.async_step_anthropic,
-                    "Google": self.async_step_google,
-                    "Groq": self.async_step_groq,
-                    "LocalAI": self.async_step_localai,
-                    "Ollama": self.async_step_ollama,
-                    "Custom OpenAI": self.async_step_custom_openai,
-                    "Mistral AI": self.async_step_mistral,
-                    "Perplexity AI": self.async_step_perplexity,
-                    "OpenRouter": self.async_step_openrouter,
-                    "OpenAI Azure": self.async_step_openai_azure,
-                    "Generic OpenAI": self.async_step_generic_openai,
-                }[self.provider]()
+            return await {
+                "OpenAI": self.async_step_openai,
+                "Anthropic": self.async_step_anthropic,
+                "Google": self.async_step_google,
+                "Groq": self.async_step_groq,
+                "LocalAI": self.async_step_localai,
+                "Ollama": self.async_step_ollama,
+                "Custom OpenAI": self.async_step_custom_openai,
+                "Mistral AI": self.async_step_mistral,
+                "Perplexity AI": self.async_step_perplexity,
+                "OpenRouter": self.async_step_openrouter,
+                "OpenAI Azure": self.async_step_openai_azure,
+                "Generic OpenAI": self.async_step_generic_openai,
+            }[self.provider]()
 
         return self.async_show_form(
             step_id="user",
@@ -215,12 +211,22 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ───────── provider‑specific steps (OpenAI shown; others similar) ─────────
     def _add_token_fields(self, base: Dict[Any, Any]) -> Dict[Any, Any]:
-        """Append the two token sliders to the schema."""
+        """Append common tuning fields to the schema."""
         base[vol.Optional(CONF_MAX_INPUT_TOKENS, default=DEFAULT_MAX_INPUT_TOKENS)] = vol.All(
             vol.Coerce(int), vol.Range(min=100)
         )
         base[vol.Optional(CONF_MAX_OUTPUT_TOKENS, default=DEFAULT_MAX_OUTPUT_TOKENS)] = vol.All(
             vol.Coerce(int), vol.Range(min=100)
+        )
+        base[vol.Optional(CONF_CUSTOM_SYSTEM_PROMPT, default="")] = str
+        base[vol.Optional(CONF_EXCLUDED_DOMAINS, default="")] = str
+        base[vol.Optional(CONF_EXCLUDED_ENTITIES, default="")] = str
+        base[vol.Optional(CONF_EXCLUDED_AREAS, default="")] = str
+        base[vol.Optional(CONF_HISTORY_RETENTION, default=DEFAULT_HISTORY_RETENTION)] = vol.All(
+            vol.Coerce(int), vol.Range(min=1, max=250)
+        )
+        base[vol.Optional(CONF_REQUEST_TIMEOUT, default=DEFAULT_REQUEST_TIMEOUT)] = vol.All(
+            vol.Coerce(int), vol.Range(min=10, max=1800)
         )
         return base
 
@@ -229,6 +235,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_OPENAI_API_KEY): TextSelector(TextSelectorConfig(type="password")),
             vol.Optional(CONF_OPENAI_MODEL, default=DEFAULT_MODELS["OpenAI"]): str,
             vol.Optional(CONF_OPENAI_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0)),
+            vol.Optional(CONF_OPENAI_REASONING_EFFORT, default=DEFAULT_OPENAI_REASONING_EFFORT): vol.In(["minimal", "low", "medium", "high"]),
         }
         self._add_token_fields(schema)
         return await self._provider_form(
@@ -542,6 +549,12 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             ): vol.All(vol.Coerce(int), vol.Range(min=100)),
             vol.Optional(CONF_MAX_OUTPUT_TOKENS, default=self._get_option(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
             ): vol.All(vol.Coerce(int), vol.Range(min=100)),
+            vol.Optional(CONF_CUSTOM_SYSTEM_PROMPT, default=self._get_option(CONF_CUSTOM_SYSTEM_PROMPT, "")): str,
+            vol.Optional(CONF_EXCLUDED_DOMAINS, default=self._get_option(CONF_EXCLUDED_DOMAINS, "")): str,
+            vol.Optional(CONF_EXCLUDED_ENTITIES, default=self._get_option(CONF_EXCLUDED_ENTITIES, "")): str,
+            vol.Optional(CONF_EXCLUDED_AREAS, default=self._get_option(CONF_EXCLUDED_AREAS, "")): str,
+            vol.Optional(CONF_HISTORY_RETENTION, default=self._get_option(CONF_HISTORY_RETENTION, DEFAULT_HISTORY_RETENTION)): vol.All(vol.Coerce(int), vol.Range(min=1, max=250)),
+            vol.Optional(CONF_REQUEST_TIMEOUT, default=self._get_option(CONF_REQUEST_TIMEOUT, DEFAULT_REQUEST_TIMEOUT)): vol.All(vol.Coerce(int), vol.Range(min=10, max=1800)),
         }
 
         # provider‑specific editable fields
@@ -549,6 +562,7 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_OPENAI_API_KEY, default=self._get_option(CONF_OPENAI_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_OPENAI_MODEL, default=self._get_option(CONF_OPENAI_MODEL, DEFAULT_MODELS["OpenAI"]))] = str
             schema[vol.Optional(CONF_OPENAI_TEMPERATURE, default=self._get_option(CONF_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+            schema[vol.Optional(CONF_OPENAI_REASONING_EFFORT, default=self._get_option(CONF_OPENAI_REASONING_EFFORT, DEFAULT_OPENAI_REASONING_EFFORT))] = vol.In(["minimal", "low", "medium", "high"])
         elif provider == "Anthropic":
             schema[vol.Optional(CONF_ANTHROPIC_API_KEY, default=self._get_option(CONF_ANTHROPIC_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_ANTHROPIC_MODEL, default=self._get_option(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"]))] = str

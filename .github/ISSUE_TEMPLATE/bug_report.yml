@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a problem with AI Automation Suggester
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+    validations:
+      required: true
+  - type: input
+    id: integration_version
+    attributes:
+      label: AI Automation Suggester version
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Provider and model
+      description: "Example: OpenAI gpt-5.5, Anthropic claude-sonnet-4-6, Ollama llama3.1"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      render: text
+  - type: textarea
+    id: service_data
+    attributes:
+      label: Service call data
+      render: yaml

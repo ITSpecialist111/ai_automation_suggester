@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest an improvement for AI Automation Suggester
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should the integration help you do?
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Provider, model, Home Assistant workflow, or dashboard context that matters.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Provider/model support
+        - Suggestion quality
+        - Home Assistant native AI
+        - Dashboard/card UX
+        - Localization
+        - Documentation
+        - Other

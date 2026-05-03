@@ -29,9 +29,51 @@ generate_suggestions:
       name: Domains
       description: "List of domains to consider. If empty, consider all domains."
       required: false
-      default: {}
+      default: []
       selector:
-        object: {}
+        select:
+          multiple: true
+          custom_value: true
+          options:
+            - light
+            - switch
+            - sensor
+            - binary_sensor
+            - climate
+            - cover
+            - media_player
+            - lock
+            - alarm_control_panel
+    exclude_domains:
+      name: Exclude Domains
+      description: "Domains to exclude from analysis, even when all entities are considered."
+      required: false
+      default: []
+      selector:
+        select:
+          multiple: true
+          custom_value: true
+          options:
+            - automation
+            - update
+            - button
+            - event
+    exclude_entities:
+      name: Exclude Entities
+      description: "Specific entity IDs to exclude from analysis."
+      required: false
+      default: []
+      selector:
+        entity:
+          multiple: true
+    exclude_areas:
+      name: Exclude Areas
+      description: "Area IDs or area names to exclude from analysis."
+      required: false
+      default: []
+      selector:
+        area:
+          multiple: true
     entity_limit:
       name: Entity Limit
       description: "Maximum number of entities to consider (randomly selected from the chosen domains)."
@@ -62,3 +104,29 @@ generate_suggestions:
           min: 10
           max: 500
           mode: slider
+
+clear_history:
+  name: Clear Suggestion History
+  description: "Clear all stored AI automation suggestions."
+
+update_suggestion:
+  name: Update Suggestion
+  description: "Update the review status for a stored AI automation suggestion."
+  fields:
+    suggestion_id:
+      name: Suggestion ID
+      description: "The suggestion ID to update."
+      required: true
+      selector:
+        text: {}
+    status:
+      name: Status
+      description: "New review status for the suggestion."
+      required: true
+      selector:
+        select:
+          options:
+            - new
+            - accepted
+            - declined
+            - dismissed
