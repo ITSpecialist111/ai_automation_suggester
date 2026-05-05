@@ -148,6 +148,14 @@ class ProviderValidator:
         except Exception as err:
             return str(err)
 
+    async def validate_github_copilot(self, api_key: str) -> Optional[str]:
+        hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        try:
+            resp = await self.session.get("https://api.githubcopilot.com/models", headers=hdr, timeout=self.timeout)
+            return None if resp.status == 200 else await resp.text()
+        except Exception as err:
+            return str(err)
+
 
 # ─────────────────────────────────────────────────────────────
 # Config‑flow main class
@@ -181,6 +189,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "OpenRouter": self.async_step_openrouter,
                 "OpenAI Azure": self.async_step_openai_azure,
                 "Generic OpenAI": self.async_step_generic_openai,
+                "GitHub Copilot": self.async_step_github_copilot,
             }[self.provider]()
 
         return self.async_show_form(
@@ -192,6 +201,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "Anthropic",
                             "Custom OpenAI",
                             "Generic OpenAI",
+                            "GitHub Copilot",
                             "Google",
                             "Groq",
                             "LocalAI",
@@ -538,6 +548,25 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input,
         )
 
+    async def async_step_github_copilot(self, user_input=None):
+        schema = {
+            vol.Required(CONF_GITHUB_COPILOT_API_KEY): TextSelector(TextSelectorConfig(type="password")),
+            vol.Optional(CONF_GITHUB_COPILOT_MODEL, default=DEFAULT_MODELS["GitHub Copilot"]): str,
+            vol.Optional(CONF_GITHUB_COPILOT_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(
+                vol.Coerce(float), vol.Range(min=0.0, max=2.0)
+            ),
+        }
+        self._add_token_fields(schema)
+        return await self._provider_form(
+            "github_copilot",
+            vol.Schema(schema),
+            lambda ui: self.validator.validate_github_copilot(ui[CONF_GITHUB_COPILOT_API_KEY]),
+            "AI Automation Suggester (GitHub Copilot)",
+            {},
+            {},
+            user_input,
+        )
+
     # ───────── Options flow (edit after setup) ─────────
     @staticmethod
     @callback
@@ -654,5 +683,9 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_GENERIC_OPENAI_TEMPERATURE, default=self._get_option(CONF_GENERIC_OPENAI_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
             schema[vol.Optional(CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT, default=self._get_option(CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT, ""))] = str
             schema[vol.Optional(CONF_GENERIC_OPENAI_ENABLE_VALIDATION, default=self._get_option(CONF_GENERIC_OPENAI_ENABLE_VALIDATION, False))] = bool
+        elif provider == "GitHub Copilot":
+            schema[vol.Optional(CONF_GITHUB_COPILOT_API_KEY, default=self._get_option(CONF_GITHUB_COPILOT_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_GITHUB_COPILOT_MODEL, default=self._get_option(CONF_GITHUB_COPILOT_MODEL, DEFAULT_MODELS["GitHub Copilot"]))] = str
+            schema[vol.Optional(CONF_GITHUB_COPILOT_TEMPERATURE, default=self._get_option(CONF_GITHUB_COPILOT_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
 
         return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))

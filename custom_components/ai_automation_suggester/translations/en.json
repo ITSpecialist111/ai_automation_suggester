@@ -141,6 +141,16 @@
           "max_input_tokens": "Max Input Tokens",
           "max_output_tokens": "Max Output Tokens"
         }
+      },
+      "github_copilot": {
+        "title": "Configure GitHub Copilot",
+        "data": {
+          "github_copilot_api_key": "GitHub Personal Access Token",
+          "github_copilot_model": "Model",
+          "github_copilot_temperature": "Temperature",
+          "max_input_tokens": "Max Input Tokens",
+          "max_output_tokens": "Max Output Tokens"
+        }
       }
     },
     "error": {
@@ -215,7 +225,10 @@
           "excluded_areas": "Excluded Areas",
           "history_retention": "Suggestion History Retention",
           "request_timeout": "Provider Request Timeout",
-          "openai_reasoning_effort": "OpenAI Reasoning Effort"
+          "openai_reasoning_effort": "OpenAI Reasoning Effort",
+          "github_copilot_api_key": "GitHub Personal Access Token",
+          "github_copilot_model": "GitHub Copilot Model",
+          "github_copilot_temperature": "Temperature (GitHub Copilot)"
         },
         "description": "Adjust settings for your AI providers. Fields relevant to your configured provider will be used. Common settings like token limits are configured per provider."
       }

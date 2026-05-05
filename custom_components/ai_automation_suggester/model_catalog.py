@@ -349,6 +349,69 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
         True,
         "https://openrouter.ai/api/v1/models",
     ),
+    "GitHub Copilot": ProviderCatalog(
+        "GitHub Copilot",
+        "gpt-4o",
+        (
+            ModelCapabilities(
+                "gpt-4o",
+                "GPT-4o",
+                token_parameter="max_tokens",
+                supports_structured_output=True,
+                supports_json_schema=True,
+            ),
+            ModelCapabilities(
+                "gpt-4o-mini",
+                "GPT-4o Mini",
+                token_parameter="max_tokens",
+                supports_structured_output=True,
+                supports_json_schema=True,
+            ),
+            ModelCapabilities(
+                "o3-mini",
+                "o3 Mini",
+                token_parameter="max_completion_tokens",
+                supports_reasoning=True,
+                omit_temperature=True,
+            ),
+            ModelCapabilities(
+                "claude-3.7-sonnet",
+                "Claude 3.7 Sonnet",
+                token_parameter="max_tokens",
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "claude-3.5-sonnet",
+                "Claude 3.5 Sonnet",
+                token_parameter="max_tokens",
+            ),
+            ModelCapabilities(
+                "gemini-2.0-flash",
+                "Gemini 2.0 Flash",
+                token_parameter="max_tokens",
+            ),
+            ModelCapabilities(
+                "o1-mini",
+                "o1 Mini",
+                token_parameter="max_completion_tokens",
+                supports_reasoning=True,
+                omit_temperature=True,
+                status=STATUS_DEPRECATED,
+                notes=("Prefer o3-mini for new configurations.",),
+            ),
+            ModelCapabilities(
+                "o1-preview",
+                "o1 Preview",
+                token_parameter="max_completion_tokens",
+                supports_reasoning=True,
+                omit_temperature=True,
+                status=STATUS_DEPRECATED,
+                notes=("Prefer o3-mini for new configurations.",),
+            ),
+        ),
+        True,
+        "https://api.githubcopilot.com/models",
+    ),
 }
 
 
