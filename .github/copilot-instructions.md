@@ -125,4 +125,4 @@ All of the following must pass before merging:
 - **Home Assistant automations** are YAML documents. The integration never creates or modifies automations automatically – it only *suggests* them for user review.
 - Entity IDs follow the `domain.entity_id` pattern (e.g. `light.living_room`). Suggestions must only reference entity IDs that exist in the user's HA instance (they are injected into the prompt by `coordinator.py`).
 - The integration surfaces suggestions via HA **persistent notifications**, **sensor attributes**, and a **stored history**. Users can mark suggestions accepted, declined, or dismissed via HA services.
-- Supported providers (as of v1.5.6): OpenAI, Azure OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Custom OpenAI, Mistral AI, Perplexity AI, OpenRouter, Generic OpenAI.
+- Supported providers (as of v1.5.6): OpenAI, Azure OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Custom OpenAI, Mistral AI, Perplexity AI, OpenRouter, Generic OpenAI, GitHub Copilot.

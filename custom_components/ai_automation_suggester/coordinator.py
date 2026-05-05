@@ -159,6 +159,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "OpenRouter": CONF_OPENROUTER_MODEL,
             "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
             "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
+            "GitHub Copilot": CONF_GITHUB_COPILOT_MODEL,
         }
         model_key = model_key_map.get(provider)
         return self._opt(model_key, DEFAULT_MODELS.get(provider, "unknown")) if model_key else "unknown"
@@ -487,6 +488,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "OpenRouter": self._openrouter,
             "OpenAI Azure": self._openai_azure,
             "Generic OpenAI": self._generic_openai,
+            "GitHub Copilot": self._github_copilot,
         }
         handler = dispatch.get(provider)
         if handler is None:
@@ -881,3 +883,22 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             provider_label="OpenRouter",
         )
         return self._extract_chat_content(response, "OpenRouter") if response else None
+
+    async def _github_copilot(self, prompt: str) -> str | None:
+        api_key = self._opt(CONF_GITHUB_COPILOT_API_KEY)
+        if not api_key:
+            raise ValueError("GitHub Copilot token not configured")
+        model = self._current_model("GitHub Copilot")
+        body = self._openai_compatible_body(
+            provider="GitHub Copilot",
+            model=model,
+            prompt=self._trim_prompt(prompt),
+            temperature=float(self._opt(CONF_GITHUB_COPILOT_TEMPERATURE, DEFAULT_TEMPERATURE)),
+        )
+        response = await self._post_json(
+            ENDPOINT_GITHUB_COPILOT,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            body=body,
+            provider_label="GitHub Copilot",
+        )
+        return self._extract_chat_content(response, "GitHub Copilot") if response else None

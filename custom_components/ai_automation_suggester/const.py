@@ -124,6 +124,11 @@ CONF_GENERIC_OPENAI_TEMPERATURE = "generic_openai_temperature"
 CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT = "generic_openai_validation_endpoint"
 CONF_GENERIC_OPENAI_ENABLE_VALIDATION = "generic_openai_enable_validation"
 
+# GitHub Copilot
+CONF_GITHUB_COPILOT_API_KEY = "github_copilot_api_key"
+CONF_GITHUB_COPILOT_MODEL = "github_copilot_model"
+CONF_GITHUB_COPILOT_TEMPERATURE = "github_copilot_temperature"
+
 # ─────────────────────────────────────────────────────────────
 # Model defaults per provider
 # ─────────────────────────────────────────────────────────────
@@ -140,6 +145,7 @@ DEFAULT_MODELS = {
     "Perplexity AI": "sonar",
     "OpenRouter": "openai/gpt-5.4-mini",
     "Generic OpenAI": "gpt-4o-mini",
+    "GitHub Copilot": "gpt-4o",
 }
 
 # ─────────────────────────────────────────────────────────────
@@ -172,6 +178,7 @@ ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"
 ENDPOINT_MISTRAL = "https://api.mistral.ai/v1/chat/completions"
 ENDPOINT_PERPLEXITY = "https://api.perplexity.ai/chat/completions"
 ENDPOINT_OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
+ENDPOINT_GITHUB_COPILOT = "https://api.githubcopilot.com/chat/completions"
 
 
 # ─────────────────────────────────────────────────────────────
