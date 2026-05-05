@@ -53,3 +53,27 @@ def test_openai_json_schema_keeps_additional_properties():
     schema = model_catalog.json_schema_response_format()["json_schema"]["schema"]
 
     assert "additionalProperties" in schema
+
+
+def test_github_copilot_default_model():
+    assert model_catalog.get_default_model("GitHub Copilot") == "gpt-4o"
+
+
+def test_github_copilot_gpt4o_sends_temperature():
+    assert model_catalog.should_send_temperature("GitHub Copilot", "gpt-4o") is True
+
+
+def test_github_copilot_o3_mini_omits_temperature():
+    assert model_catalog.should_send_temperature("GitHub Copilot", "o3-mini") is False
+
+
+def test_github_copilot_deprecated_o1_warns():
+    warnings = model_catalog.compatibility_warnings("GitHub Copilot", "o1-mini")
+    assert any("deprecated" in w.lower() for w in warnings)
+
+
+def test_github_copilot_catalog_has_model_listing_url():
+    catalog = model_catalog.get_provider_catalog("GitHub Copilot")
+    assert catalog is not None
+    assert catalog.model_listing_url == "https://api.githubcopilot.com/models"
+    assert catalog.supports_model_listing is True
