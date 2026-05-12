@@ -57,6 +57,7 @@ SUGGESTION_RESPONSE_SCHEMA: dict = {
                     "yaml": {"type": "string"},
                     "entities_used": {"type": "array", "items": {"type": "string"}},
                     "automation_ids_used": {"type": "array", "items": {"type": "string"}},
+                    "script_ids_used": {"type": "array", "items": {"type": "string"}},
                     "confidence": {"type": "number"},
                     "warnings": {"type": "array", "items": {"type": "string"}},
                 },

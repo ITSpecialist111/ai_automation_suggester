@@ -145,6 +145,93 @@ def test_notification_formats_parser_repair_warning_for_users():
     assert "needed formatting repair" in message
 
 
+def test_script_ids_used_in_structured_json():
+    raw = """
+    {
+      "suggestions": [
+        {
+          "title": "Test script suggestion",
+          "description": "A suggestion referencing scripts.",
+          "yaml": "alias: test\\ntrigger: []\\naction: []",
+          "entities_used": ["light.living_room"],
+          "automation_ids_used": ["automation.morning"],
+          "script_ids_used": ["script.welcome", "script.goodbye"]
+        }
+      ]
+    }
+    """
+
+    parsed = suggestions.parse_suggestion_response(
+        raw,
+        provider="OpenAI",
+        model="gpt-5.5",
+        created_at=datetime(2026, 5, 3, 12, 0, 0),
+        entities_processed=["light.living_room"],
+    )
+
+    assert parsed[0]["script_ids_used"] == ["script.welcome", "script.goodbye"]
+    assert parsed[0]["automation_ids_used"] == ["automation.morning"]
+
+
+def test_script_ids_used_in_malformed_json():
+    raw = '''
+{
+    "suggestions": [
+        {
+            "title": "Weather script automation",
+            "description": "Check weather and run script.",
+            "yaml": ""
+                alias: "Weather check"
+                trigger: []
+                action: []
+            "",
+            "entities_used": ["sensor.temperature"],
+            "automation_ids_used": ["automation.weather_alert"],
+            "script_ids_used": ["script.weather_check"],
+            "confidence": 0.8,
+            "warnings": []
+        }
+    ]
+}
+'''
+
+    parsed = suggestions.parse_suggestion_response(
+        raw,
+        provider="Mistral AI",
+        model="mistral-medium",
+        created_at=datetime(2026, 5, 3, 12, 0, 0),
+        entities_processed=["sensor.temperature"],
+    )
+
+    assert parsed[0]["script_ids_used"] == ["script.weather_check"]
+    assert parsed[0]["automation_ids_used"] == ["automation.weather_alert"]
+
+
+def test_script_ids_used_defaults_to_empty():
+    raw = """
+    {
+      "suggestions": [
+        {
+          "title": "Simple suggestion",
+          "description": "No script references.",
+          "yaml": "alias: simple\\ntrigger: []\\naction: []",
+          "entities_used": []
+        }
+      ]
+    }
+    """
+
+    parsed = suggestions.parse_suggestion_response(
+        raw,
+        provider="OpenAI",
+        model="gpt-5.5",
+        created_at=datetime(2026, 5, 3, 12, 0, 0),
+        entities_processed=[],
+    )
+
+    assert parsed[0]["script_ids_used"] == []
+
+
 def test_unparseable_structured_payload_does_not_become_notification_body():
     raw = '{"suggestions": [ this is not recoverable ]}'
 
