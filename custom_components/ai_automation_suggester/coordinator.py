@@ -79,8 +79,10 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.excluded_entities: list[str] = self._opt_list(CONF_EXCLUDED_ENTITIES)
         self.excluded_areas: list[str] = self._opt_list(CONF_EXCLUDED_AREAS)
         self.entity_limit = 200
-        self.automation_read_file = False
+        self.automation_read_file = False  # Default automation reading mode
         self.automation_limit = 100
+        self.script_read_file = False  # Default script reading mode
+        self.script_limit = 100    
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
 
@@ -184,6 +186,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         entity_limit: int = 200,
         automation_read_yaml: bool = False,
         automation_limit: int = 100,
+        script_read_yaml: bool = False,
+        script_limit: int = 100,
     ) -> None:
         """Run one suggestion generation with isolated request settings."""
 
@@ -198,6 +202,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 "entity_limit": self.entity_limit,
                 "automation_read_file": self.automation_read_file,
                 "automation_limit": self.automation_limit,
+                "script_read_file": self.script_read_file,
+                "script_limit": self.script_limit,
             }
             try:
                 persistent_prompt = str(self._opt(CONF_CUSTOM_SYSTEM_PROMPT, "") or "").strip()
@@ -215,6 +221,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 self.entity_limit = int(entity_limit)
                 self.automation_read_file = bool(automation_read_yaml)
                 self.automation_limit = int(automation_limit)
+                self.script_read_file = bool(script_read_yaml)
+                self.script_limit = int(script_limit)
                 await self.async_request_refresh()
             finally:
                 self.SYSTEM_PROMPT = saved["SYSTEM_PROMPT"]
@@ -226,6 +234,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 self.entity_limit = saved["entity_limit"]
                 self.automation_read_file = saved["automation_read_file"]
                 self.automation_limit = saved["automation_limit"]
+                self.script_read_file = saved["script_read_file"]
+                self.script_limit = saved["script_limit"]
 
     async def _async_update_data(self) -> dict:
         try:
@@ -370,6 +380,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
     async def _build_prompt(self, entities: dict) -> str:
         max_attr = 500
         max_autom = self.automation_limit
+        max_script = self.script_limit
         ent_sections: list[str] = []
         for entity_id, meta in random.sample(list(entities.items()), min(len(entities), self.entity_limit)):
             domain = entity_id.split(".", 1)[0]
@@ -415,6 +426,11 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         autom_codes: list[str] = []
         if self.automation_read_file:
             autom_codes = await self._read_automations_file_method(max_autom)
+
+        script_sections = self._read_scripts_default(max_script, max_attr)
+        script_codes: list[str] = []
+        if self.script_read_file:
+            script_codes = await self._read_scripts_file_method(self.script_limit)
         language_instruction = suggestion_language_instruction(getattr(self.hass.config, "language", None))
         language_block = f"{language_instruction}\n\n" if language_instruction else ""
 
@@ -427,7 +443,11 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
             "Automations YAML Code (for analysis and improvement):\n"
             f"{''.join(autom_codes) if autom_codes else 'No automations YAML code included.'}\n\n"
-            "Analyze the entities and existing automations. Propose useful new automations or improvements "
+            "Scripts Overview:\n"
+            f"{''.join(script_sections) if script_sections else 'None found.'}\n\n"
+            "Scripts YAML Code (for analysis and improvement):\n"
+            f"{''.join(script_codes) if script_codes else 'No scripts YAML code included.'}\n\n"
+            "Analyze the entities and existing automations and scripts. Propose useful new automations/scripts or improvements "
             "that reference only the entity_ids shown above."
         )
 
@@ -471,6 +491,47 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         except yaml.YAMLError as err:
             _LOGGER.warning("Error parsing automations.yaml: %s", err)
         return autom_codes
+
+    async def _read_scripts_default(self, max_script: int, max_attr: int) -> list[str]:
+        script_sections: list[str] = []
+        for script_id in self.hass.states.async_entity_ids("script")[:max_script]:
+            state = self.hass.states.get(script_id)
+            if state:
+                attr = str(state.attributes)
+                if len(attr) > max_attr:
+                    attr = f"{attr[:max_attr]}...(truncated)"
+                script_sections.append(
+                    f"Entity: {script_id}\n"
+                    f"Friendly Name: {state.attributes.get('friendly_name', script_id)}\n"
+                    f"State: {state.state}\n"
+                    f"Attributes: {attr}\n"
+                    "---\n"
+                )
+        return script_sections
+        
+    async def _read_scripts_file_method(self, max_script: int) -> list[str]:
+        scripts_file = Path(self.hass.config.path()) / "scripts.yaml"
+        script_codes: list[str] = []
+        try:
+            async with await anyio.open_file(scripts_file, "r", encoding="utf-8") as file:
+                content = await file.read()
+            scripts = yaml.safe_load(content) or {}
+            if not isinstance(scripts, dict):
+                _LOGGER.warning("scripts.yaml did not parse as a dict")
+                return script_codes
+            for script_id, script in list(scripts.items())[:max_script]:
+                if not isinstance(script, dict):
+                    continue
+                script_codes.append(
+                    "Script YAML:\n```yaml\n"
+                    f"{yaml.safe_dump({script_id: script}, sort_keys=False)}"
+                    "```\n---\n"
+                )
+        except FileNotFoundError:
+            _LOGGER.warning("scripts.yaml file was not found")
+        except yaml.YAMLError as err:
+            _LOGGER.warning("Error parsing scripts.yaml: %s", err)
+        return script_codes
 
     async def _dispatch(self, prompt: str) -> str | None:
         provider = self._opt(CONF_PROVIDER, "OpenAI")

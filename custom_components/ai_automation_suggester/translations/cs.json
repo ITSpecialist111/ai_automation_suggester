@@ -257,6 +257,14 @@
           "name": "Limit automatizací",
           "description": "Maximální počet automatizací k analýze (výchozí: 100)."
         },
+        "script_read_yaml": {
+          "name": "Číst soubor 'scripts.yaml'",
+          "description": "Přečte a přidá YAML kód skriptů nalezených v souboru 'scripts.yaml'. Tato akce použije mnoho vstupních tokenů, používejte ji opatrně a s modely s velkým kontextovým oknem (např. Gemini)."
+        },
+        "script_limit": {
+          "name": "Limit skriptů",
+          "description": "Maximální počet skriptů k analýze (výchozí: 100)."
+        },
         "exclude_domains": {
           "name": "Vyloučit domény",
           "description": "Domény, které se mají vyloučit z analýzy."

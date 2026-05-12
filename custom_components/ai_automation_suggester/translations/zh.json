@@ -245,6 +245,14 @@
         "automation_limit": {
           "name": "自动化数量上限",
           "description": "要分析的自动化最大数量（默认：100）。"
+        },
+        "script_read_yaml": {
+          "name": "读取 'scripts.yaml' 文件",
+          "description": "读取并附加 'scripts.yaml' 文件中找到的脚本的 YAML 代码。此操作将使用大量输入令牌，请谨慎使用，并配合具有较大上下文窗口的模型（例如 Gemini）。"
+        },
+        "script_limit": {
+          "name": "脚本数量上限",
+          "description": "要分析的脚本最大数量（默认：100）。"
         }
       }
     }
