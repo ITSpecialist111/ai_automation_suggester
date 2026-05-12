@@ -492,7 +492,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Error parsing automations.yaml: %s", err)
         return autom_codes
 
-    async def _read_scripts_default(self, max_script: int, max_attr: int) -> list[str]:
+    def _read_scripts_default(self, max_script: int, max_attr: int) -> list[str]:
         script_sections: list[str] = []
         for script_id in self.hass.states.async_entity_ids("script")[:max_script]:
             state = self.hass.states.get(script_id)
