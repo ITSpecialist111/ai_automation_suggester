@@ -104,7 +104,26 @@ generate_suggestions:
           min: 10
           max: 500
           mode: slider
-
+    script_read_yaml:
+      name: Read 'scripts.yaml' file.
+      description: "Reads and appends the yaml code of the scripts found in the scripts.yaml file. This action will use a lot of input tokens, use it with care and with models with a large input window (e.g. Gemini)."
+      required: false
+      default: false
+      example: false
+      selector:
+        boolean: {}
+    script_limit:
+      name: Script Limit
+      description: "Maximum number of scripts to analyze (default: 100)."
+      required: false
+      default: 100
+      example: 100
+      selector:
+        number:
+          min: 10
+          max: 500
+          mode: slider
+        
 clear_history:
   name: Clear Suggestion History
   description: "Clear all stored AI automation suggestions."

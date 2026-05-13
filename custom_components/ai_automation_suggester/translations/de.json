@@ -245,6 +245,14 @@
         "automation_limit": {
           "name": "Limit für Automatisierungen",
           "description": "Maximale Anzahl der zu analysierenden Automatisierungen (Standard: 100)."
+        },
+        "script_read_yaml": {
+          "name": "Datei 'scripts.yaml' lesen",
+          "description": "Liest den YAML-Code der in der 'scripts.yaml'-Datei gefundenen Skripte und fügt ihn an. Diese Aktion verbraucht viele Eingabe-Tokens. Verwenden Sie sie mit Vorsicht und mit Modellen, die ein großes Kontextfenster haben (z.B. Gemini)."
+        },
+        "script_limit": {
+          "name": "Skript-Limit",
+          "description": "Maximale Anzahl der zu analysierenden Skripte (Standard: 100)."
         }
       }
     }

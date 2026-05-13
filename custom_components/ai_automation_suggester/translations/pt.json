@@ -245,6 +245,14 @@
         "automation_limit": {
           "name": "Limite de Automações",
           "description": "Número máximo de automações a analisar (predefinição: 100)."
+        },
+        "script_read_yaml": {
+          "name": "Ler ficheiro 'scripts.yaml'",
+          "description": "Lê e anexa o código YAML dos scripts encontrados no ficheiro 'scripts.yaml'. Esta ação irá usar muitos tokens de entrada; use-a com cautela e com modelos com uma janela de contexto grande (ex: Gemini)."
+        },
+        "script_limit": {
+          "name": "Limite de Scripts",
+          "description": "Número máximo de scripts a analisar (predefinição: 100)."
         }
       }
     }
