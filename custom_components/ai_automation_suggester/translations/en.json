@@ -141,6 +141,17 @@
           "max_input_tokens": "Max Input Tokens",
           "max_output_tokens": "Max Output Tokens"
         }
+      },
+      "litellm": {
+        "title": "Configure LiteLLM",
+        "data": {
+          "litellm_model": "LiteLLM Model (e.g. openai/gpt-4o, anthropic/claude-sonnet-4-6, groq/llama-3.3-70b-versatile)",
+          "litellm_api_key": "API Key (optional if set via environment variable)",
+          "litellm_api_base": "API Base URL (optional, for LiteLLM proxy)",
+          "litellm_temperature": "Temperature",
+          "max_input_tokens": "Max Input Tokens",
+          "max_output_tokens": "Max Output Tokens"
+        }
       }
     },
     "error": {
@@ -207,6 +218,10 @@
           "generic_openai_temperature": "Temperature (Generic OpenAI)",
           "generic_openai_validation_endpoint": "Validation URL (Generic OpenAI, should end with 'models')",
           "generic_openai_enable_validation": "Enable Validation (Generic OpenAI)",
+          "litellm_api_key": "LiteLLM API Key",
+          "litellm_model": "LiteLLM Model",
+          "litellm_api_base": "LiteLLM API Base URL",
+          "litellm_temperature": "Temperature (LiteLLM)",
           "max_input_tokens": "Max Input Tokens",
           "max_output_tokens": "Max Output Tokens",
           "custom_system_prompt": "Persistent Custom System Prompt",

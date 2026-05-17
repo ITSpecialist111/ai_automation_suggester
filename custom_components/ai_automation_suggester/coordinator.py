@@ -159,6 +159,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "OpenRouter": CONF_OPENROUTER_MODEL,
             "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
             "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
+            "LiteLLM": CONF_LITELLM_MODEL,
         }
         model_key = model_key_map.get(provider)
         return self._opt(model_key, DEFAULT_MODELS.get(provider, "unknown")) if model_key else "unknown"
@@ -487,6 +488,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "OpenRouter": self._openrouter,
             "OpenAI Azure": self._openai_azure,
             "Generic OpenAI": self._generic_openai,
+            "LiteLLM": self._litellm,
         }
         handler = dispatch.get(provider)
         if handler is None:
@@ -881,3 +883,38 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             provider_label="OpenRouter",
         )
         return self._extract_chat_content(response, "OpenRouter") if response else None
+
+    async def _litellm(self, prompt: str) -> str | None:
+        import litellm
+
+        model = self._current_model("LiteLLM")
+        _, out_budget = self._budgets()
+        kwargs: dict[str, Any] = {
+            "model": model,
+            "messages": [{"role": "user", "content": self._trim_prompt(prompt)}],
+            "max_tokens": out_budget,
+            "temperature": float(self._opt(CONF_LITELLM_TEMPERATURE, DEFAULT_TEMPERATURE)),
+        }
+        api_key = self._opt(CONF_LITELLM_API_KEY)
+        if api_key:
+            kwargs["api_key"] = api_key
+        api_base = self._opt(CONF_LITELLM_API_BASE)
+        if api_base:
+            kwargs["api_base"] = api_base
+
+        timeout_seconds = int(self._opt(CONF_REQUEST_TIMEOUT, DEFAULT_REQUEST_TIMEOUT))
+        kwargs["timeout"] = max(10, timeout_seconds)
+
+        response = await litellm.acompletion(**kwargs)
+        self._last_response_metadata = {
+            "finish_reason": response.choices[0].finish_reason,
+            "usage": {
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens,
+            },
+        }
+        content = response.choices[0].message.content
+        if content is None:
+            raise ValueError("LiteLLM response missing content")
+        return content
