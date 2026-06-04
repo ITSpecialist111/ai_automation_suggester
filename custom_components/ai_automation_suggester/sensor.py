@@ -163,7 +163,11 @@ async def async_setup_entry(
             entities.append(AIBaseSensor(coordinator, entry, specific_description))
 
 
-    async_add_entities(entities, True)
+    # update_before_add must stay False: in HA 2025.x+, passing True calls
+    # CoordinatorEntity.async_update() during platform setup, which triggers a
+    # full LLM inference and exceeds the setup timeout (issue #166). Entities
+    # populate from coordinator data and refresh on generate_suggestions.
+    async_add_entities(entities, False)
     _LOGGER.debug("Sensor platform setup complete for provider: %s", provider_name)
 
 # ─────────────────────────────────────────────────────────────

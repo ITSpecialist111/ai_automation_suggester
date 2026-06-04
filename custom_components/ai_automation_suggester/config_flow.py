@@ -119,7 +119,9 @@ class ProviderValidator:
 
     async def validate_perplexity(self, api_key: str, model: str) -> Optional[str]:
         hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        payload = {"model": model, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 1}
+        # Perplexity 'sonar' models require max_tokens >= 16; a smaller value is
+        # rejected with a 400 during validation (issue #171).
+        payload = {"model": model, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 16}
         try:
             resp = await self.session.post(ENDPOINT_PERPLEXITY, headers=hdr, json=payload, timeout=self.timeout)
             return None if resp.status == 200 else await resp.text()

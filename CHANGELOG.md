@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.7 - 2026-06-04
+
+### Fixed
+
+- Fixed integration entering `setup_error` on Home Assistant 2025.x+ because `async_add_entities(..., True)` triggered a full LLM inference during sensor platform setup and exceeded the setup timeout, especially with local/slow providers (issue #166).
+- Fixed Perplexity setup validation always failing with `max_tokens must be at least 16 for sonar` by raising the validation probe's `max_tokens` from 1 to 16 (issue #171).
+
 ## 1.5.6 - 2026-05-03
 
 ### Fixed
