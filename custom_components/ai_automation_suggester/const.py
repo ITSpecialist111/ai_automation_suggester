@@ -124,6 +124,12 @@ CONF_GENERIC_OPENAI_TEMPERATURE = "generic_openai_temperature"
 CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT = "generic_openai_validation_endpoint"
 CONF_GENERIC_OPENAI_ENABLE_VALIDATION = "generic_openai_enable_validation"
 
+# LiteLLM
+CONF_LITELLM_API_KEY = "litellm_api_key"
+CONF_LITELLM_MODEL = "litellm_model"
+CONF_LITELLM_TEMPERATURE = "litellm_temperature"
+CONF_LITELLM_API_BASE = "litellm_api_base"
+
 # ─────────────────────────────────────────────────────────────
 # Model defaults per provider
 # ─────────────────────────────────────────────────────────────
@@ -140,6 +146,7 @@ DEFAULT_MODELS = {
     "Perplexity AI": "sonar",
     "OpenRouter": "openai/gpt-5.4-mini",
     "Generic OpenAI": "gpt-4o-mini",
+    "LiteLLM": "openai/gpt-4o-mini",
 }
 
 # ─────────────────────────────────────────────────────────────
