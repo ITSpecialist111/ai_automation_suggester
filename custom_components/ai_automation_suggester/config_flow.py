@@ -140,6 +140,18 @@ class ProviderValidator:
         except Exception as err:
             return str(err)
 
+    async def validate_requesty(self, api_key: str, model: str) -> Optional[str]:
+        hdr = {"content-type": "application/json"}
+        if api_key:
+            hdr["Authorization"] = f"Bearer {api_key}"
+        try:
+            resp = await self.session.get(
+                "https://router.requesty.ai/v1/models", headers=hdr, timeout=self.timeout
+            )
+            return None if resp.status == 200 else await resp.text()
+        except Exception as err:
+            return str(err)
+
     async def validate_generic_openai(self, endpoint: str, api_key: str) -> Optional[str]:
         hdr = {"Content-Type": "application/json"}
         if api_key:
@@ -181,6 +193,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "Mistral AI": self.async_step_mistral,
                 "Perplexity AI": self.async_step_perplexity,
                 "OpenRouter": self.async_step_openrouter,
+                "Requesty": self.async_step_requesty,
                 "OpenAI Azure": self.async_step_openai_azure,
                 "Generic OpenAI": self.async_step_generic_openai,
                 "LiteLLM": self.async_step_litellm,
@@ -205,6 +218,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "OpenAI",
                             "OpenRouter",
                             "Perplexity AI",
+                            "Requesty",
                         ]
                     )
                 }
@@ -489,6 +503,36 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input,
         )
 
+    async def async_step_requesty(self, user_input=None):
+        async def _v(ui):
+            return await self.validator.validate_requesty(
+                ui[CONF_REQUESTY_API_KEY],
+                ui.get(CONF_REQUESTY_MODEL, DEFAULT_MODELS["Requesty"]),
+            )
+
+        schema = {
+            vol.Required(CONF_REQUESTY_API_KEY): TextSelector(TextSelectorConfig(type="password")),
+            vol.Optional(
+                CONF_REQUESTY_MODEL, default=DEFAULT_MODELS["Requesty"]
+            ): str,
+            vol.Optional(CONF_REQUESTY_REASONING_MAX_TOKENS, default=0): vol.All(
+                vol.Coerce(int), vol.Range(min=0)
+            ),
+            vol.Optional(
+                CONF_REQUESTY_TEMPERATURE, default=DEFAULT_TEMPERATURE
+            ): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0)),
+        }
+        self._add_token_fields(schema)
+        return await self._provider_form(
+            "requesty",
+            vol.Schema(schema),
+            _v,
+            "AI Automation Suggester (Requesty)",
+            {},
+            {},
+            user_input,
+        )
+
     async def async_step_openai_azure(self, user_input=None):
         async def _v(ui):
             if not ui.get(CONF_OPENAI_AZURE_API_KEY) or not ui.get(CONF_OPENAI_AZURE_DEPLOYMENT_ID) or not ui.get(CONF_OPENAI_AZURE_API_VERSION):
@@ -668,6 +712,11 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_OPENROUTER_MODEL, default=self._get_option(CONF_OPENROUTER_MODEL, DEFAULT_MODELS["OpenRouter"]))] = str
             schema[vol.Optional(CONF_OPENROUTER_REASONING_MAX_TOKENS, default=self._get_option(CONF_OPENROUTER_REASONING_MAX_TOKENS, 0))] = vol.All(vol.Coerce(int), vol.Range(min=0))
             schema[vol.Optional(CONF_OPENROUTER_TEMPERATURE, default=self._get_option(CONF_OPENROUTER_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+        elif provider == "Requesty":
+            schema[vol.Optional(CONF_REQUESTY_API_KEY, default=self._get_option(CONF_REQUESTY_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_REQUESTY_MODEL, default=self._get_option(CONF_REQUESTY_MODEL, DEFAULT_MODELS["Requesty"]))] = str
+            schema[vol.Optional(CONF_REQUESTY_REASONING_MAX_TOKENS, default=self._get_option(CONF_REQUESTY_REASONING_MAX_TOKENS, 0))] = vol.All(vol.Coerce(int), vol.Range(min=0))
+            schema[vol.Optional(CONF_REQUESTY_TEMPERATURE, default=self._get_option(CONF_REQUESTY_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
         elif provider == "OpenAI Azure":
             schema[vol.Optional(CONF_OPENAI_AZURE_API_KEY, default=self._get_option(CONF_OPENAI_AZURE_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_OPENAI_AZURE_ENDPOINT, default=self._get_option(CONF_OPENAI_AZURE_ENDPOINT))] = str
