@@ -63,6 +63,8 @@ GENERATE_SUGGESTIONS_SCHEMA = vol.Schema(
         vol.Optional("entity_limit", default=200): vol.All(vol.Coerce(int), vol.Range(min=1, max=2000)),
         vol.Optional("automation_read_yaml", default=False): bool,
         vol.Optional("automation_limit", default=100): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000)),
+        vol.Optional("script_read_yaml", default=False): bool,
+        vol.Optional("script_limit", default=100): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000)),
     }
 )
 
@@ -106,6 +108,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 entity_limit=call.data.get("entity_limit", 200),
                 automation_read_yaml=call.data.get("automation_read_yaml", False),
                 automation_limit=call.data.get("automation_limit", 100),
+                script_read_yaml=call.data.get("script_read_yaml", False),
+                script_limit=call.data.get("script_limit", 100),
             )
 
         except KeyError:

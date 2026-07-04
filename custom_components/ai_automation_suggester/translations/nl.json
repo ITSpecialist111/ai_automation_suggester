@@ -245,6 +245,14 @@
         "automation_limit": {
           "name": "Automatiseringslimiet",
           "description": "Maximum aantal te analyseren automatiseringen (standaard: 100)."
+        },
+        "script_read_yaml": {
+          "name": "Lees 'scripts.yaml' bestand",
+          "description": "Leest en voegt de YAML-code van de scripts uit het 'scripts.yaml'-bestand toe. Deze actie verbruikt veel invoertokens, gebruik deze voorzichtig en met modellen met een groot contextvenster (bijv. Gemini)."
+        },
+        "script_limit": {
+          "name": "Scriptlimiet",
+          "description": "Maximum aantal te analyseren scripts (standaard: 100)."
         }
       }
     }

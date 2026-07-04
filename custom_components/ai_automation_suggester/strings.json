@@ -272,6 +272,14 @@
           "name": "Automation Limit",
           "description": "Maximum number of automations to analyze (default: 100)."
         },
+        "script_read_yaml": {
+          "name": "Read 'scripts.yaml' file",
+          "description": "Reads and appends the YAML code of the scripts found in the 'scripts.yaml' file. This action will use a lot of input tokens, use it with care and with models with a large context window (e.g. Gemini)."
+        },
+        "script_limit": {
+          "name": "Script Limit",
+          "description": "Maximum number of scripts to analyze (default: 100)."
+        },
         "exclude_domains": {
           "name": "Exclude Domains",
           "description": "Domains to exclude from analysis."

@@ -27,6 +27,7 @@ Return a JSON object with this shape and no surrounding Markdown:
       "yaml": "Home Assistant automation YAML",
       "entities_used": ["domain.entity_id"],
       "automation_ids_used": [],
+      "script_ids_used": [],
       "confidence": 0.0,
       "warnings": []
     }
@@ -137,6 +138,7 @@ def _try_loose_structured_items(raw_response: str) -> list[dict[str, Any]]:
             "yaml": yaml_code,
             "entities_used": _extract_array_field(segment, "entities_used"),
             "automation_ids_used": _extract_array_field(segment, "automation_ids_used"),
+            "script_ids_used": _extract_array_field(segment, "script_ids_used"),
             "warnings": _extract_array_field(segment, "warnings"),
         }
         confidence = _extract_number_field(segment, "confidence")
@@ -203,6 +205,7 @@ def _normalise_suggestion(
         "created_at": created_at.isoformat(),
         "entities_used": [str(e) for e in _as_list(item.get("entities_used"))],
         "automation_ids_used": [str(a) for a in _as_list(item.get("automation_ids_used"))],
+        "script_ids_used": [str(s) for s in _as_list(item.get("script_ids_used"))],
         "entities_processed": entities_processed,
         "confidence": item.get("confidence"),
         "warnings": warnings,
