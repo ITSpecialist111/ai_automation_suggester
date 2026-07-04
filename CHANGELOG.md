@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.8 - 2026-07-04
+
+### Fixed
+
+- Fixed a Home Assistant freeze/crash after multiple options-flow saves. `async_reload_entry` bypassed the core reload path, so `entry.async_on_unload` callbacks never fired and every save stacked an additional update listener until the event loop locked up. It now delegates to `hass.config_entries.async_reload` (issue #175, thanks @mjg42).
+- Stopped the recorder warning `State attributes for sensor.ai_automation_suggester_*_ai_automation_suggestions_* exceed maximum size of 16384 bytes` by marking the large suggestion payload attributes (`suggestions`, `yaml_block`, `description`, `entities_processed`, `suggestion`) as unrecorded. Attributes remain visible in the live state, the dashboard card, and the HTTP API — they are just no longer persisted to the history database (issue #172).
+- Added a `reasoning_content` fallback to the OpenAI-compatible response parser so reasoning models (Qwen3, DeepSeek R1, and similar) that emit their answer in `reasoning_content` when `content` is empty are no longer silently discarded (issue #127, thanks @HexRebuilt for the diagnosis).
+
 ## 1.5.7 - 2026-06-04
 
 ### Fixed

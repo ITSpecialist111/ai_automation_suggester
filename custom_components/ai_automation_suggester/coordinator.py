@@ -569,11 +569,26 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         }
         message = choice.get("message") or {}
         content = message.get("content")
-        if isinstance(content, str):
+        if isinstance(content, str) and content:
             return content
         if isinstance(content, list):
-            return "".join(part.get("text", "") for part in content if isinstance(part, dict))
-        raise ValueError(f"{provider_label} message missing content: {message}")
+            joined = "".join(part.get("text", "") for part in content if isinstance(part, dict))
+            if joined:
+                return joined
+        # Reasoning models (Qwen3, DeepSeek R1, and similar OpenAI-compatible
+        # deployments) emit their answer in ``reasoning_content`` when
+        # ``content`` is empty. Fall back to it so those models aren't silently
+        # dropped (issue #127).
+        reasoning = message.get("reasoning_content") or message.get("reasoning")
+        if isinstance(reasoning, str) and reasoning:
+            _LOGGER.debug(
+                "%s returned empty content; using reasoning_content fallback",
+                provider_label,
+            )
+            return reasoning
+        if content is None:
+            raise ValueError(f"{provider_label} message missing content: {message}")
+        raise ValueError(f"{provider_label} message has empty content: {message}")
 
     async def _openai(self, prompt: str) -> str | None:
         api_key = self._opt(CONF_OPENAI_API_KEY)

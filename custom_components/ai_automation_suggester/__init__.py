@@ -197,6 +197,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return False
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload config entry."""
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
+    """Reload config entry.
+
+    Delegates to ``hass.config_entries.async_reload`` so the core reload path
+    runs ``entry.async_on_unload`` callbacks (which detach the update listener
+    registered in :func:`async_setup_entry`). Calling ``async_unload_entry``
+    directly bypassed those callbacks, so every options save appended another
+    listener and eventually locked up the event loop (issue #175).
+    """
+    await hass.config_entries.async_reload(entry.entry_id)
