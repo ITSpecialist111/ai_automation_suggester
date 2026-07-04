@@ -46,7 +46,7 @@ The integration follows a simple, effective process:
 |------|---------------|---------|
 | **1&nbsp;· Snapshot** | Collects data about your home. | On manual trigger or schedule, the integration gathers information on your entities (including attributes), devices, areas, **and** existing automations. You can control the scope using filters and limits. |
 | **2&nbsp;· Prompt Building** | Structures the data for the AI. | This snapshot is embedded into a detailed system prompt describing your specific Home Assistant setup. You can enhance this with a *custom prompt* to steer suggestions towards specific goals (e.g., "focus on presence lighting"). |
-| **3&nbsp;· Provider Call** | Sends the prompt to the AI. | The crafted prompt is sent to your configured AI provider (OpenAI, Azure OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, OpenRouter, or another OpenAI-compatible endpoint). |
+| **3&nbsp;· Provider Call** | Sends the prompt to the AI. | The crafted prompt is sent to your configured AI provider (OpenAI, Azure OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, OpenRouter, Requesty, LiteLLM, or another OpenAI-compatible endpoint). |
 | **4&nbsp;· Parsing** | Processes the AI's response. | The integration asks capable providers for structured JSON, falls back to fenced YAML parsing, validates returned YAML, and records warnings for missing or possibly truncated output. |
 | **5&nbsp;· Surface** | Delivers and stores the suggestions. | Suggestions appear as Home Assistant persistent notifications, sensor attributes, and stored history that can be used by the bundled dashboard card or your own cards. |
 
@@ -95,7 +95,7 @@ Leveraging the AI Automation Suggester provides several key benefits:
 
 ## 📦 Features
 
-* **Multi-Provider Support:** Connect to OpenAI, OpenAI Azure, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, or OpenRouter with full configuration options:
+* **Multi-Provider Support:** Connect to OpenAI, OpenAI Azure, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, OpenRouter, Requesty, or LiteLLM (100+ backends) with full configuration options:
     * Temperature control for all providers (0.0 - 2.0)
     * Model selection with provider-specific defaults
     * Secure API key storage
@@ -118,7 +118,7 @@ Leveraging the AI Automation Suggester provides several key benefits:
 
 * **Home Assistant:** Version 2024.1 or later.
 * **AI Provider Setup:** You will need access to an AI model.
-    * For cloud providers (OpenAI, Anthropic, Google, Groq, Mistral, Perplexity), you’ll need API keys.
+    * For cloud providers (OpenAI, Anthropic, Google, Groq, Mistral, Perplexity, OpenRouter, Requesty), you’ll need API keys.
     * For local models (LocalAI, Ollama), ensure the local servers are running and accessible from Home Assistant.
 
 ---
@@ -203,6 +203,8 @@ Model APIs change quickly, so the integration keeps a compatibility catalog and 
 | Mistral AI | `mistral-small-latest` | Supports current `*-latest` aliases and custom published IDs. |
 | Perplexity AI | `sonar` | Supports Sonar, Sonar Pro, reasoning, and research-style model IDs where your account has access. |
 | OpenRouter | `openai/gpt-5.4-mini` | OpenRouter remains dynamic. Use provider-prefixed IDs from OpenRouter's model catalog. |
+| Requesty | `openai/gpt-4o-mini` | OpenAI-compatible router (`https://router.requesty.ai`) providing 300+ models through a single API key. Use provider-prefixed model IDs. |
+| LiteLLM | `openai/gpt-4o-mini` | Uses the LiteLLM Python SDK to reach 100+ backends (OpenAI, Bedrock, Azure, Vertex, Groq, and more). Model IDs follow the LiteLLM naming scheme. |
 | LocalAI/Ollama/custom OpenAI-compatible | User configured | Custom model names remain valid and are treated conservatively. |
 
 For maximum stability, prefer stable model IDs over preview or `latest` aliases unless you intentionally want fast-moving behavior.
@@ -236,6 +238,8 @@ You can trigger the suggestion generation manually using the service call:
     * `custom_prompt` (string, optional): Add a specific instruction for this particular run (e.g., "Suggest security automations for doors and windows.").
     * `automation_read_yaml` (boolean, optional): Include YAML from `automations.yaml` for deeper review.
     * `automation_limit` (integer, optional): Limit how many automations are included.
+    * `script_read_yaml` (boolean, optional): Include YAML from `scripts.yaml` so the AI can reason about scripts you already have. Uses more input tokens — best paired with large-context models.
+    * `script_limit` (integer, optional): Limit how many scripts are included (default: 100).
 
 ### Suggestion Review Services
 
@@ -428,7 +432,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 ## Acknowledgments
 
 * **Home Assistant Community:** For providing a robust and extensible smart home platform.
-* **AI Providers:** OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, and Perplexity for developing and providing access to powerful language models.
+* **AI Providers:** OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, OpenRouter, Requesty, and LiteLLM for developing and providing access to powerful language models.
 * **Contributors and Users:** For valuable feedback, testing, and contributions that help improve this project.
 
 ---
