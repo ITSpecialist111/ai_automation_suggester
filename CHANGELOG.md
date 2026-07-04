@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.9 - 2026-07-04
+
+### Added
+
+- Added **Requesty** as an OpenAI-compatible LLM provider, giving access to 300+ models through the Requesty router (`https://router.requesty.ai`). Configure with a Requesty API key and pick any supported model (defaults to `openai/gpt-4o-mini`). Thanks @Thibaultjaigu (PR #176).
+- Added **script reading support** so `script.*` YAML from `scripts.yaml` is included in the suggestion prompt alongside automations, letting the AI reason about scripts you already have when proposing new automations. Available as the `script_read_yaml` service field and mirrored across all 11 locales. Thanks @RmG152 (PR #167).
+- Added **Polish (`pl`) translations** covering the full config flow, options flow, and service descriptions. Thanks @blka (PR #164).
+
 ## 1.5.8 - 2026-07-04
 
 ### Fixed
