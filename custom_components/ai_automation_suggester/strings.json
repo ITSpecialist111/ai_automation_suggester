@@ -117,6 +117,17 @@
           "max_output_tokens": "Max Output Tokens"
         }
       },
+      "requesty": {
+        "title": "Configure Requesty",
+        "data": {
+          "requesty_api_key": "Requesty API Key",
+          "requesty_model": "Requesty Model",
+          "requesty_reasoning_max_tokens": "Requesty Reasoning Max Tokens",
+          "requesty_temperature": "Temperature",
+          "max_input_tokens": "Max Input Tokens",
+          "max_output_tokens": "Max Output Tokens"
+        }
+      },
       "openai_azure": {
         "title": "Configure OpenAI Azure",
         "data": {
@@ -207,6 +218,10 @@
           "openrouter_model": "OpenRouter Model",
           "openrouter_reasoning_max_tokens": "OpenRouter Reasoning Max Tokens",
           "openrouter_temperature": "Temperature (OpenRouter)",
+          "requesty_api_key": "Requesty API Key",
+          "requesty_model": "Requesty Model",
+          "requesty_reasoning_max_tokens": "Requesty Reasoning Max Tokens",
+          "requesty_temperature": "Temperature (Requesty)",
           "openai_azure_api_key": "Azure OpenAI API Key",
           "openai_azure_deployment_id": "Azure Deployment ID",
           "openai_azure_endpoint": "Azure Endpoint",

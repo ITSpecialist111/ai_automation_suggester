@@ -116,6 +116,12 @@ CONF_OPENROUTER_MODEL = "openrouter_model"
 CONF_OPENROUTER_REASONING_MAX_TOKENS = "openrouter_reasoning_max_tokens"
 CONF_OPENROUTER_TEMPERATURE = "openrouter_temperature"
 
+# Requesty
+CONF_REQUESTY_API_KEY = "requesty_api_key"
+CONF_REQUESTY_MODEL = "requesty_model"
+CONF_REQUESTY_REASONING_MAX_TOKENS = "requesty_reasoning_max_tokens"
+CONF_REQUESTY_TEMPERATURE = "requesty_temperature"
+
 # Generic OpenAI
 CONF_GENERIC_OPENAI_ENDPOINT = "generic_openai_api_endpoint"
 CONF_GENERIC_OPENAI_API_KEY = "generic_openai_api_key"
@@ -145,6 +151,7 @@ DEFAULT_MODELS = {
     "Mistral AI": "mistral-small-latest",
     "Perplexity AI": "sonar",
     "OpenRouter": "openai/gpt-5.4-mini",
+    "Requesty": "openai/gpt-4o-mini",
     "Generic OpenAI": "gpt-4o-mini",
     "LiteLLM": "openai/gpt-4o-mini",
 }
@@ -179,6 +186,7 @@ ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"
 ENDPOINT_MISTRAL = "https://api.mistral.ai/v1/chat/completions"
 ENDPOINT_PERPLEXITY = "https://api.perplexity.ai/chat/completions"
 ENDPOINT_OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
+ENDPOINT_REQUESTY = "https://router.requesty.ai/v1/chat/completions"
 
 
 # ─────────────────────────────────────────────────────────────

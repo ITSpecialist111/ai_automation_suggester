@@ -350,6 +350,42 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
         True,
         "https://openrouter.ai/api/v1/models",
     ),
+    "Requesty": ProviderCatalog(
+        "Requesty",
+        "openai/gpt-4o-mini",
+        (
+            ModelCapabilities(
+                "openai/gpt-4o-mini",
+                "OpenAI GPT-4o Mini via Requesty",
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "openai/gpt-4o",
+                "OpenAI GPT-4o via Requesty",
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "anthropic/claude-sonnet-4-5",
+                "Claude Sonnet 4.5 via Requesty",
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "google/gemini-2.5-flash",
+                "Gemini 2.5 Flash via Requesty",
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+        ),
+        True,
+        "https://router.requesty.ai/v1/models",
+    ),
 }
 
 

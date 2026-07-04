@@ -83,6 +83,20 @@ def test_length_finish_reason_adds_warning():
     assert any("truncated" in warning for warning in parsed[0]["warnings"])
 
 
+def test_requesty_length_finish_reason_adds_warning():
+    parsed = suggestions.parse_suggestion_response(
+        "No YAML this time",
+        provider="Requesty",
+        model="openai/gpt-4o-mini",
+        created_at=datetime(2026, 5, 3, 12, 0, 0),
+        entities_processed=[],
+        response_metadata={"finish_reason": "length"},
+    )
+
+    assert parsed[0]["provider"] == "Requesty"
+    assert any("truncated" in warning for warning in parsed[0]["warnings"])
+
+
 def test_parse_malformed_json_yaml_blocks_from_provider():
     raw = '''
 {

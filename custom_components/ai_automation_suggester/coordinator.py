@@ -159,6 +159,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "Mistral AI": CONF_MISTRAL_MODEL,
             "Perplexity AI": CONF_PERPLEXITY_MODEL,
             "OpenRouter": CONF_OPENROUTER_MODEL,
+            "Requesty": CONF_REQUESTY_MODEL,
             "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
             "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
             "LiteLLM": CONF_LITELLM_MODEL,
@@ -547,6 +548,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "Mistral AI": self._mistral,
             "Perplexity AI": self._perplexity,
             "OpenRouter": self._openrouter,
+            "Requesty": self._requesty,
             "OpenAI Azure": self._openai_azure,
             "Generic OpenAI": self._generic_openai,
             "LiteLLM": self._litellm,
@@ -959,6 +961,30 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             provider_label="OpenRouter",
         )
         return self._extract_chat_content(response, "OpenRouter") if response else None
+
+    async def _requesty(self, prompt: str) -> str | None:
+        api_key = self._opt(CONF_REQUESTY_API_KEY)
+        if not api_key:
+            raise ValueError("Requesty API key not configured")
+        model = self._current_model("Requesty")
+        extra: dict[str, Any] = {}
+        reasoning_max_tokens = int(self._opt(CONF_REQUESTY_REASONING_MAX_TOKENS, 0))
+        if reasoning_max_tokens > 0:
+            extra["reasoning"] = {"max_tokens": reasoning_max_tokens}
+        body = self._openai_compatible_body(
+            provider="Requesty",
+            model=model,
+            prompt=self._trim_prompt(prompt),
+            temperature=float(self._opt(CONF_REQUESTY_TEMPERATURE, DEFAULT_TEMPERATURE)),
+            extra=extra,
+        )
+        response = await self._post_json(
+            ENDPOINT_REQUESTY,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            body=body,
+            provider_label="Requesty",
+        )
+        return self._extract_chat_content(response, "Requesty") if response else None
 
     async def _litellm(self, prompt: str) -> str | None:
         import litellm
