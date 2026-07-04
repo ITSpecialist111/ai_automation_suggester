@@ -8,6 +8,7 @@ LANGUAGE_NAMES = {
     "es": "Spanish",
     "it": "Italian",
     "nl": "Dutch",
+    "pl": "Polish",
     "pt": "Portuguese",
     "ru": "Russian",
     "tr": "Turkish",
