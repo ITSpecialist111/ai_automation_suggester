@@ -1,5 +1,7 @@
+aiohttp>=3.8.0
+anyio>=4.0
 pytest
-pytest-cov==2.9.0
-pytest-homeassistant-custom-component
+pytest-cov>=6.0
 pyyaml>=6.0
 ruff>=0.4.0
+voluptuous>=0.13.1

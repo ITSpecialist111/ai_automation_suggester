@@ -331,6 +331,7 @@ The integration provides several sensors for monitoring:
 
 * API keys are stored in Home Assistant config entries and password fields are masked in the UI.
 * Cloud providers may receive entity IDs, states, attributes, device/area context, automation metadata, and prompt text.
+* This household context is intentionally retained so suggestions can be genuinely personal and useful. Provider error diagnostics redact authentication credentials, not names, rooms, states, or other home context.
 * Local providers such as Ollama and LocalAI can keep model processing on your own network.
 * Suggestions are review-only. This integration does not automatically create, accept, or modify automations.
 

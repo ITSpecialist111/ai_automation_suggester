@@ -16,8 +16,8 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pyyaml ruff
-      - name: Lint helper modules
-        run: ruff check custom_components/ai_automation_suggester/model_catalog.py custom_components/ai_automation_suggester/suggestions.py tests
+          python -m pip install -r requirements.txt
+      - name: Lint repository
+        run: ruff check .
       - name: Run tests
         run: pytest

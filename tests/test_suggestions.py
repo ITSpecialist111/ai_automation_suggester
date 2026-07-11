@@ -259,3 +259,71 @@ def test_unparseable_structured_payload_does_not_become_notification_body():
 
     assert not parsed[0]["description"].startswith("{")
     assert "could not be parsed" in parsed[0]["description"]
+
+
+def test_model_cannot_set_store_id_or_review_status():
+    raw = """
+    {
+        "id": "model-controlled-id",
+        "status": "accepted",
+        "title": "Server-owned fields",
+        "description": "The model must not control workflow fields.",
+        "yaml": "alias: Safe fields\\ntriggers: []\\nactions: []"
+    }
+    """
+
+    parsed = suggestions.parse_suggestion_response(
+        raw,
+        provider="OpenAI",
+        model="gpt-5.5",
+        created_at=datetime(2026, 7, 11, 12, 0, 0),
+        entities_processed=[],
+    )
+
+    assert parsed[0]["id"] != "model-controlled-id"
+    assert parsed[0]["status"] == "new"
+
+
+def test_yaml_references_are_extracted_and_unsampled_entities_warn():
+    raw = """
+    {
+        "title": "Motion light",
+        "description": "Turn on a light after motion.",
+        "yaml": "alias: Motion light\\ntriggers:\\n  - trigger: state\\n    entity_id: binary_sensor.hall_motion\\nactions:\\n  - action: light.turn_on\\n    target:\\n      entity_id: light.hall",
+        "entities_used": []
+    }
+    """
+
+    parsed = suggestions.parse_suggestion_response(
+        raw,
+        provider="OpenAI",
+        model="gpt-5.5",
+        created_at=datetime(2026, 7, 11, 12, 0, 0),
+        entities_processed=["binary_sensor.hall_motion"],
+    )
+
+    assert parsed[0]["yaml_entities_used"] == ["binary_sensor.hall_motion", "light.hall"]
+    assert parsed[0]["services_used"] == ["light.turn_on"]
+    assert any("light.hall" in warning and "sampled" in warning for warning in parsed[0]["warnings"])
+
+
+def test_invalid_confidence_is_ignored_with_warning():
+    raw = """
+    {
+        "title": "Invalid confidence",
+        "description": "Confidence must be between zero and one.",
+        "yaml": "alias: Invalid confidence\\ntriggers: []\\nactions: []",
+        "confidence": 4.2
+    }
+    """
+
+    parsed = suggestions.parse_suggestion_response(
+        raw,
+        provider="OpenAI",
+        model="gpt-5.5",
+        created_at=datetime(2026, 7, 11, 12, 0, 0),
+        entities_processed=[],
+    )
+
+    assert parsed[0]["confidence"] is None
+    assert any("confidence outside" in warning for warning in parsed[0]["warnings"])

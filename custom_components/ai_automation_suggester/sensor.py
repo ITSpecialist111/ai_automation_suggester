@@ -22,40 +22,39 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .const import (
-    DOMAIN,
-    INTEGRATION_NAME,
-    CONF_PROVIDER,
-    PROVIDER_STATUS_CONNECTED,
-    PROVIDER_STATUS_DISCONNECTED,
-    PROVIDER_STATUS_ERROR,
-    PROVIDER_STATUS_INITIALIZING,
-    CONF_MAX_INPUT_TOKENS,
-    DEFAULT_MAX_INPUT_TOKENS,
-    CONF_MAX_OUTPUT_TOKENS,
-    DEFAULT_MAX_OUTPUT_TOKENS,
-    # Model configuration keys (used to display current model)
-    CONF_OPENAI_MODEL,
     CONF_ANTHROPIC_MODEL,
+    CONF_CUSTOM_OPENAI_MODEL,
+    CONF_GENERIC_OPENAI_MODEL,
     CONF_GOOGLE_MODEL,
     CONF_GROQ_MODEL,
     CONF_LOCALAI_MODEL,
-    CONF_OLLAMA_MODEL,
-    CONF_CUSTOM_OPENAI_MODEL,
+    CONF_MAX_INPUT_TOKENS,
+    CONF_MAX_OUTPUT_TOKENS,
     CONF_MISTRAL_MODEL,
-    CONF_PERPLEXITY_MODEL,
-    CONF_OPENROUTER_MODEL,
-    CONF_REQUESTY_MODEL,
+    CONF_OLLAMA_MODEL,
     CONF_OPENAI_AZURE_DEPLOYMENT_ID,
-    CONF_GENERIC_OPENAI_MODEL,
+    # Model configuration keys (used to display current model)
+    CONF_OPENAI_MODEL,
+    CONF_OPENROUTER_MODEL,
+    CONF_PERPLEXITY_MODEL,
+    CONF_PROVIDER,
+    CONF_REQUESTY_MODEL,
+    DEFAULT_MAX_INPUT_TOKENS,
+    DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODELS,
+    DOMAIN,
+    INTEGRATION_NAME,
+    PROVIDER_STATUS_CONNECTED,
+    PROVIDER_STATUS_ERROR,
+    PROVIDER_STATUS_INITIALIZING,
+    SENSOR_KEY_HISTORY_COUNT,
+    SENSOR_KEY_INPUT_TOKENS,
+    SENSOR_KEY_LAST_ERROR,
+    SENSOR_KEY_MODEL,
+    SENSOR_KEY_OUTPUT_TOKENS,
+    SENSOR_KEY_STATUS,
     # Sensor Keys from const.py
     SENSOR_KEY_SUGGESTIONS,
-    SENSOR_KEY_STATUS,
-    SENSOR_KEY_INPUT_TOKENS,
-    SENSOR_KEY_OUTPUT_TOKENS,
-    SENSOR_KEY_MODEL,
-    SENSOR_KEY_LAST_ERROR,
-    SENSOR_KEY_HISTORY_COUNT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -323,14 +322,14 @@ class AIProviderStatusSensor(AIBaseSensor):
         data = self.coordinator.data or {}
         if not self.coordinator.last_update_success:
             self._attr_native_value = PROVIDER_STATUS_ERROR
-        elif not data:
-            self._attr_native_value = PROVIDER_STATUS_INITIALIZING
         elif data.get("last_error"):
             self._attr_native_value = PROVIDER_STATUS_ERROR
-        elif "suggestions" in data:
+        elif data.get("request_succeeded") is True:
              self._attr_native_value = PROVIDER_STATUS_CONNECTED
+        elif data.get("request_succeeded") is False:
+            self._attr_native_value = PROVIDER_STATUS_ERROR
         else:
-            self._attr_native_value = PROVIDER_STATUS_DISCONNECTED
+            self._attr_native_value = PROVIDER_STATUS_INITIALIZING
 
         self._attr_extra_state_attributes = {
             "last_error_message": data.get("last_error", None),
@@ -441,9 +440,11 @@ class AILastErrorSensor(AIBaseSensor):
         """Update sensor state with the last error message."""
         data = self.coordinator.data or {}
         last_error = data.get("last_error")
-        self._attr_native_value = str(last_error) if last_error else "No Error"
+        error_text = str(last_error) if last_error else ""
+        self._attr_native_value = error_text[:255] if error_text else "No Error"
         self._attr_extra_state_attributes = {
-             "last_error_timestamp": data.get("last_update") if last_error else None,
+            "last_error_timestamp": data.get("last_update") if last_error else None,
+            "full_error_message": error_text or None,
         }
 
 

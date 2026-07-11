@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.5.10 - 2026-07-11
+
+### Fixed
+
+- Fixed excluded-area filtering and device/area prompt context by initializing Home Assistant registries when the coordinator is created. The previous entity lifecycle hook was never called for a coordinator, so area exclusions could be ignored.
+- Fixed entity sampling metadata so `entities_processed` contains exactly the entity context sent to the provider. New entities omitted by the entity limit or input budget now remain eligible for a later run instead of being marked as processed.
+- Fixed rapid service calls potentially being delayed by the coordinator debouncer until after their request-specific filters and prompt settings had been restored.
+- Replaced arbitrary mid-text prompt slicing with whole-block budgeting. Complete entity, automation, and script blocks are retained, with explicit warnings when context is compacted or deferred.
+- Failed or empty provider requests now surface as service failures instead of appearing successful, and provider diagnostics redact credentials while preserving useful household context.
+- Prevented oversized provider errors from exceeding Home Assistant's 255-character sensor state limit while retaining the full sanitized message as an attribute.
+- Fixed the provider status sensor reporting `connected` before the first successful request.
+- Serialized suggestion-store writes so concurrent generation, review actions, and history clearing cannot overwrite each other.
+- Restored Home Assistant's coordinator shutdown cleanup instead of overriding it with a no-op.
+
+### Added
+
+- Added server-side validation warnings for entity, automation, script, and service references found in generated YAML.
+- Added server-owned suggestion IDs and review statuses, plus confidence-range validation, so model output cannot control workflow metadata.
+- Added coordinator, prompt-budget, area-exclusion, credential-redaction, output-validation, and storage-concurrency regression tests.
+- Expanded Ruff enforcement to the full repository and removed wildcard imports from production modules.
+- Made the lightweight test suite cross-platform and reproducible from `requirements.txt`.
+
+### Privacy
+
+- Personal household context remains intentionally available to the selected model. This release does not remove names, areas, states, attributes, or other useful smart-home details; it only prevents authentication credentials from being copied into diagnostics.
+
 ## 1.5.9 - 2026-07-04
 
 ### Added

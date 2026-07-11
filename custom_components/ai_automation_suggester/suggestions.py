@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import textwrap
 from datetime import datetime
@@ -15,6 +16,10 @@ YAML_RE = re.compile(r"```(?:yaml|yml)\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
 JSON_RE = re.compile(r"```json\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
 STRING_FIELDS_AFTER_YAML = "entities_used|automation_ids_used|confidence|warnings"
 PARSE_REPAIR_WARNING = "The provider returned malformed JSON; suggestions were parsed best-effort."
+ENTITY_ID_RE = re.compile(r"(?<![a-z0-9_])([a-z0-9_]+\.[a-z0-9_]+)(?![a-z0-9_])", re.IGNORECASE)
+SERVICE_RE = re.compile(r"^[a-z0-9_]+\.[a-z0-9_]+$", re.IGNORECASE)
+ENTITY_REFERENCE_KEYS = {"entity_id", "entity_ids"}
+SERVICE_REFERENCE_KEYS = {"service", "action"}
 
 
 STRUCTURED_OUTPUT_INSTRUCTIONS = """
@@ -44,6 +49,49 @@ def _as_list(value: Any) -> list:
     if isinstance(value, list):
         return value
     return [value]
+
+
+def _unique_strings(values: list[Any]) -> list[str]:
+    """Return non-empty strings in their original order without duplicates."""
+
+    return list(dict.fromkeys(str(value).strip() for value in values if str(value).strip()))
+
+
+def _entity_ids_from_value(value: Any) -> list[str]:
+    """Extract entity IDs from a scalar or nested entity target value."""
+
+    if isinstance(value, (list, tuple, set)):
+        return [entity_id for item in value for entity_id in _entity_ids_from_value(item)]
+    if isinstance(value, str):
+        return ENTITY_ID_RE.findall(value)
+    return []
+
+
+def _yaml_references(parsed: Any) -> tuple[list[str], list[str]]:
+    """Extract entity and service references from parsed automation YAML."""
+
+    entity_ids: list[str] = []
+    services: list[str] = []
+
+    def walk(value: Any) -> None:
+        if isinstance(value, dict):
+            for raw_key, child in value.items():
+                key = str(raw_key)
+                if key in ENTITY_REFERENCE_KEYS:
+                    entity_ids.extend(_entity_ids_from_value(child))
+                if key in SERVICE_REFERENCE_KEYS and isinstance(child, str):
+                    service = child.strip()
+                    # ``action`` may also contain a nested action list; only a
+                    # domain.service scalar is a service reference.
+                    if SERVICE_RE.fullmatch(service):
+                        services.append(service)
+                walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+
+    walk(parsed)
+    return _unique_strings(entity_ids), _unique_strings(services)
 
 
 def _try_json_loads(raw_response: str) -> dict | list | None:
@@ -149,20 +197,30 @@ def _try_loose_structured_items(raw_response: str) -> list[dict[str, Any]]:
     return items
 
 
-def _validate_yaml(yaml_code: str | None) -> list[str]:
+def _inspect_yaml(yaml_code: str | None) -> tuple[list[str], list[str], list[str]]:
+    """Validate YAML and return warnings, referenced entities, and services."""
+
     warnings: list[str] = []
     if not yaml_code:
         warnings.append("No automation YAML was returned.")
-        return warnings
+        return warnings, [], []
     try:
         parsed = yaml.safe_load(yaml_code)
     except yaml.YAMLError as err:
         warnings.append(f"Returned YAML could not be parsed: {err}")
-        return warnings
+        return warnings, [], []
     if parsed is None:
         warnings.append("Returned YAML was empty after parsing.")
     elif not isinstance(parsed, (dict, list)):
         warnings.append("Returned YAML parsed to an unexpected scalar value.")
+    entity_ids, services = _yaml_references(parsed)
+    return warnings, entity_ids, services
+
+
+def _validate_yaml(yaml_code: str | None) -> list[str]:
+    """Return YAML validation warnings for backward-compatible callers."""
+
+    warnings, _, _ = _inspect_yaml(yaml_code)
     return warnings
 
 
@@ -182,7 +240,30 @@ def _normalise_suggestion(
     yaml_code = str(yaml_code).strip() if yaml_code else None
     warnings = [str(w) for w in inherited_warnings]
     warnings.extend(str(w) for w in _as_list(item.get("warnings")))
-    warnings.extend(_validate_yaml(yaml_code))
+    yaml_warnings, yaml_entity_ids, services_used = _inspect_yaml(yaml_code)
+    warnings.extend(yaml_warnings)
+
+    declared_entity_ids = _unique_strings(_as_list(item.get("entities_used")))
+    entities_used = _unique_strings([*declared_entity_ids, *yaml_entity_ids])
+    processed_entities = set(entities_processed)
+    for entity_id in entities_used:
+        if entity_id not in processed_entities:
+            warnings.append(
+                f"Referenced entity '{entity_id}' was not in the sampled entity context; verify it before use."
+            )
+
+    confidence = None
+    raw_confidence = item.get("confidence")
+    if raw_confidence is not None and not isinstance(raw_confidence, bool):
+        try:
+            parsed_confidence = float(raw_confidence)
+        except (TypeError, ValueError):
+            warnings.append("The provider returned a non-numeric confidence value; it was ignored.")
+        else:
+            if math.isfinite(parsed_confidence) and 0.0 <= parsed_confidence <= 1.0:
+                confidence = parsed_confidence
+            else:
+                warnings.append("The provider returned confidence outside the 0 to 1 range; it was ignored.")
 
     finish_reason = response_metadata.get("finish_reason")
     if finish_reason in {"length", "max_tokens"}:
@@ -190,9 +271,9 @@ def _normalise_suggestion(
     if response_metadata.get("status") == "incomplete":
         warnings.append("The provider returned an incomplete response.")
 
-    suggestion_id = str(item.get("id") or uuid4())
     return {
-        "id": suggestion_id,
+        # IDs and workflow status belong to Home Assistant, not the model.
+        "id": str(uuid4()),
         "title": title,
         "shortDescription": description[:180] if description else title,
         "detailedDescription": description,
@@ -201,15 +282,17 @@ def _normalise_suggestion(
         "yaml_block": yaml_code,
         "provider": provider,
         "model": model,
-        "status": str(item.get("status") or "new"),
+        "status": "new",
         "created_at": created_at.isoformat(),
-        "entities_used": [str(e) for e in _as_list(item.get("entities_used"))],
-        "automation_ids_used": [str(a) for a in _as_list(item.get("automation_ids_used"))],
-        "script_ids_used": [str(s) for s in _as_list(item.get("script_ids_used"))],
+        "entities_used": entities_used,
+        "yaml_entities_used": yaml_entity_ids,
+        "services_used": services_used,
+        "automation_ids_used": _unique_strings(_as_list(item.get("automation_ids_used"))),
+        "script_ids_used": _unique_strings(_as_list(item.get("script_ids_used"))),
         "entities_processed": entities_processed,
-        "confidence": item.get("confidence"),
-        "warnings": warnings,
-        "response_metadata": response_metadata,
+        "confidence": confidence,
+        "warnings": list(dict.fromkeys(warnings)),
+        "response_metadata": dict(response_metadata),
     }
 
 

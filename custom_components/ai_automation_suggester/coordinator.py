@@ -3,29 +3,119 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+import inspect
 import logging
-from pathlib import Path
 import random
 import re
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import aiohttp
 import anyio
 import yaml
-
 from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     area_registry as ar,
+)
+from homeassistant.helpers import (
     device_registry as dr,
+)
+from homeassistant.helpers import (
     entity_registry as er,
 )
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import *
+from .const import (
+    CONF_ANTHROPIC_API_KEY,
+    CONF_ANTHROPIC_MODEL,
+    CONF_ANTHROPIC_TEMPERATURE,
+    CONF_CUSTOM_OPENAI_API_KEY,
+    CONF_CUSTOM_OPENAI_ENDPOINT,
+    CONF_CUSTOM_OPENAI_MODEL,
+    CONF_CUSTOM_OPENAI_TEMPERATURE,
+    CONF_CUSTOM_SYSTEM_PROMPT,
+    CONF_EXCLUDED_AREAS,
+    CONF_EXCLUDED_DOMAINS,
+    CONF_EXCLUDED_ENTITIES,
+    CONF_GENERIC_OPENAI_API_KEY,
+    CONF_GENERIC_OPENAI_ENDPOINT,
+    CONF_GENERIC_OPENAI_MODEL,
+    CONF_GENERIC_OPENAI_TEMPERATURE,
+    CONF_GOOGLE_API_KEY,
+    CONF_GOOGLE_MODEL,
+    CONF_GOOGLE_TEMPERATURE,
+    CONF_GROQ_API_KEY,
+    CONF_GROQ_MODEL,
+    CONF_GROQ_TEMPERATURE,
+    CONF_HISTORY_RETENTION,
+    CONF_LITELLM_API_BASE,
+    CONF_LITELLM_API_KEY,
+    CONF_LITELLM_MODEL,
+    CONF_LITELLM_TEMPERATURE,
+    CONF_LOCALAI_HTTPS,
+    CONF_LOCALAI_IP_ADDRESS,
+    CONF_LOCALAI_MODEL,
+    CONF_LOCALAI_PORT,
+    CONF_LOCALAI_TEMPERATURE,
+    CONF_MAX_INPUT_TOKENS,
+    CONF_MAX_OUTPUT_TOKENS,
+    CONF_MAX_TOKENS,
+    CONF_MISTRAL_API_KEY,
+    CONF_MISTRAL_MODEL,
+    CONF_MISTRAL_TEMPERATURE,
+    CONF_OLLAMA_API_KEY,
+    CONF_OLLAMA_BASE_URL,
+    CONF_OLLAMA_DISABLE_THINK,
+    CONF_OLLAMA_HTTPS,
+    CONF_OLLAMA_IP_ADDRESS,
+    CONF_OLLAMA_MODEL,
+    CONF_OLLAMA_PORT,
+    CONF_OLLAMA_TEMPERATURE,
+    CONF_OPENAI_API_KEY,
+    CONF_OPENAI_AZURE_API_KEY,
+    CONF_OPENAI_AZURE_API_VERSION,
+    CONF_OPENAI_AZURE_DEPLOYMENT_ID,
+    CONF_OPENAI_AZURE_ENDPOINT,
+    CONF_OPENAI_AZURE_TEMPERATURE,
+    CONF_OPENAI_MODEL,
+    CONF_OPENAI_REASONING_EFFORT,
+    CONF_OPENAI_TEMPERATURE,
+    CONF_OPENROUTER_API_KEY,
+    CONF_OPENROUTER_MODEL,
+    CONF_OPENROUTER_REASONING_MAX_TOKENS,
+    CONF_OPENROUTER_TEMPERATURE,
+    CONF_PERPLEXITY_API_KEY,
+    CONF_PERPLEXITY_MODEL,
+    CONF_PERPLEXITY_TEMPERATURE,
+    CONF_PROVIDER,
+    CONF_REQUEST_TIMEOUT,
+    CONF_REQUESTY_API_KEY,
+    CONF_REQUESTY_MODEL,
+    CONF_REQUESTY_REASONING_MAX_TOKENS,
+    CONF_REQUESTY_TEMPERATURE,
+    DEFAULT_HISTORY_RETENTION,
+    DEFAULT_MAX_TOKENS,
+    DEFAULT_MODELS,
+    DEFAULT_OPENAI_REASONING_EFFORT,
+    DEFAULT_REQUEST_TIMEOUT,
+    DEFAULT_TEMPERATURE,
+    DOMAIN,
+    ENDPOINT_ANTHROPIC,
+    ENDPOINT_GROQ,
+    ENDPOINT_LOCALAI,
+    ENDPOINT_MISTRAL,
+    ENDPOINT_OPENAI,
+    ENDPOINT_OPENROUTER,
+    ENDPOINT_PERPLEXITY,
+    ENDPOINT_REQUESTY,
+    VERSION_ANTHROPIC,
+)
 from .endpoint_utils import bearer_auth_headers, ollama_api_candidates, ollama_base_url, openai_chat_endpoint
+from .error_utils import sanitize_provider_error
 from .language_utils import suggestion_language_instruction
 from .model_catalog import (
     chat_token_parameter,
@@ -59,6 +149,15 @@ If you see a lot of text in a different language, focus on it for a translation 
 """
 
 
+@dataclass(frozen=True)
+class PromptBuildResult:
+    """Prompt text plus an exact record of the context sent to the model."""
+
+    prompt: str
+    entity_ids: tuple[str, ...]
+    warnings: tuple[str, ...]
+
+
 class AIAutomationCoordinator(DataUpdateCoordinator):
     """Build prompts, call the configured provider, and publish suggestions."""
 
@@ -84,7 +183,17 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         self.script_read_file = False  # Default script reading mode
         self.script_limit = 100    
 
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
+        coordinator_options: dict[str, Any] = {
+            "name": DOMAIN,
+            "update_interval": None,
+        }
+        # Home Assistant added the explicit config_entry parameter after the
+        # integration's 2024.1 minimum. Use it where available while retaining
+        # compatibility with older supported installations, which populate the
+        # coordinator entry from Home Assistant's setup context.
+        if "config_entry" in inspect.signature(DataUpdateCoordinator.__init__).parameters:
+            coordinator_options["config_entry"] = entry
+        super().__init__(hass, _LOGGER, **coordinator_options)
 
         self.data: dict = {
             "suggestions": "No suggestions yet",
@@ -100,11 +209,16 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "warnings": [],
             "last_error": None,
             "response_metadata": {},
+            "request_succeeded": None,
         }
 
-        self.device_registry: dr.DeviceRegistry | None = None
-        self.entity_registry: er.EntityRegistry | None = None
-        self.area_registry: ar.AreaRegistry | None = None
+        # A DataUpdateCoordinator is not an Entity, so entity lifecycle hooks
+        # such as async_added_to_hass are never called on it. Registry helpers
+        # are async-safe and must be initialized here for area exclusions and
+        # prompt device/area context to work from the first request.
+        self.device_registry: dr.DeviceRegistry = dr.async_get(hass)
+        self.entity_registry: er.EntityRegistry = er.async_get(hass)
+        self.area_registry: ar.AreaRegistry = ar.async_get(hass)
 
     def _opt(self, key: str, default=None):
         """Return entry option, then setup data, then default."""
@@ -167,15 +281,6 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         model_key = model_key_map.get(provider)
         return self._opt(model_key, DEFAULT_MODELS.get(provider, "unknown")) if model_key else "unknown"
 
-    async def async_added_to_hass(self):
-        await super().async_added_to_hass()
-        self.device_registry = dr.async_get(self.hass)
-        self.entity_registry = er.async_get(self.hass)
-        self.area_registry = ar.async_get(self.hass)
-
-    async def async_shutdown(self):
-        return
-
     async def async_generate_suggestions(
         self,
         *,
@@ -225,7 +330,12 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 self.automation_limit = int(automation_limit)
                 self.script_read_file = bool(script_read_yaml)
                 self.script_limit = int(script_limit)
-                await self.async_request_refresh()
+                # Request settings are temporary and protected by the
+                # generation lock, so run the refresh immediately. A debounced
+                # request could execute after these settings are restored.
+                await self.async_refresh()
+                if self.data.get("request_succeeded") is False:
+                    raise ValueError(self.data.get("last_error") or "Suggestion generation failed")
             finally:
                 self.SYSTEM_PROMPT = saved["SYSTEM_PROMPT"]
                 self.scan_all = saved["scan_all"]
@@ -252,7 +362,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             current = self._collect_entities()
             picked = current if self.scan_all else {k: v for k, v in current.items() if k not in self.previous_entities}
             if not picked:
-                self.previous_entities = current
+                self._prune_processed_entities(current)
                 history = await async_get_suggestion_store(self.hass).async_list()
                 self.data.update(
                     {
@@ -262,12 +372,15 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                         "model": model,
                         "warnings": warnings,
                         "last_update": now,
+                        "last_error": None,
+                        "response_metadata": {},
                     }
                 )
                 return self.data
 
-            prompt = await self._build_prompt(picked)
-            response = await self._dispatch(prompt)
+            prompt_result = await self._build_prompt(picked)
+            warnings.extend(prompt_result.warnings)
+            response = await self._dispatch(prompt_result.prompt)
             store = async_get_suggestion_store(self.hass)
 
             if response:
@@ -276,10 +389,11 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     provider=provider,
                     model=model,
                     created_at=now,
-                    entities_processed=list(picked.keys()),
+                    entities_processed=list(prompt_result.entity_ids),
                     inherited_warnings=warnings,
                     response_metadata=self._last_response_metadata,
                 )
+                self._validate_generated_suggestions(parsed)
                 retention = int(self._opt(CONF_HISTORY_RETENTION, DEFAULT_HISTORY_RETENTION))
                 history = await store.async_add_suggestions(parsed, retention=retention)
                 latest = history[0] if history else parsed[0]
@@ -299,14 +413,18 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     "description": latest.get("description"),
                     "yaml_block": latest.get("yamlCode"),
                     "last_update": now,
-                    "entities_processed": list(picked.keys()),
+                    "entities_processed": list(prompt_result.entity_ids),
                     "provider": provider,
                     "model": model,
                     "warnings": latest.get("warnings", warnings),
                     "last_error": None,
                     "response_metadata": self._last_response_metadata,
+                    "request_succeeded": True,
                 }
+                self._mark_entities_processed(current, prompt_result.entity_ids)
             else:
+                if not self._last_error:
+                    self._last_error = "The provider returned no usable suggestion content."
                 history = await store.async_list()
                 self.data.update(
                     {
@@ -323,17 +441,80 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                         "warnings": warnings,
                         "last_error": self._last_error,
                         "response_metadata": self._last_response_metadata,
+                        "request_succeeded": False,
                     }
                 )
 
-            self.previous_entities = current
             return self.data
 
         except Exception as err:  # noqa: BLE001
-            self._last_error = str(err)
-            _LOGGER.exception("Coordinator fatal error")
-            self.data["last_error"] = self._last_error
+            self._last_error = sanitize_provider_error(err)
+            _LOGGER.error(
+                "Coordinator error (%s): %s",
+                type(err).__name__,
+                self._last_error,
+            )
+            self.data.update(
+                {
+                    "last_error": self._last_error,
+                    "last_update": self.last_update,
+                    "request_succeeded": False,
+                }
+            )
             return self.data
+
+    def _prune_processed_entities(self, current: dict[str, dict]) -> None:
+        """Forget removed entities while retaining entities already processed."""
+
+        self.previous_entities = {
+            entity_id: current[entity_id]
+            for entity_id in self.previous_entities
+            if entity_id in current
+        }
+
+    def _mark_entities_processed(
+        self,
+        current: dict[str, dict],
+        entity_ids: tuple[str, ...],
+    ) -> None:
+        """Mark only entity context actually sent in a successful request."""
+
+        self._prune_processed_entities(current)
+        self.previous_entities.update(
+            {
+                entity_id: current[entity_id]
+                for entity_id in entity_ids
+                if entity_id in current
+            }
+        )
+
+    def _validate_generated_suggestions(self, suggestions: list[dict[str, Any]]) -> None:
+        """Add warnings for references that Home Assistant cannot currently resolve."""
+
+        for suggestion in suggestions:
+            suggestion_warnings = list(suggestion.get("warnings") or [])
+            for entity_id in suggestion.get("entities_used") or []:
+                if self.hass.states.get(entity_id) is None:
+                    suggestion_warnings.append(
+                        f"Referenced entity '{entity_id}' does not currently exist in Home Assistant."
+                    )
+            for automation_id in suggestion.get("automation_ids_used") or []:
+                if self.hass.states.get(automation_id) is None:
+                    suggestion_warnings.append(
+                        f"Referenced automation '{automation_id}' does not currently exist in Home Assistant."
+                    )
+            for script_id in suggestion.get("script_ids_used") or []:
+                if self.hass.states.get(script_id) is None:
+                    suggestion_warnings.append(
+                        f"Referenced script '{script_id}' does not currently exist in Home Assistant."
+                    )
+            for service in suggestion.get("services_used") or []:
+                domain, separator, service_name = service.partition(".")
+                if not separator or not self.hass.services.has_service(domain, service_name):
+                    suggestion_warnings.append(
+                        f"Referenced service '{service}' is not currently registered in Home Assistant."
+                    )
+            suggestion["warnings"] = list(dict.fromkeys(suggestion_warnings))
 
     def _collect_entities(self) -> dict[str, dict]:
         current: dict[str, dict] = {}
@@ -379,28 +560,43 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         excluded = {area.lower() for area in self.excluded_areas}
         return bool(area_names & excluded)
 
-    async def _build_prompt(self, entities: dict) -> str:
+    async def _build_prompt(self, entities: dict[str, dict]) -> PromptBuildResult:
+        """Build a prompt from complete context blocks within the configured budget."""
+
         max_attr = 500
         max_autom = self.automation_limit
         max_script = self.script_limit
-        ent_sections: list[str] = []
-        for entity_id, meta in random.sample(list(entities.items()), min(len(entities), self.entity_limit)):
+        warnings: list[str] = []
+        attribute_truncations = 0
+        compact_entities = 0
+        sample_size = min(len(entities), self.entity_limit)
+        sampled_entities = random.sample(list(entities.items()), sample_size)
+        entity_blocks: list[tuple[str, str, str]] = []
+
+        if sample_size < len(entities):
+            warnings.append(
+                f"The entity limit selected {sample_size} of {len(entities)} eligible entities; "
+                "the remaining new entities are deferred to a later run."
+            )
+
+        for entity_id, meta in sampled_entities:
             domain = entity_id.split(".", 1)[0]
             attr_str = str(meta["attributes"])
             if len(attr_str) > max_attr:
                 attr_str = f"{attr_str[:max_attr]}...(truncated)"
+                attribute_truncations += 1
 
-            entity_entry = self.entity_registry.async_get(entity_id) if self.entity_registry else None
+            entity_entry = self.entity_registry.async_get(entity_id)
             device_entry = (
                 self.device_registry.async_get(entity_entry.device_id)
-                if entity_entry and entity_entry.device_id and self.device_registry
+                if entity_entry and entity_entry.device_id
                 else None
             )
             area_id = entity_entry.area_id if entity_entry and entity_entry.area_id else None
             if not area_id and device_entry:
                 area_id = device_entry.area_id
             area_name = "Unknown Area"
-            if area_id and self.area_registry:
+            if area_id:
                 area_entry = self.area_registry.async_get_area(area_id)
                 if area_entry:
                     area_name = area_entry.name
@@ -422,35 +618,162 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     f"  Device ID: {device_entry.id}\n"
                 )
             block += f"Last Changed: {meta['last_changed']}\nLast Updated: {meta['last_updated']}\n---\n"
-            ent_sections.append(block)
+            compact_block = (
+                f"Entity: {entity_id}\n"
+                f"Friendly Name: {meta['friendly_name']}\n"
+                f"Domain: {domain}\n"
+                f"State: {meta['state']}\n"
+                f"Area: {area_name}\n"
+                "---\n"
+            )
+            entity_blocks.append((entity_id, block, compact_block))
 
-        autom_sections = self._read_automations_default(max_autom, max_attr)
-        autom_codes: list[str] = []
-        if self.automation_read_file:
-            autom_codes = await self._read_automations_file_method(max_autom)
-
-        script_sections = self._read_scripts_default(max_script, max_attr)
-        script_codes: list[str] = []
-        if self.script_read_file:
-            script_codes = await self._read_scripts_file_method(self.script_limit)
         language_instruction = suggestion_language_instruction(getattr(self.hass.config, "language", None))
         language_block = f"{language_instruction}\n\n" if language_instruction else ""
-
-        return (
+        prefix = (
             f"{self.SYSTEM_PROMPT}\n\n"
             f"{STRUCTURED_OUTPUT_INSTRUCTIONS}\n\n"
             f"{language_block}"
-            f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
-            "Existing Automations Overview:\n"
-            f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
-            "Automations YAML Code (for analysis and improvement):\n"
-            f"{''.join(autom_codes) if autom_codes else 'No automations YAML code included.'}\n\n"
-            "Scripts Overview:\n"
-            f"{''.join(script_sections) if script_sections else 'None found.'}\n\n"
-            "Scripts YAML Code (for analysis and improvement):\n"
-            f"{''.join(script_codes) if script_codes else 'No scripts YAML code included.'}\n\n"
+        )
+        suffix = (
+            "\n"
             "Analyze the entities and existing automations and scripts. Propose useful new automations/scripts or improvements "
             "that reference only the entity_ids shown above."
+        )
+        in_budget, _ = self._budgets()
+        character_budget = max(1, in_budget) * 4
+        remaining = character_budget - len(prefix) - len(suffix)
+        if remaining <= 0:
+            raise ValueError(
+                "The max input token setting is too small for the required instructions. "
+                "Increase max input tokens and try again."
+            )
+
+        prompt_parts = [prefix]
+        entity_heading = "Entities in your Home Assistant (sampled):\n"
+        if len(entity_heading) >= remaining:
+            raise ValueError(
+                "The max input token setting leaves no room for entity context. "
+                "Increase max input tokens and try again."
+            )
+        prompt_parts.append(entity_heading)
+        remaining -= len(entity_heading)
+        included_entity_ids: list[str] = []
+        for entity_id, full_block, compact_block in entity_blocks:
+            if len(full_block) <= remaining:
+                prompt_parts.append(full_block)
+                remaining -= len(full_block)
+                included_entity_ids.append(entity_id)
+            elif len(compact_block) <= remaining:
+                prompt_parts.append(compact_block)
+                remaining -= len(compact_block)
+                included_entity_ids.append(entity_id)
+                compact_entities += 1
+            else:
+                # Preserve the randomized sample order. Skipping ahead would
+                # bias low-budget prompts toward entities with shorter names.
+                break
+
+        if not included_entity_ids:
+            raise ValueError(
+                "The max input token setting leaves no room for even one entity. "
+                "Increase max input tokens or shorten the custom prompt."
+            )
+        if len(included_entity_ids) < len(entity_blocks):
+            warnings.append(
+                f"The input budget included {len(included_entity_ids)} of {len(entity_blocks)} sampled entities; "
+                "omitted entities remain pending for a later run."
+            )
+        if compact_entities:
+            warnings.append(
+                f"The input budget used compact context for {compact_entities} entities while retaining their names, "
+                "states, and areas."
+            )
+        if attribute_truncations:
+            warnings.append(
+                f"Long attribute text was shortened for {attribute_truncations} entities to stay within the input budget."
+            )
+
+        def append_section(heading: str, blocks: list[str], empty_text: str) -> int:
+            """Append as many complete section blocks as fit and return the count."""
+
+            nonlocal remaining
+            section_heading = f"\n{heading}:\n"
+            if not blocks:
+                empty_section = f"{section_heading}{empty_text}\n"
+                if len(empty_section) <= remaining:
+                    prompt_parts.append(empty_section)
+                    remaining -= len(empty_section)
+                return 0
+
+            section_space = remaining - len(section_heading)
+            if section_space <= 0:
+                return 0
+            included_blocks: list[str] = []
+            for section_block in blocks:
+                if len(section_block) <= section_space:
+                    included_blocks.append(section_block)
+                    section_space -= len(section_block)
+            if included_blocks:
+                prompt_parts.append(section_heading)
+                prompt_parts.extend(included_blocks)
+                used = len(section_heading) + sum(len(item) for item in included_blocks)
+                remaining -= used
+            return len(included_blocks)
+
+        automation_sections = self._read_automations_default(max_autom, max_attr)
+        included_automations = append_section(
+            "Existing Automations Overview",
+            automation_sections,
+            "None found.",
+        )
+        if included_automations < len(automation_sections):
+            warnings.append(
+                f"The input budget included {included_automations} of {len(automation_sections)} automation summaries."
+            )
+
+        automation_codes = (
+            await self._read_automations_file_method(max_autom)
+            if self.automation_read_file
+            else []
+        )
+        included_automation_codes = append_section(
+            "Automations YAML Code (for analysis and improvement)",
+            automation_codes,
+            "No automations YAML code included.",
+        )
+        if included_automation_codes < len(automation_codes):
+            warnings.append(
+                f"The input budget included {included_automation_codes} of {len(automation_codes)} automation YAML blocks."
+            )
+
+        script_sections = self._read_scripts_default(max_script, max_attr)
+        included_scripts = append_section("Scripts Overview", script_sections, "None found.")
+        if included_scripts < len(script_sections):
+            warnings.append(
+                f"The input budget included {included_scripts} of {len(script_sections)} script summaries."
+            )
+
+        script_codes = (
+            await self._read_scripts_file_method(max_script)
+            if self.script_read_file
+            else []
+        )
+        included_script_codes = append_section(
+            "Scripts YAML Code (for analysis and improvement)",
+            script_codes,
+            "No scripts YAML code included.",
+        )
+        if included_script_codes < len(script_codes):
+            warnings.append(
+                f"The input budget included {included_script_codes} of {len(script_codes)} script YAML blocks."
+            )
+
+        prompt_parts.append(suffix)
+        return PromptBuildResult(
+            prompt="".join(prompt_parts),
+            entity_ids=tuple(included_entity_ids),
+            warnings=tuple(warnings),
         )
 
     def _read_automations_default(self, max_autom: int, max_attr: int) -> list[str]:
@@ -561,14 +884,30 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         try:
             return await handler(prompt)
         except Exception as err:  # noqa: BLE001
-            self._last_error = str(err)
-            _LOGGER.exception("Dispatch error for %s", provider)
+            self._last_error = sanitize_provider_error(err)
+            _LOGGER.error(
+                "Dispatch error for %s (%s): %s",
+                provider,
+                type(err).__name__,
+                self._last_error,
+            )
             return None
 
     def _trim_prompt(self, prompt: str) -> str:
+        """Return a prompt assembled from complete blocks.
+
+        Prompt budgeting happens in ``_build_prompt``. This compatibility
+        helper intentionally never slices arbitrary text or YAML midway.
+        """
+
         in_budget, _ = self._budgets()
         if len(prompt) // 4 > in_budget:
-            return prompt[: in_budget * 4]
+            _LOGGER.warning(
+                "Prompt estimate exceeds the configured input budget (%s estimated tokens > %s); "
+                "sending complete context blocks rather than corrupting the prompt",
+                len(prompt) // 4,
+                in_budget,
+            )
         return prompt
 
     async def _post_json(
@@ -586,15 +925,20 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             timeout=self._timeout(),
         ) as response:
             response_text = await response.text()
-            if response.status != 200:
-                self._last_error = f"{provider_label} error {response.status}: {response_text}"
-                _LOGGER.error(self._last_error)
+            if not 200 <= response.status < 300:
+                safe_response = sanitize_provider_error(response_text)
+                self._last_error = f"{provider_label} error {response.status}: {safe_response}"
+                _LOGGER.error("%s", self._last_error)
                 return None
             try:
                 return await response.json(content_type=None)
             except Exception as err:  # noqa: BLE001
-                self._last_error = f"{provider_label} returned non-JSON response: {err}: {response_text[:500]}"
-                _LOGGER.error(self._last_error)
+                safe_error = sanitize_provider_error(err, 300)
+                safe_response = sanitize_provider_error(response_text, 500)
+                self._last_error = (
+                    f"{provider_label} returned a non-JSON response: {safe_error}: {safe_response}"
+                )
+                _LOGGER.error("%s", self._last_error)
                 return None
 
     def _openai_compatible_body(
@@ -623,7 +967,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
     def _extract_chat_content(self, response: dict[str, Any], provider_label: str) -> str | None:
         choices = response.get("choices")
         if not isinstance(choices, list) or not choices:
-            raise ValueError(f"{provider_label} response missing choices array: {response}")
+            raise ValueError(f"{provider_label} response is missing a choices array")
         choice = choices[0]
         self._last_response_metadata = {
             "finish_reason": choice.get("finish_reason"),
@@ -650,8 +994,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             )
             return reasoning
         if content is None:
-            raise ValueError(f"{provider_label} message missing content: {message}")
-        raise ValueError(f"{provider_label} message has empty content: {message}")
+            raise ValueError(f"{provider_label} response message is missing content")
+        raise ValueError(f"{provider_label} response message has empty content")
 
     async def _openai(self, prompt: str) -> str | None:
         api_key = self._opt(CONF_OPENAI_API_KEY)
@@ -778,7 +1122,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         text_parts = [part.get("text", "") for part in content if isinstance(part, dict) and part.get("type") == "text"]
         if text_parts:
             return "".join(text_parts)
-        raise ValueError(f"Anthropic response missing text content: {response}")
+        raise ValueError("Anthropic response is missing text content")
 
     async def _google(self, prompt: str) -> str | None:
         api_key = self._opt(CONF_GOOGLE_API_KEY)
@@ -800,7 +1144,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
         candidates = response.get("candidates") or []
         if not candidates:
-            raise ValueError(f"Google response missing candidates: {response}")
+            raise ValueError("Google response is missing candidates")
         self._last_response_metadata = {
             "finish_reason": candidates[0].get("finishReason"),
             "usage": response.get("usageMetadata"),

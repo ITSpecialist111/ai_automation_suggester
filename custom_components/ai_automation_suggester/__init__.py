@@ -1,7 +1,7 @@
 """The AI Automation Suggester integration."""
 import logging
-import voluptuous as vol
 
+import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
@@ -9,17 +9,18 @@ from homeassistant.helpers.typing import ConfigType
 
 from .api import async_register_http_views
 from .const import (
+    ATTR_CUSTOM_PROMPT,
+    ATTR_PROVIDER_CONFIG,
+    CONF_PROVIDER,
+    CONFIG_VERSION,
     DOMAIN,
     PLATFORMS,
-    CONF_PROVIDER,
     SERVICE_CLEAR_HISTORY,
     SERVICE_GENERATE_SUGGESTIONS,
     SERVICE_UPDATE_SUGGESTION,
-    ATTR_PROVIDER_CONFIG,
-    ATTR_CUSTOM_PROMPT,
-    CONFIG_VERSION
 )
 from .coordinator import AIAutomationCoordinator
+from .error_utils import sanitize_provider_error
 from .store import async_get_suggestion_store
 
 _LOGGER = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 coordinator = hass.data[DOMAIN].get(provider_config)
             else:
                 # Find first available coordinator if none specified
-                for entry_id, coord in hass.data[DOMAIN].items():
+                for coord in hass.data[DOMAIN].values():
                     if isinstance(coord, AIAutomationCoordinator):
                         coordinator = coord
                         break
@@ -112,10 +113,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 script_limit=call.data.get("script_limit", 100),
             )
 
-        except KeyError:
-            raise ServiceValidationError("Provider configuration not found")
+        except ServiceValidationError:
+            raise
+        except KeyError as err:
+            raise ServiceValidationError("Provider configuration not found") from err
         except Exception as err:
-            raise ServiceValidationError(f"Failed to generate suggestions: {err}")
+            safe_error = sanitize_provider_error(err)
+            raise ServiceValidationError(f"Failed to generate suggestions: {safe_error}") from err
 
     async def handle_clear_history(call: ServiceCall) -> None:
         """Clear stored suggestion history."""
@@ -193,8 +197,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
         if unload_ok:
-            coordinator = hass.data[DOMAIN].pop(entry.entry_id)
-            await coordinator.async_shutdown()
+            hass.data[DOMAIN].pop(entry.entry_id)
         return unload_ok
     except Exception as err:
         _LOGGER.error("Error unloading entry: %s", err)

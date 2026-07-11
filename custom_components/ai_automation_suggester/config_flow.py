@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import aiohttp
 import voluptuous as vol
@@ -12,7 +12,87 @@ from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import TextSelector, TextSelectorConfig
 
-from .const import *
+from .const import (
+    CONF_ANTHROPIC_API_KEY,
+    CONF_ANTHROPIC_MODEL,
+    CONF_ANTHROPIC_TEMPERATURE,
+    CONF_CUSTOM_OPENAI_API_KEY,
+    CONF_CUSTOM_OPENAI_ENDPOINT,
+    CONF_CUSTOM_OPENAI_MODEL,
+    CONF_CUSTOM_OPENAI_TEMPERATURE,
+    CONF_CUSTOM_SYSTEM_PROMPT,
+    CONF_EXCLUDED_AREAS,
+    CONF_EXCLUDED_DOMAINS,
+    CONF_EXCLUDED_ENTITIES,
+    CONF_GENERIC_OPENAI_API_KEY,
+    CONF_GENERIC_OPENAI_ENABLE_VALIDATION,
+    CONF_GENERIC_OPENAI_ENDPOINT,
+    CONF_GENERIC_OPENAI_MODEL,
+    CONF_GENERIC_OPENAI_TEMPERATURE,
+    CONF_GENERIC_OPENAI_VALIDATION_ENDPOINT,
+    CONF_GOOGLE_API_KEY,
+    CONF_GOOGLE_MODEL,
+    CONF_GOOGLE_TEMPERATURE,
+    CONF_GROQ_API_KEY,
+    CONF_GROQ_MODEL,
+    CONF_GROQ_TEMPERATURE,
+    CONF_HISTORY_RETENTION,
+    CONF_LITELLM_API_BASE,
+    CONF_LITELLM_API_KEY,
+    CONF_LITELLM_MODEL,
+    CONF_LITELLM_TEMPERATURE,
+    CONF_LOCALAI_HTTPS,
+    CONF_LOCALAI_IP_ADDRESS,
+    CONF_LOCALAI_MODEL,
+    CONF_LOCALAI_PORT,
+    CONF_LOCALAI_TEMPERATURE,
+    CONF_MAX_INPUT_TOKENS,
+    CONF_MAX_OUTPUT_TOKENS,
+    CONF_MISTRAL_API_KEY,
+    CONF_MISTRAL_MODEL,
+    CONF_MISTRAL_TEMPERATURE,
+    CONF_OLLAMA_API_KEY,
+    CONF_OLLAMA_BASE_URL,
+    CONF_OLLAMA_DISABLE_THINK,
+    CONF_OLLAMA_HTTPS,
+    CONF_OLLAMA_IP_ADDRESS,
+    CONF_OLLAMA_MODEL,
+    CONF_OLLAMA_PORT,
+    CONF_OLLAMA_TEMPERATURE,
+    CONF_OPENAI_API_KEY,
+    CONF_OPENAI_AZURE_API_KEY,
+    CONF_OPENAI_AZURE_API_VERSION,
+    CONF_OPENAI_AZURE_DEPLOYMENT_ID,
+    CONF_OPENAI_AZURE_ENDPOINT,
+    CONF_OPENAI_AZURE_TEMPERATURE,
+    CONF_OPENAI_MODEL,
+    CONF_OPENAI_REASONING_EFFORT,
+    CONF_OPENAI_TEMPERATURE,
+    CONF_OPENROUTER_API_KEY,
+    CONF_OPENROUTER_MODEL,
+    CONF_OPENROUTER_REASONING_MAX_TOKENS,
+    CONF_OPENROUTER_TEMPERATURE,
+    CONF_PERPLEXITY_API_KEY,
+    CONF_PERPLEXITY_MODEL,
+    CONF_PERPLEXITY_TEMPERATURE,
+    CONF_PROVIDER,
+    CONF_REQUEST_TIMEOUT,
+    CONF_REQUESTY_API_KEY,
+    CONF_REQUESTY_MODEL,
+    CONF_REQUESTY_REASONING_MAX_TOKENS,
+    CONF_REQUESTY_TEMPERATURE,
+    CONFIG_VERSION,
+    DEFAULT_HISTORY_RETENTION,
+    DEFAULT_MAX_INPUT_TOKENS,
+    DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_MODELS,
+    DEFAULT_OPENAI_REASONING_EFFORT,
+    DEFAULT_REQUEST_TIMEOUT,
+    DEFAULT_TEMPERATURE,
+    DOMAIN,
+    ENDPOINT_PERPLEXITY,
+    VERSION_ANTHROPIC,
+)
 from .endpoint_utils import (
     bearer_auth_headers,
     ensure_http_url,
@@ -20,6 +100,7 @@ from .endpoint_utils import (
     ollama_base_url,
     openai_model_endpoint_candidates,
 )
+from .error_utils import sanitize_provider_error
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,51 +114,69 @@ class ProviderValidator:
         self.session = async_get_clientsession(hass)
         self.timeout = aiohttp.ClientTimeout(total=max(10, int(request_timeout or DEFAULT_REQUEST_TIMEOUT)))
 
-    async def validate_openai(self, api_key: str) -> Optional[str]:
+    @staticmethod
+    async def _response_error(response: aiohttp.ClientResponse, label: str | None = None) -> str | None:
+        """Return a safe validation error for a non-success response."""
+
+        if 200 <= response.status < 300:
+            return None
+        detail = sanitize_provider_error(await response.text(), 750)
+        prefix = f"{label}: " if label else ""
+        return f"{prefix}{response.status} {detail}".strip()
+
+    async def validate_openai(self, api_key: str) -> str | None:
         hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         try:
-            resp = await self.session.get("https://api.openai.com/v1/models", headers=hdr, timeout=self.timeout)
-            return None if resp.status == 200 else await resp.text()
+            async with self.session.get(
+                "https://api.openai.com/v1/models", headers=hdr, timeout=self.timeout
+            ) as response:
+                return await self._response_error(response)
         except Exception as err:  # noqa: BLE001
-            return str(err)
+            return sanitize_provider_error(err)
 
-    async def validate_anthropic(self, api_key: str, model: str) -> Optional[str]:
+    async def validate_anthropic(self, api_key: str, model: str) -> str | None:
         hdr = {
             "x-api-key": api_key,
             "anthropic-version": VERSION_ANTHROPIC,
             "content-type": "application/json",
         }
         try:
-            resp = await self.session.get("https://api.anthropic.com/v1/models", headers=hdr, timeout=self.timeout)
-            return None if resp.status == 200 else await resp.text()
+            async with self.session.get(
+                "https://api.anthropic.com/v1/models", headers=hdr, timeout=self.timeout
+            ) as response:
+                return await self._response_error(response)
         except Exception as err:
-            return str(err)
+            return sanitize_provider_error(err)
 
-    async def validate_google(self, api_key: str, model: str) -> Optional[str]:
+    async def validate_google(self, api_key: str, model: str) -> str | None:
         try:
-            resp = await self.session.get(
+            async with self.session.get(
                 f"https://generativelanguage.googleapis.com/v1beta/models/{model}?key={api_key}",
                 timeout=self.timeout,
-            )
-            return None if resp.status == 200 else await resp.text()
+            ) as response:
+                return await self._response_error(response)
         except Exception as err:
-            return str(err)
+            return sanitize_provider_error(err)
 
-    async def validate_groq(self, api_key: str) -> Optional[str]:
+    async def validate_groq(self, api_key: str) -> str | None:
         hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         try:
-            resp = await self.session.get("https://api.groq.com/openai/v1/models", headers=hdr, timeout=self.timeout)
-            return None if resp.status == 200 else await resp.text()
+            async with self.session.get(
+                "https://api.groq.com/openai/v1/models", headers=hdr, timeout=self.timeout
+            ) as response:
+                return await self._response_error(response)
         except Exception as err:
-            return str(err)
+            return sanitize_provider_error(err)
 
-    async def validate_localai(self, ip: str, port: int, https: bool) -> Optional[str]:
+    async def validate_localai(self, ip: str, port: int, https: bool) -> str | None:
         proto = "https" if https else "http"
         try:
-            resp = await self.session.get(f"{proto}://{ip}:{port}/v1/models", timeout=self.timeout)
-            return None if resp.status == 200 else await resp.text()
+            async with self.session.get(
+                f"{proto}://{ip}:{port}/v1/models", timeout=self.timeout
+            ) as response:
+                return await self._response_error(response)
         except Exception as err:
-            return str(err)
+            return sanitize_provider_error(err)
 
     async def validate_ollama(
         self,
@@ -86,7 +185,7 @@ class ProviderValidator:
         https: bool,
         base_url: str | None = None,
         api_key: str | None = None,
-    ) -> Optional[str]:
+    ) -> str | None:
         base = ollama_base_url(base_url=base_url, ip_address=ip, port=port, https=https)
         if not base:
             return "Ollama host/port or base URL is required"
@@ -94,73 +193,77 @@ class ProviderValidator:
         headers = bearer_auth_headers(api_key)
         try:
             for endpoint in ollama_api_candidates(base, "api/tags"):
-                resp = await self.session.get(endpoint, headers=headers, timeout=self.timeout)
-                if resp.status == 200:
-                    return None
-                last_error = f"{endpoint}: {resp.status} {await resp.text()}"
+                async with self.session.get(endpoint, headers=headers, timeout=self.timeout) as response:
+                    if (error := await self._response_error(response, endpoint)) is None:
+                        return None
+                    last_error = error
             return last_error
         except Exception as err:
-            return str(err)
+            return sanitize_provider_error(err)
 
-    async def validate_custom_openai(self, endpoint: str, api_key: str | None) -> Optional[str]:
+    async def validate_custom_openai(self, endpoint: str, api_key: str | None) -> str | None:
         hdr = {"Content-Type": "application/json"}
         if api_key:
             hdr["Authorization"] = f"Bearer {api_key}"
         last_error = None
         try:
             for model_endpoint in openai_model_endpoint_candidates(endpoint):
-                resp = await self.session.get(model_endpoint, headers=hdr, timeout=self.timeout)
-                if resp.status == 200:
-                    return None
-                last_error = f"{model_endpoint}: {resp.status} {await resp.text()}"
+                async with self.session.get(model_endpoint, headers=hdr, timeout=self.timeout) as response:
+                    if (error := await self._response_error(response, model_endpoint)) is None:
+                        return None
+                    last_error = error
             return last_error or "No valid model endpoint could be built"
         except Exception as err:
-            return str(err)
+            return sanitize_provider_error(err)
 
-    async def validate_perplexity(self, api_key: str, model: str) -> Optional[str]:
+    async def validate_perplexity(self, api_key: str, model: str) -> str | None:
         hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         # Perplexity 'sonar' models require max_tokens >= 16; a smaller value is
         # rejected with a 400 during validation (issue #171).
         payload = {"model": model, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 16}
         try:
-            resp = await self.session.post(ENDPOINT_PERPLEXITY, headers=hdr, json=payload, timeout=self.timeout)
-            return None if resp.status == 200 else await resp.text()
+            async with self.session.post(
+                ENDPOINT_PERPLEXITY, headers=hdr, json=payload, timeout=self.timeout
+            ) as response:
+                return await self._response_error(response)
         except Exception as err:
-            return str(err)
+            return sanitize_provider_error(err)
 
-    async def validate_openrouter(self, api_key: str, model: str) -> Optional[str]:
+    async def validate_openrouter(self, api_key: str, model: str) -> str | None:
         hdr = {"content-type": "application/json"}
         if api_key:
             hdr["Authorization"] = f"Bearer {api_key}"
         try:
-            resp = await self.session.get(
+            async with self.session.get(
                 "https://openrouter.ai/api/v1/models", headers=hdr, timeout=self.timeout
-            )
-            return None if resp.status == 200 else await resp.text()
+            ) as response:
+                return await self._response_error(response)
         except Exception as err:
-            return str(err)
+            return sanitize_provider_error(err)
 
-    async def validate_requesty(self, api_key: str, model: str) -> Optional[str]:
+    async def validate_requesty(self, api_key: str, model: str) -> str | None:
         hdr = {"content-type": "application/json"}
         if api_key:
             hdr["Authorization"] = f"Bearer {api_key}"
         try:
-            resp = await self.session.get(
+            async with self.session.get(
                 "https://router.requesty.ai/v1/models", headers=hdr, timeout=self.timeout
-            )
-            return None if resp.status == 200 else await resp.text()
+            ) as response:
+                return await self._response_error(response)
         except Exception as err:
-            return str(err)
+            return sanitize_provider_error(err)
 
-    async def validate_generic_openai(self, endpoint: str, api_key: str) -> Optional[str]:
+    async def validate_generic_openai(self, endpoint: str, api_key: str) -> str | None:
         hdr = {"Content-Type": "application/json"}
         if api_key:
             hdr["Authorization"] = f"Bearer {api_key}"
         try:
-            resp = await self.session.get(ensure_http_url(endpoint), headers=hdr, timeout=self.timeout)
-            return None if resp.status == 200 else await resp.text()
+            async with self.session.get(
+                ensure_http_url(endpoint), headers=hdr, timeout=self.timeout
+            ) as response:
+                return await self._response_error(response)
         except Exception as err:
-            return str(err)
+            return sanitize_provider_error(err)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -173,12 +276,12 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         self.provider: str | None = None
-        self.data: Dict[str, Any] = {}
+        self.data: dict[str, Any] = {}
         self.validator: ProviderValidator | None = None
 
     # ───────── Initial provider choice ─────────
-    async def async_step_user(self, user_input: Dict[str, Any] | None = None):
-        errors: Dict[str, str] = {}
+    async def async_step_user(self, user_input: dict[str, Any] | None = None):
+        errors: dict[str, str] = {}
         if user_input:
             self.provider = user_input[CONF_PROVIDER]
             self.data.update(user_input)
@@ -233,9 +336,9 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema: vol.Schema,
         validate_fn,
         title: str,
-        errors: Dict[str, str],
-        placeholders: Dict[str, str],
-        user_input: Dict[str, Any] | None,
+        errors: dict[str, str],
+        placeholders: dict[str, str],
+        user_input: dict[str, Any] | None,
     ):
         if user_input:
             self.validator = ProviderValidator(self.hass, user_input.get(CONF_REQUEST_TIMEOUT))
@@ -253,7 +356,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id=step_id, data_schema=schema, errors=errors, description_placeholders=placeholders)
 
     # ───────── provider‑specific steps (OpenAI shown; others similar) ─────────
-    def _add_token_fields(self, base: Dict[Any, Any]) -> Dict[Any, Any]:
+    def _add_token_fields(self, base: dict[Any, Any]) -> dict[Any, Any]:
         """Append common tuning fields to the schema."""
         base[vol.Optional(CONF_MAX_INPUT_TOKENS, default=DEFAULT_MAX_INPUT_TOKENS)] = vol.All(
             vol.Coerce(int), vol.Range(min=100)
@@ -648,7 +751,7 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=new_data)
 
         provider = self._config_entry.data.get(CONF_PROVIDER)
-        schema: Dict[Any, Any] = {
+        schema: dict[Any, Any] = {
             vol.Optional(CONF_MAX_INPUT_TOKENS, default=self._get_option(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)
             ): vol.All(vol.Coerce(int), vol.Range(min=100)),
             vol.Optional(CONF_MAX_OUTPUT_TOKENS, default=self._get_option(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
