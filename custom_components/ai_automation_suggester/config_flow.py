@@ -297,6 +297,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "Perplexity AI": self.async_step_perplexity,
                 "OpenRouter": self.async_step_openrouter,
                 "Requesty": self.async_step_requesty,
+                "MiniMax": self.async_step_requesty,
                 "OpenAI Azure": self.async_step_openai_azure,
                 "Generic OpenAI": self.async_step_generic_openai,
                 "LiteLLM": self.async_step_litellm,
@@ -322,6 +323,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "OpenRouter",
                             "Perplexity AI",
                             "Requesty",
+                            "MiniMax",
                         ]
                     )
                 }

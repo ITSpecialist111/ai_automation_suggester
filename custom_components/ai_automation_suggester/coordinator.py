@@ -112,6 +112,7 @@ from .const import (
     ENDPOINT_OPENROUTER,
     ENDPOINT_PERPLEXITY,
     ENDPOINT_REQUESTY,
+    ENDPOINT_MINIMAX,
     VERSION_ANTHROPIC,
 )
 from .endpoint_utils import bearer_auth_headers, ollama_api_candidates, ollama_base_url, openai_chat_endpoint
@@ -274,6 +275,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "Perplexity AI": CONF_PERPLEXITY_MODEL,
             "OpenRouter": CONF_OPENROUTER_MODEL,
             "Requesty": CONF_REQUESTY_MODEL,
+            "MiniMax": CONF_REQUESTY_MODEL,
             "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
             "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
             "LiteLLM": CONF_LITELLM_MODEL,
@@ -872,6 +874,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "Perplexity AI": self._perplexity,
             "OpenRouter": self._openrouter,
             "Requesty": self._requesty,
+            "MiniMax": self._minimax,
             "OpenAI Azure": self._openai_azure,
             "Generic OpenAI": self._generic_openai,
             "LiteLLM": self._litellm,
@@ -1329,6 +1332,22 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             provider_label="Requesty",
         )
         return self._extract_chat_content(response, "Requesty") if response else None
+
+    async def _minimax(self, prompt: str) -> str | None:
+        api_key = self._opt(CONF_REQUESTY_API_KEY)
+        if not api_key:
+            raise ValueError("MiniMax API key not configured")
+        body = self._openai_compatible_body(
+            provider="MiniMax", model=self._current_model("MiniMax"),
+            prompt=self._trim_prompt(prompt),
+            temperature=float(self._opt(CONF_REQUESTY_TEMPERATURE, DEFAULT_TEMPERATURE)),
+        )
+        response = await self._post_json(
+            ENDPOINT_MINIMAX,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            body=body, provider_label="MiniMax",
+        )
+        return self._extract_chat_content(response, "MiniMax") if response else None
 
     async def _litellm(self, prompt: str) -> str | None:
         import litellm
