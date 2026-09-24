@@ -65,6 +65,13 @@ def test_unknown_local_model_is_allowed_as_custom():
     assert capabilities.status == model_catalog.STATUS_CUSTOM
 
 
+def test_openrouter_free_router_supports_structured_output():
+    capabilities = model_catalog.get_model_capabilities("OpenRouter", "openrouter/free")
+
+    assert capabilities.supports_structured_output is True
+    assert capabilities.supports_json_schema is True
+
+
 def test_minimax_catalog_contains_target_models():
     catalog = model_catalog.get_provider_catalog("MiniMax")
 
