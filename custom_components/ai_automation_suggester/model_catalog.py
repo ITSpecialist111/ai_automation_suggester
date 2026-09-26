@@ -355,6 +355,12 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
         "openai/gpt-5.4-mini",
         (
             ModelCapabilities(
+                "openrouter/free",
+                "OpenRouter Free Models Router",
+                supports_structured_output=True,
+                supports_json_schema=True,
+            ),
+            ModelCapabilities(
                 "openai/gpt-5.5",
                 "OpenAI GPT-5.5 via OpenRouter",
                 token_parameter="max_tokens",
