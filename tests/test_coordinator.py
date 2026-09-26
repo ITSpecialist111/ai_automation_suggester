@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -333,3 +334,189 @@ def test_configured_models_are_not_replaced_by_new_defaults(monkeypatch, provide
     coordinator, _, _ = make_coordinator(monkeypatch, states={}, options={"provider": provider, key: model})
 
     assert coordinator._current_model() == model
+
+
+def test_automation_and_script_yaml_context_preserves_unicode(monkeypatch, tmp_path):
+    (tmp_path / "automations.yaml").write_text(
+        "- id: '1780905604476'\n  alias: Pomocn\u00edk klima vyp\n  triggers: []\n  actions: []\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "scripts.yaml").write_text(
+        "klima_vyp:\n  alias: Vypnout klimatizaci v kancel\u00e1\u0159i\n  sequence: []\n",
+        encoding="utf-8",
+    )
+    coordinator, _, _ = make_coordinator(monkeypatch, states={})
+    coordinator.hass.config = SimpleNamespace(language="cs", path=lambda: str(tmp_path))
+
+    automations = asyncio.run(coordinator._read_automations_file_method(10))
+    scripts = asyncio.run(coordinator._read_scripts_file_method(10))
+
+    assert "alias: Pomocn\u00edk klima vyp" in automations[0]
+    assert "alias: Vypnout klimatizaci v kancel\u00e1\u0159i" in scripts[0]
+    assert "\\x" not in automations[0] + scripts[0]
+    assert "\\u" not in automations[0] + scripts[0]
+
+
+def make_google_coordinator(monkeypatch, response, **options):
+    coordinator, _, _ = make_coordinator(
+        monkeypatch,
+        states={},
+        options={"provider": "Google", "google_api_key": "secret", **options},
+    )
+
+    async def post_json(endpoint, *, headers=None, body=None, provider_label=None):
+        return response
+
+    coordinator._post_json = post_json
+    return coordinator
+
+
+def test_google_max_tokens_without_text_explains_output_limit(monkeypatch):
+    coordinator = make_google_coordinator(
+        monkeypatch,
+        {
+            "candidates": [{"content": {"role": "model"}, "finishReason": "MAX_TOKENS"}],
+            "usageMetadata": {"promptTokenCount": 900, "thoughtsTokenCount": 497},
+        },
+    )
+
+    with pytest.raises(ValueError, match=r"Max Output Tokens limit \(500\)") as error:
+        asyncio.run(coordinator._google("hello"))
+
+    assert "497 thinking tokens" in str(error.value)
+    assert coordinator._last_response_metadata["finish_reason"] == "MAX_TOKENS"
+
+
+def test_google_partial_text_at_limit_is_returned_for_parsing(monkeypatch):
+    coordinator = make_google_coordinator(
+        monkeypatch,
+        {"candidates": [{"content": {"parts": [{"text": '{"suggestions": ['}]}, "finishReason": "MAX_TOKENS"}]},
+    )
+
+    assert asyncio.run(coordinator._google("hello")) == '{"suggestions": ['
+    assert coordinator._last_response_metadata["finish_reason"] == "MAX_TOKENS"
+
+
+def test_google_thought_parts_are_not_part_of_the_answer(monkeypatch):
+    coordinator = make_google_coordinator(
+        monkeypatch,
+        {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {"text": "Considering the hallway lights", "thought": True},
+                            {"text": '{"suggestions": []}', "thoughtSignature": "abc"},
+                        ]
+                    },
+                    "finishReason": "STOP",
+                }
+            ]
+        },
+    )
+
+    assert asyncio.run(coordinator._google("hello")) == '{"suggestions": []}'
+
+
+@pytest.mark.parametrize(
+    "response,message",
+    [
+        ({"promptFeedback": {"blockReason": "PROHIBITED_CONTENT"}}, "blockReason: PROHIBITED_CONTENT"),
+        ({"candidates": [{"finishReason": "SAFETY"}]}, "finishReason: SAFETY"),
+    ],
+)
+def test_google_empty_responses_report_the_provider_reason(monkeypatch, response, message):
+    coordinator = make_google_coordinator(monkeypatch, response)
+
+    with pytest.raises(ValueError, match=message):
+        asyncio.run(coordinator._google("hello"))
+
+
+def test_chat_response_at_output_limit_without_answer_is_explicit(monkeypatch):
+    coordinator, _, _ = make_coordinator(monkeypatch, states={}, options={"max_output_tokens": 800})
+    response = {
+        "choices": [
+            {
+                "message": {"content": "", "reasoning_content": "Let me think about the hallway"},
+                "finish_reason": "length",
+            }
+        ]
+    }
+
+    with pytest.raises(ValueError, match=r"OpenRouter stopped at the Max Output Tokens limit \(800\)"):
+        coordinator._extract_chat_content(response, "OpenRouter")
+
+
+def test_anthropic_output_limit_without_text_is_explicit(monkeypatch):
+    coordinator, _, _ = make_coordinator(
+        monkeypatch,
+        states={},
+        options={"provider": "Anthropic", "anthropic_api_key": "secret"},
+    )
+
+    async def post_json(endpoint, *, headers=None, body=None, provider_label=None):
+        return {"content": [], "stop_reason": "max_tokens"}
+
+    coordinator._post_json = post_json
+
+    with pytest.raises(ValueError, match="Anthropic stopped at the Max Output Tokens limit"):
+        asyncio.run(coordinator._anthropic("hello"))
+
+
+def test_ollama_output_limit_without_text_is_explicit(monkeypatch):
+    coordinator, _, _ = make_coordinator(
+        monkeypatch,
+        states={},
+        options={"provider": "Ollama", "ollama_base_url": "http://localhost:11434", "ollama_model": "qwen3"},
+    )
+
+    async def post_json(endpoint, *, headers=None, body=None, provider_label=None):
+        return {"message": {"role": "assistant", "content": ""}, "done_reason": "length"}
+
+    coordinator._post_json = post_json
+
+    with pytest.raises(ValueError, match="Ollama stopped at the Max Output Tokens limit"):
+        asyncio.run(coordinator._ollama("hello"))
+
+
+def test_truncated_google_generation_logs_raw_response_and_explains_limit(monkeypatch, caplog):
+    states = {"light.hall": make_state("light.hall", "off", {"friendly_name": "Hall"})}
+    coordinator, _, _ = make_coordinator(
+        monkeypatch,
+        states=states,
+        options={"provider": "Google", "google_api_key": "secret", "max_input_tokens": 4000},
+    )
+    raw = '{"suggestions": [{"title": "Hall light", "description": "Token: abc123\\nLine two", "yaml": "alias: Ha'
+
+    async def post_json(endpoint, *, headers=None, body=None, provider_label=None):
+        return {"candidates": [{"content": {"parts": [{"text": raw}]}, "finishReason": "MAX_TOKENS"}]}
+
+    notifications = []
+    coordinator._post_json = post_json
+    coordinator.scan_all = True
+    monkeypatch.setattr(
+        coordinator_module.persistent_notification,
+        "async_create",
+        lambda hass, **kwargs: notifications.append(kwargs),
+        raising=False,
+    )
+    caplog.set_level(logging.DEBUG, logger=coordinator_module.__name__)
+
+    data = asyncio.run(coordinator._async_update_data())
+
+    assert data["request_succeeded"] is True
+    assert "The provider reported a length finish reason; the suggestion may be truncated." in data["warnings"]
+    assert "may have been cut off" in notifications[0]["message"]
+    assert "Raw Google response for model gemini-3.5-flash" in caplog.text
+    assert "'finish_reason': 'MAX_TOKENS'" in caplog.text
+    assert '"title": "Hall light"' in caplog.text
+    assert "abc123" not in caplog.text
+
+
+def test_raw_response_log_is_skipped_without_debug_logging(monkeypatch, caplog):
+    coordinator, _, _ = make_coordinator(monkeypatch, states={})
+    caplog.set_level(logging.INFO, logger=coordinator_module.__name__)
+
+    coordinator._log_provider_response("OpenAI", "gpt-5.4-mini", "response text")
+
+    assert "response text" not in caplog.text

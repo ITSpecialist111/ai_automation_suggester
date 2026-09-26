@@ -40,3 +40,14 @@ def test_sanitizer_bounds_long_errors():
 
     assert len(sanitized) <= 80
     assert sanitized.endswith("(truncated)")
+
+
+def test_credential_redaction_preserves_response_layout():
+    text = 'alias: Hall light\n  description: "Authorization: Bearer sk-secret"\n  api_key: google-secret\n'
+
+    redacted = error_utils.redact_credentials(text)
+
+    assert redacted.startswith("alias: Hall light\n  description:")
+    assert redacted.count("\n") == 3
+    assert "sk-secret" not in redacted
+    assert "google-secret" not in redacted

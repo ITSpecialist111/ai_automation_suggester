@@ -13,6 +13,14 @@ _SENSITIVE_ERROR_PATTERNS = (
 )
 
 
+def redact_credentials(text: str) -> str:
+    """Return text with authentication material removed, preserving layout."""
+
+    for pattern in _SENSITIVE_ERROR_PATTERNS:
+        text = pattern.sub(r"\1[redacted]", text)
+    return text
+
+
 def sanitize_provider_error(error: Any, limit: int = ERROR_TEXT_LIMIT) -> str:
     """Return a bounded error message with authentication material removed.
 
@@ -20,9 +28,7 @@ def sanitize_provider_error(error: Any, limit: int = ERROR_TEXT_LIMIT) -> str:
     and secret-bearing query parameters are redacted from diagnostics.
     """
 
-    text = " ".join(str(error).split())
-    for pattern in _SENSITIVE_ERROR_PATTERNS:
-        text = pattern.sub(r"\1[redacted]", text)
+    text = redact_credentials(" ".join(str(error).split()))
     if len(text) > limit:
         return f"{text[: limit - 14].rstrip()}… (truncated)"
     return text

@@ -109,7 +109,7 @@ Leveraging the AI Automation Suggester provides several key benefits:
 * **Persistent Notifications:** Receive suggestions directly in your Home Assistant interface.
 * **Service Call Integration:** Manually trigger suggestions via the `ai_automation_suggester.generate_suggestions` service with full parameter control.
 * **Diagnostics Sensors:** Monitor suggestion status and provider connection health.
-* **Example Automations:** Includes built-in examples for new entity detection and weekly reviews. - This is found in the code base
+* **Example Automations:** Includes YAML examples for new entity detection and weekly reviews. Import and enable them yourself; the integration does not install automations or a schedule.
 * **Dashboard-Friendly Output:** Sensor attributes provide description and YAML blocks ready for Lovelace cards.
 
 ---
@@ -182,6 +182,7 @@ You can adjust these settings later via the integration options in Settings → 
     * Optimizes response length
     * Defaults remain 500 tokens per budget for compatibility. For reasoning models or missing/truncated YAML, try 16000 input tokens and 4096 output tokens with a small entity limit, then adjust within your model's limits.
     * Reasoning may consume output tokens before the final YAML is produced. Higher limits can increase usage and cost. Limits are ceilings, not measurements of billed tokens. Check your provider's usage dashboard and current pricing.
+    * When a provider reports that it stopped at the output limit (for example Gemini `MAX_TOKENS`, Anthropic `max_tokens`, Ollama `length`, or OpenAI-compatible `length`), the suggestion includes a truncation warning. If the provider returned no final answer at all, the action fails with a message naming your configured Max Output Tokens value, instead of a generic parsing error.
 
 * **History and Filtering:**
     * Persistent custom system prompt
@@ -204,7 +205,7 @@ Model APIs change quickly, so the integration keeps a compatibility catalog and 
 | Groq | `openai/gpt-oss-120b` | Replaces `llama-3.3-70b-versatile`, retired for free/developer accounts on 2026-08-16. `openai/gpt-oss-20b` is another production option. `qwen/qwen3.6-27b` is a preview alternative. Enterprise Llama access may remain. |
 | Mistral AI | `mistral-small-latest` | Supports current `*-latest` aliases and custom published IDs. |
 | Perplexity AI | `sonar` | Supports Sonar, Sonar Pro, reasoning, and research-style model IDs where your account has access. |
-| OpenRouter | `openai/gpt-5.4-mini` | OpenRouter remains dynamic. Use provider-prefixed IDs from OpenRouter's model catalog. |
+| OpenRouter | `openai/gpt-5.4-mini` | OpenRouter remains dynamic. Use provider-prefixed IDs from OpenRouter's model catalog. `openrouter/free` (the Free Models Router) receives the structured-output schema, so OpenRouter only routes it to free models that support structured outputs. |
 | Requesty | `openai/gpt-4o-mini` | OpenAI-compatible router (`https://router.requesty.ai`) providing 300+ models through a single API key. Use provider-prefixed model IDs. |
 | MiniMax | `MiniMax-M3` | OpenAI-compatible provider with global (`https://api.minimax.io/v1`) and China (`https://api.minimaxi.com/v1`) regions. `MiniMax-M2.7` is also in the catalog. Use a MiniMax API key for the selected region. |
 | LiteLLM | `openai/gpt-4o-mini` | Uses the LiteLLM Python SDK to reach 100+ backends (OpenAI, Bedrock, Azure, Vertex, Groq, and more). Model IDs follow the LiteLLM naming scheme. |
@@ -222,12 +223,36 @@ The Anthropic provider uses API key authentication. A Claude Pro/Max subscriptio
 
 ### Automatic Suggestions
 
-The integration comes with example automations you can enable or adapt:
+Suggestion generation is on demand. The integration does not run inference during startup or have a built-in polling interval. Automatic runs require an enabled Home Assistant automation that calls `ai_automation_suggester.generate_suggestions`.
 
-* **On New Entities:** Automatically generates suggestions when new entities are added to Home Assistant, helping you quickly integrate them.
-* **Weekly Reviews:** Triggers a comprehensive analysis weekly (or at a custom interval you define in the automation), providing ongoing ideas.
+The repository includes these examples, but HACS does not register them in your automation list:
 
-Find and enable these examples in Settings → Automations.
+* **Weekly review:** [custom_components/ai_automation_suggester/automations/weekly-review-automation.yaml](custom_components/ai_automation_suggester/automations/weekly-review-automation.yaml) runs on Sundays at 03:00. Change the time and weekday condition to suit your schedule.
+* **New entity detection:** [custom_components/ai_automation_suggester/automations/new-entity-automation.yaml](custom_components/ai_automation_suggester/automations/new-entity-automation.yaml) responds to entity registry events. It is not a periodic timer.
+
+To install an example, go to **Settings > Automations & scenes > Automations > Create automation > Create new automation**, open **Edit in YAML** from the menu, and paste the example's YAML. Save and enable the automation. If you use multiple provider entries, select the intended **Provider Configuration** in the action editor.
+
+For an optional run after each Home Assistant restart, create a separate automation with this YAML:
+
+```yaml
+alias: AI Suggestions - After Startup
+trigger:
+    - platform: homeassistant
+      event: start
+action:
+    - delay: "00:01:00"
+    - service: ai_automation_suggester.generate_suggestions
+      data:
+        all_entities: true
+        entity_limit: 50
+        automation_read_yaml: false
+        script_read_yaml: false
+mode: single
+```
+
+The delay allows entities time to become available, but does not guarantee a provider is reachable. Every scheduled or startup run can incur API usage. Keep these triggers opt-in and avoid frequent retries after provider errors.
+
+If manual generation works but automatic runs do not, check that the automation is enabled, its trigger and conditions match, and its **Traces** show the generation action being called. Use `all_entities: true` for periodic reviews; the default only considers entities not processed by the current integration instance. `initializing` alone does not mean a request is running.
 
 ### Manual Trigger
 
@@ -333,6 +358,18 @@ The integration provides several sensors for monitoring:
     * Check Home Assistant logs for stack traces
     * Monitor provider status sensor for connection issues
 
+* **Debug Logging:**
+    * To capture the unparsed provider response for a bug report, enable debug logging, restart Home Assistant, and run one generation:
+
+      ```yaml
+      logger:
+        default: warning
+        logs:
+          custom_components.ai_automation_suggester: debug
+      ```
+
+    * Each generation logs the prompt size and entity count, then the raw response text with the provider's finish reason and token usage. Credentials are redacted. The response can include entity names, areas, and other household context, so review it before posting it publicly.
+
 ---
 
 ## 🔒 Security Notes
@@ -351,7 +388,7 @@ Beyond the basic configuration and service call parameters, you can further cust
 
 ### Random Entity Selection
 
-By default, the integration uses randomized entity selection when `all_entities` is `true` (or the automatic weekly scan runs). This helps ensure variety in suggestions and prevents the AI from focusing only on the same initial set of entities.
+The integration uses randomized entity selection within the entity limit, including when `all_entities` is `true` or an installed weekly-review automation runs. This helps ensure variety in suggestions and prevents the AI from focusing only on the same initial set of entities.
 
 ### Domain Filtering
 
@@ -411,7 +448,7 @@ Monitor these sensors to ensure the integration is functioning correctly.
 | Symptom                                 | Check / Action                                                                                                                               |
 |-----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
 | **AI Provider Status stays `initializing`** | Run `ai_automation_suggester.generate_suggestions` explicitly with `all_entities: true`, `entity_limit: 50`, and automation/script YAML reading disabled. Select the affected provider entry when using multiple instances. Inspect the action result, `last_error_message`, and `last_attempted_update`. An empty entity selection makes no provider call and can leave the status unchanged. |
-| **Missing or truncated YAML with a reasoning model** | Increase input/output budgets as described under Token Management and reduce the entity limit. Four-space YAML indentation is valid and is preserved. Complete YAML Markdown fences inside structured output are removed without flattening the content. If YAML still fails, include a sanitized raw provider response in your issue report. |
+| **Missing or truncated YAML with a reasoning model** | Increase input/output budgets as described under Token Management and reduce the entity limit. A message or warning mentioning the Max Output Tokens limit means the provider stopped before finishing; thinking and reasoning tokens count toward that limit. Four-space YAML indentation is valid and is preserved. Complete YAML Markdown fences inside structured output are removed without flattening the content. If YAML still fails, enable debug logging (see Error Handling & Troubleshooting) and include the sanitized raw provider response in your issue report. |
 | **No suggestions available** | - Verify API key is correct.<br>- Check the `AI Provider Status` sensor for errors.<br>- Check the Home Assistant logs for errors related to the integration.<br>- Try triggering the service manually with a small `entity_limit` and no domain filters.<br>- Ensure you have enough entities/devices for meaningful suggestions. |
 | **AI Provider Status shows `error`** | - Inspect the Home Assistant log (`home-assistant.log`) for detailed error messages (look for `ai_automation_suggester` and `processing error`).<br>- Check your network connection to the provider's server (if cloud-based) or your local server.<br>- Confirm your API key is active and has permissions.<br>- Ensure your local AI server is running and accessible. |
 | **Suggestion prompt is too long** | - Reduce the `entity_limit` parameter when triggering the service or configuring the automation.<br>- Use the `domains` filter to narrow the scope of entities analyzed.<br>- Shorten or simplify your `custom_prompt` if you are using one. |
