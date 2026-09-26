@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+import yaml
 
 
 def load_module(name: str):
@@ -369,3 +370,115 @@ def test_invalid_confidence_is_ignored_with_warning():
 
     assert parsed[0]["confidence"] is None
     assert any("confidence outside" in warning for warning in parsed[0]["warnings"])
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"finish_reason": "MAX_TOKENS"},
+        {"stop_reason": "max_tokens"},
+        {"done_reason": "length"},
+        {"finish_reason": "length", "native_finish_reason": "MAX_TOKENS"},
+        {"status": "incomplete", "incomplete_details": {"reason": "max_output_tokens"}},
+    ],
+)
+def test_provider_output_limit_reasons_add_truncation_warning(metadata):
+    parsed = suggestions.parse_suggestion_response(
+        "No YAML this time",
+        provider="Google",
+        model="gemini-3.5-flash",
+        created_at=datetime(2026, 9, 26, 12, 0, 0),
+        entities_processed=[],
+        response_metadata=metadata,
+    )
+
+    assert suggestions.TRUNCATION_WARNING in parsed[0]["warnings"]
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {},
+        {"finish_reason": "STOP"},
+        {"stop_reason": "end_turn"},
+        {"done_reason": "stop"},
+        {"status": "incomplete", "incomplete_details": {"reason": "content_filter"}},
+    ],
+)
+def test_completed_responses_do_not_add_truncation_warning(metadata):
+    parsed = suggestions.parse_suggestion_response(
+        "No YAML this time",
+        provider="Anthropic",
+        model="claude-sonnet-4-6",
+        created_at=datetime(2026, 9, 26, 12, 0, 0),
+        entities_processed=[],
+        response_metadata=metadata,
+    )
+
+    assert suggestions.TRUNCATION_WARNING not in parsed[0]["warnings"]
+
+
+def test_truncated_structured_output_explains_output_limit():
+    parsed = suggestions.parse_suggestion_response(
+        '{"suggestions": [{"title": "Turn on the hall li',
+        provider="Google",
+        model="gemini-3.5-flash",
+        created_at=datetime(2026, 9, 26, 12, 0, 0),
+        entities_processed=[],
+        response_metadata={"finish_reason": "MAX_TOKENS"},
+    )
+
+    assert parsed[0]["description"] == suggestions.TRUNCATED_STRUCTURED_OUTPUT_DESCRIPTION
+    assert "No automation YAML was returned." in parsed[0]["warnings"]
+    message = suggestions.format_suggestion_notification(parsed[0])
+    assert "Max Output Tokens" in message
+    assert "may have been cut off" in message
+
+
+def test_yaml_escapes_copied_into_json_parse_without_repair_warning():
+    # Gemini can copy a YAML double-quoted escape such as \xED into a JSON
+    # string. JSON rejects that escape, but the YAML text is still intact.
+    raw = (
+        '{"suggestions": [{"title": "Klima", "description": "Pomocn\u00edk.", '
+        '"yaml": "alias: \\"Pomocn\\xEDk klima vyp\\"\\ntrigger:\\n  - platform: state\\n'
+        "    entity_id: input_boolean.klimatizace\\n    to: \\'off\\'\\naction: []\"}]}"
+    )
+    with pytest.raises(json.JSONDecodeError):
+        json.loads(raw)
+
+    parsed = suggestions.parse_suggestion_response(
+        raw,
+        provider="Google",
+        model="gemini-3.5-flash",
+        created_at=datetime(2026, 9, 26, 12, 0, 0),
+        entities_processed=["input_boolean.klimatizace"],
+    )
+
+    assert suggestions.PARSE_REPAIR_WARNING not in parsed[0]["warnings"]
+    assert "\n  - platform: state\n    entity_id: input_boolean.klimatizace" in parsed[0]["yamlCode"]
+    automation = yaml.safe_load(parsed[0]["yamlCode"])
+    assert automation["alias"] == "Pomocn\u00edk klima vyp"
+    assert automation["trigger"][0]["to"] == "off"
+    assert not any("could not be parsed" in warning for warning in parsed[0]["warnings"])
+
+
+def test_literal_newlines_inside_json_strings_parse_without_repair_warning():
+    yaml_code = "alias: Hall light\ntriggers:\n    - trigger: state\n      entity_id: binary_sensor.hall\nactions: []"
+    raw = '{"suggestions": [{"title": "Hall", "description": "Line one\nLine two", "yaml": "' + yaml_code + '"}]}'
+
+    parsed = suggestions.parse_suggestion_response(
+        raw,
+        provider="Ollama",
+        model="gemma4:12b",
+        created_at=datetime(2026, 9, 26, 12, 0, 0),
+        entities_processed=["binary_sensor.hall"],
+    )
+
+    assert parsed[0]["yamlCode"] == yaml_code
+    assert parsed[0]["description"] == "Line one\nLine two"
+    assert suggestions.PARSE_REPAIR_WARNING not in parsed[0]["warnings"]
+
+
+def test_json_escape_repair_only_changes_invalid_escapes():
+    text = r'"keep \\x \" \/ \n \u00e9, repair \xED \u12 \' \$"'
+
+    assert suggestions._repair_json_escapes(text) == r'"keep \\x \" \/ \n \u00e9, repair \\xED \\u12 ' + "'" + r' \\$"'

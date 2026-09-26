@@ -14,8 +14,23 @@ import yaml
 
 YAML_RE = re.compile(r"```(?:yaml|yml)\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
 JSON_RE = re.compile(r"```json\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
+JSON_ESCAPE_RE = re.compile(r"\\(u[0-9a-fA-F]{4}|.)", flags=re.DOTALL)
+VALID_JSON_ESCAPES = frozenset('"\\/bfnrt')
 STRING_FIELDS_AFTER_YAML = "entities_used|automation_ids_used|confidence|warnings"
 PARSE_REPAIR_WARNING = "The provider returned malformed JSON; suggestions were parsed best-effort."
+TRUNCATION_WARNING = "The provider reported a length finish reason; the suggestion may be truncated."
+TRUNCATED_STRUCTURED_OUTPUT_DESCRIPTION = (
+    "The provider stopped at the Max Output Tokens limit before finishing its structured response. "
+    "Increase Max Output Tokens in the integration options (for example to 4096) and try again. "
+    "Reasoning and thinking tokens count toward this limit on many models."
+)
+# Providers report output-limit stops with different keys and casing, for
+# example OpenAI "length", Anthropic "max_tokens", Gemini "MAX_TOKENS", and
+# Ollama done_reason "length".
+TRUNCATION_REASON_KEYS = ("finish_reason", "native_finish_reason", "stop_reason", "done_reason")
+TRUNCATION_REASONS = frozenset(
+    {"length", "max_tokens", "max_output_tokens", "model_length", "model_context_window_exceeded"}
+)
 ENTITY_ID_RE = re.compile(r"(?<![a-z0-9_])([a-z0-9_]+\.[a-z0-9_]+)(?![a-z0-9_])", re.IGNORECASE)
 SERVICE_RE = re.compile(r"^[a-z0-9_]+\.[a-z0-9_]+$", re.IGNORECASE)
 ENTITY_REFERENCE_KEYS = {"entity_id", "entity_ids"}
@@ -41,6 +56,22 @@ Return a JSON object with this shape and no surrounding Markdown:
 Only reference entity_ids present in the prompt. Keep suggestions review-only;
 do not claim that automations have been created or changed.
 """
+
+
+def response_was_truncated(response_metadata: dict[str, Any] | None) -> bool:
+    """Return True when provider metadata reports an output-limit stop."""
+
+    if not response_metadata:
+        return False
+    for key in TRUNCATION_REASON_KEYS:
+        reason = response_metadata.get(key)
+        if isinstance(reason, str) and reason.strip().lower() in TRUNCATION_REASONS:
+            return True
+    details = response_metadata.get("incomplete_details")
+    if isinstance(details, dict):
+        reason = details.get("reason")
+        return isinstance(reason, str) and reason.strip().lower() in TRUNCATION_REASONS
+    return False
 
 
 def _as_list(value: Any) -> list:
@@ -94,6 +125,35 @@ def _yaml_references(parsed: Any) -> tuple[list[str], list[str]]:
     return _unique_strings(entity_ids), _unique_strings(services)
 
 
+def _repair_json_escapes(text: str) -> str:
+    """Repair backslash escapes that JSON rejects but models commonly emit.
+
+    An escaped single quote becomes a quote. Other invalid escapes, such as a
+    YAML ``\\xED`` escape copied from a double-quoted scalar, keep their
+    backslash literally so YAML can still interpret them.
+    """
+
+    def repair(match: re.Match[str]) -> str:
+        escaped = match.group(1)
+        if escaped in VALID_JSON_ESCAPES or len(escaped) == 5:
+            return match.group(0)
+        if escaped == "'":
+            return "'"
+        return "\\\\" + escaped
+
+    return JSON_ESCAPE_RE.sub(repair, text)
+
+
+def _json_loads_tolerant(text: str) -> Any:
+    """Decode JSON, retrying with repairs for common model string defects."""
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # strict=False also accepts literal newlines and tabs inside strings.
+        return json.loads(_repair_json_escapes(text), strict=False)
+
+
 def _try_json_loads(raw_response: str) -> dict | list | None:
     """Try to decode model output as JSON, including fenced JSON."""
 
@@ -103,13 +163,13 @@ def _try_json_loads(raw_response: str) -> dict | list | None:
         text = fenced.group(1).strip()
 
     try:
-        return json.loads(text)
+        return _json_loads_tolerant(text)
     except json.JSONDecodeError:
         start = text.find("{")
         end = text.rfind("}")
         if start != -1 and end != -1 and end > start:
             try:
-                return json.loads(text[start : end + 1])
+                return _json_loads_tolerant(text[start : end + 1])
             except json.JSONDecodeError:
                 return None
     return None
@@ -119,7 +179,7 @@ def _decode_jsonish_string(value: str) -> str:
     """Decode a JSON string fragment when possible."""
 
     try:
-        return str(json.loads(f'"{value}"'))
+        return str(_json_loads_tolerant(f'"{value}"'))
     except json.JSONDecodeError:
         return value.replace('\\"', '"').replace("\\n", "\n").strip()
 
@@ -268,9 +328,8 @@ def _normalise_suggestion(
             else:
                 warnings.append("The provider returned confidence outside the 0 to 1 range; it was ignored.")
 
-    finish_reason = response_metadata.get("finish_reason")
-    if finish_reason in {"length", "max_tokens"}:
-        warnings.append("The provider reported a length finish reason; the suggestion may be truncated.")
+    if response_was_truncated(response_metadata):
+        warnings.append(TRUNCATION_WARNING)
     if response_metadata.get("status") == "incomplete":
         warnings.append("The provider returned an incomplete response.")
 
@@ -373,7 +432,10 @@ def parse_suggestion_response(
     if yaml_match:
         description = YAML_RE.sub("", raw_response).strip()
     elif raw_response.lstrip().startswith(("{", "[")) or '"suggestions"' in raw_response:
-        description = "The provider returned structured output that could not be parsed. Try regenerating with a lower entity limit or a newer model."
+        if response_was_truncated(metadata):
+            description = TRUNCATED_STRUCTURED_OUTPUT_DESCRIPTION
+        else:
+            description = "The provider returned structured output that could not be parsed. Try regenerating with a lower entity limit or a newer model."
     else:
         description = raw_response.strip()
     return [
@@ -415,6 +477,6 @@ def _format_notification_warning(warning: Any) -> str:
     text = str(warning)
     if text == PARSE_REPAIR_WARNING:
         return "Provider response needed formatting repair before display. Review the YAML before using it."
-    if text == "The provider reported a length finish reason; the suggestion may be truncated.":
+    if text == TRUNCATION_WARNING:
         return "The AI response may have been cut off. Review the YAML before using it."
     return text

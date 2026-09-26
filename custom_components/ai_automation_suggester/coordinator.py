@@ -120,7 +120,7 @@ from .const import (
     VERSION_ANTHROPIC,
 )
 from .endpoint_utils import bearer_auth_headers, ollama_api_candidates, ollama_base_url, openai_chat_endpoint
-from .error_utils import sanitize_provider_error
+from .error_utils import redact_credentials, sanitize_provider_error
 from .language_utils import suggestion_language_instruction
 from .model_catalog import (
     chat_token_parameter,
@@ -136,9 +136,12 @@ from .suggestions import (
     STRUCTURED_OUTPUT_INSTRUCTIONS,
     format_suggestion_notification,
     parse_suggestion_response,
+    response_was_truncated,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+RAW_RESPONSE_LOG_LIMIT = 50_000
 
 SYSTEM_PROMPT = """You are an AI assistant that generates Home Assistant automations
 based on entities, areas and devices, and suggests improvements to existing automations.
@@ -386,7 +389,16 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
 
             prompt_result = await self._build_prompt(picked)
             warnings.extend(prompt_result.warnings)
+            _LOGGER.debug(
+                "Sending a %s-character prompt (about %s tokens) with %s entities to %s (%s)",
+                len(prompt_result.prompt),
+                len(prompt_result.prompt) // 4,
+                len(prompt_result.entity_ids),
+                provider,
+                model,
+            )
             response = await self._dispatch(prompt_result.prompt)
+            self._log_provider_response(provider, model, response)
             store = async_get_suggestion_store(self.hass)
 
             if response:
@@ -468,6 +480,34 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                 }
             )
             return self.data
+
+    def _log_provider_response(self, provider: str, model: str, response: str | None) -> None:
+        """Log the unparsed provider text when debug logging is enabled."""
+
+        if not _LOGGER.isEnabledFor(logging.DEBUG):
+            return
+        text = redact_credentials(response or "")
+        if len(text) > RAW_RESPONSE_LOG_LIMIT:
+            text = f"{text[:RAW_RESPONSE_LOG_LIMIT]}\n... (truncated from {len(text)} characters)"
+        _LOGGER.debug(
+            "Raw %s response for model %s (metadata: %s):\n%s",
+            provider,
+            model,
+            self._last_response_metadata,
+            text or "<no text returned>",
+        )
+
+    def _raise_if_output_limit_reached(self, provider_label: str, detail: str = "") -> None:
+        """Explain an empty answer caused by the output token limit."""
+
+        if not response_was_truncated(self._last_response_metadata):
+            return
+        _, out_budget = self._budgets()
+        raise ValueError(
+            f"{provider_label} stopped at the Max Output Tokens limit ({out_budget}) before returning a final answer."
+            f"{detail} Reasoning and thinking tokens count toward this limit on many models. "
+            "Increase Max Output Tokens in the integration options and try again."
+        )
 
     def _prune_processed_entities(self, current: dict[str, dict]) -> None:
         """Forget removed entities while retaining entities already processed."""
@@ -814,7 +854,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     continue
                 autom_codes.append(
                     "Automation YAML:\n```yaml\n"
-                    f"{yaml.safe_dump([automation], sort_keys=False)}"
+                    f"{yaml.safe_dump([automation], sort_keys=False, allow_unicode=True)}"
                     "```\n---\n"
                 )
         except FileNotFoundError:
@@ -855,7 +895,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
                     continue
                 script_codes.append(
                     "Script YAML:\n```yaml\n"
-                    f"{yaml.safe_dump({script_id: script}, sort_keys=False)}"
+                    f"{yaml.safe_dump({script_id: script}, sort_keys=False, allow_unicode=True)}"
                     "```\n---\n"
                 )
         except FileNotFoundError:
@@ -989,6 +1029,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             joined = "".join(part.get("text", "") for part in content if isinstance(part, dict))
             if joined:
                 return joined
+        # With no final answer at the output limit, any reasoning text is
+        # unfinished thinking rather than a usable suggestion.
+        self._raise_if_output_limit_reached(provider_label)
         # Reasoning models (Qwen3, DeepSeek R1, and similar OpenAI-compatible
         # deployments) emit their answer in ``reasoning_content`` when
         # ``content`` is empty. Fall back to it so those models aren't silently
@@ -1046,15 +1089,19 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "incomplete_details": response.get("incomplete_details"),
             "usage": response.get("usage"),
         }
-        if isinstance(response.get("output_text"), str):
-            return response["output_text"]
+        output_text = response.get("output_text")
+        if isinstance(output_text, str) and output_text:
+            return output_text
         output = response.get("output") or []
         text_parts: list[str] = []
         for item in output:
             for content in item.get("content", []) if isinstance(item, dict) else []:
                 if isinstance(content, dict) and content.get("type") in {"output_text", "text"}:
                     text_parts.append(str(content.get("text", "")))
-        return "".join(text_parts) if text_parts else None
+        if any(text_parts):
+            return "".join(text_parts)
+        self._raise_if_output_limit_reached("OpenAI Responses")
+        return None
 
     async def _openai_azure(self, prompt: str) -> str | None:
         endpoint_base = self._opt(CONF_OPENAI_AZURE_ENDPOINT)
@@ -1127,8 +1174,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         }
         content = response.get("content") or []
         text_parts = [part.get("text", "") for part in content if isinstance(part, dict) and part.get("type") == "text"]
-        if text_parts:
+        if any(text_parts):
             return "".join(text_parts)
+        self._raise_if_output_limit_reached("Anthropic")
         raise ValueError("Anthropic response is missing text content")
 
     async def _google(self, prompt: str) -> str | None:
@@ -1151,14 +1199,36 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             return None
         candidates = response.get("candidates") or []
         if not candidates:
+            prompt_feedback = response.get("promptFeedback")
+            block_reason = prompt_feedback.get("blockReason") if isinstance(prompt_feedback, dict) else None
+            if block_reason:
+                raise ValueError(f"Google blocked the request (blockReason: {block_reason})")
             raise ValueError("Google response is missing candidates")
+        candidate = candidates[0] if isinstance(candidates[0], dict) else {}
+        finish_reason = candidate.get("finishReason")
+        usage = response.get("usageMetadata")
         self._last_response_metadata = {
-            "finish_reason": candidates[0].get("finishReason"),
-            "usage": response.get("usageMetadata"),
+            "finish_reason": finish_reason,
+            "usage": usage,
         }
-        parts = candidates[0].get("content", {}).get("parts", [])
-        text_parts = [part.get("text", "") for part in parts if isinstance(part, dict)]
-        return "".join(text_parts) if text_parts else None
+        content = candidate.get("content")
+        parts = content.get("parts") if isinstance(content, dict) else None
+        # Thought summaries are reasoning, not part of the requested answer.
+        text = "".join(
+            str(part.get("text", ""))
+            for part in parts or []
+            if isinstance(part, dict) and not part.get("thought")
+        )
+        if text:
+            return text
+        thoughts = usage.get("thoughtsTokenCount") if isinstance(usage, dict) else None
+        self._raise_if_output_limit_reached(
+            "Google",
+            f" Gemini used {thoughts} thinking tokens." if thoughts else "",
+        )
+        if finish_reason and str(finish_reason).upper() != "STOP":
+            raise ValueError(f"Google returned no text (finishReason: {finish_reason})")
+        return None
 
     async def _groq(self, prompt: str) -> str | None:
         api_key = self._opt(CONF_GROQ_API_KEY)
@@ -1232,7 +1302,11 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         if not response:
             return None
         self._last_response_metadata = {"done_reason": response.get("done_reason"), "usage": response.get("eval_count")}
-        return response.get("message", {}).get("content")
+        message = response.get("message")
+        content = message.get("content") if isinstance(message, dict) else None
+        if not content:
+            self._raise_if_output_limit_reached("Ollama")
+        return content
 
     async def _custom_openai(self, prompt: str) -> str | None:
         endpoint = str(self._opt(CONF_CUSTOM_OPENAI_ENDPOINT) or "").rstrip("/")
@@ -1387,6 +1461,8 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             },
         }
         content = response.choices[0].message.content
+        if not content:
+            self._raise_if_output_limit_reached("LiteLLM")
         if content is None:
             raise ValueError("LiteLLM response missing content")
         return content
