@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.6.1 - 2026-09-26
+
+### Fixed
+
+- Fixed non-ASCII names in `automations.yaml` and `scripts.yaml` prompt context being sent as YAML escapes, for example `"Pomocn\xEDk klima vyp"`. Models could copy those escapes into their JSON response, making it invalid JSON and triggering the best-effort parser and its "formatting repair" warning (issue #172).
+- JSON suggestion responses containing escapes that JSON does not allow, such as `\xED` or `\'`, or literal newlines inside strings, are now decoded without the best-effort repair path. Escaped single quotes become quotes, so a trigger such as `to: 'off'` is no longer corrupted to `to: \'off\'`. Valid JSON is decoded exactly as before.
+- Truncation is now detected from each provider's own stop reason, including Gemini `MAX_TOKENS`, Anthropic `max_tokens`, Ollama `length`, and OpenAI Responses `max_output_tokens`. Previously only the OpenAI-compatible `length` finish reason produced the truncation warning (issue #172).
+- When truncated structured output cannot be parsed, the suggestion now explains that the provider stopped at the Max Output Tokens limit instead of reporting a generic parse failure.
+- When a provider stops at the output limit without returning a final answer, generation now fails with an error naming the configured Max Output Tokens value. Unfinished OpenAI-compatible reasoning text at the limit is no longer presented as a successful suggestion. Completed `reasoning_content` answers still use the fallback from issue #127.
+- Gemini responses exclude thought-summary parts from the answer, report `blockReason` for blocked prompts, and report `finishReason` when no text is returned. Thinking-token usage is included when the output limit is reached.
+
+### Added
+
+- `openrouter/free`, OpenRouter's Free Models Router, now receives the structured-output schema, so OpenRouter routes it only to free models that support structured outputs. Thanks @JamieC03 (PR #190).
+- Added debug logging of the prompt size and the raw provider response, with its finish reason and token usage. Credentials are redacted. Enable `custom_components.ai_automation_suggester: debug` to capture it for bug reports (issue #172).
+- Added regression tests for provider stop reasons, tolerant JSON decoding, Unicode prompt context, Gemini response handling, output-limit errors, and debug logging.
+
+### Changed
+
+- Clarified that suggestion generation is on demand. The weekly-review and new-entity examples ship with the repository but must be imported and enabled as automations. The integration does not install automations, run inference at startup, or poll. Added an optional after-startup automation and scheduling troubleshooting (issue #177).
+- Documented output-limit messages, `openrouter/free` behavior, and debug logging. Default token budgets, configured models, and suggestion history are unchanged.
+
 ## 1.6.0 - 2026-09-05
 
 ### Added
