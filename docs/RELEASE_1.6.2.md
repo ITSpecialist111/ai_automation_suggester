@@ -8,6 +8,7 @@ Release date: 2026-10-02
   - **OpenAI:** these models use the Responses API with `max_output_tokens` and reasoning effort, as GPT-5 models already did.
   - **Azure OpenAI, Custom OpenAI, Generic OpenAI:** these models use Chat Completions with `max_completion_tokens` and no temperature.
 - **Safer default for unknown OpenAI models:** Unrecognized model names on the direct OpenAI provider now send `max_completion_tokens` instead of the deprecated `max_tokens`. Unrecognized models on other providers are unchanged.
+- **hassfest compliance:** `aiohttp` and `pyyaml` were removed from the manifest requirements. Home Assistant already provides both, and hassfest now rejects custom integrations that list core dependencies. The integration still uses the versions bundled with Home Assistant.
 
 ## Upgrade
 
@@ -19,7 +20,7 @@ Update through HACS and restart Home Assistant. No config-entry or stored-histor
 
 ## Validation
 
-- 155 automated tests pass in a clean Python 3.12 environment, matching CI. Ruff checks pass.
+- 155 automated tests pass in clean Python 3.11 and 3.12 environments, matching CI. Ruff checks pass. hassfest and HACS validation pass.
 - The new regression tests fail against 1.6.1 (34 failures) and pass with this release.
 - Home Assistant 2026.9.4 container smoke test: the real config flow and `ai_automation_suggester.generate_suggestions` service ran against a local TLS mock of `api.openai.com` that rejects `max_tokens` for GPT-5-and-later models, as the OpenAI API does.
   - 1.6.1: `gpt-6.1-sol` and `gpt-6-luna` fail with HTTP 500 and the exact sensor error from #192. `gpt-5.4-mini` passes.

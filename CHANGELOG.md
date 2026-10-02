@@ -6,6 +6,7 @@
 
 - GPT-6 and later OpenAI models, such as `gpt-6.1-sol` and `gpt-6-luna`, failed with `OpenAI error 400: Unsupported parameter: 'max_tokens' is not supported with this model`. Model detection only recognized `gpt-5`, `o3`, and `o4` names, so newer models fell back to Chat Completions with `max_tokens` and a temperature. GPT-5-or-later and every `o`-series model are now matched by version number. On the OpenAI provider they use the Responses API with `max_output_tokens`, as GPT-5 models do. On Azure OpenAI, Custom OpenAI, and Generic OpenAI they use `max_completion_tokens` without a temperature (issue #192).
 - Unrecognized model names on the direct OpenAI provider now send `max_completion_tokens` instead of the deprecated `max_tokens`. Unrecognized models on other providers are unchanged.
+- Removed `aiohttp` and `pyyaml` from the manifest requirements. Home Assistant already provides both, and hassfest now rejects custom integrations that list core dependencies.
 
 ### Added
 
