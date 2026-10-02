@@ -98,3 +98,57 @@ def test_openai_json_schema_keeps_additional_properties():
     schema = model_catalog.json_schema_response_format()["json_schema"]["schema"]
 
     assert "additionalProperties" in schema
+
+
+@pytest.mark.parametrize("model", ["gpt-6.1-sol", "gpt-6-luna", "gpt-6", "gpt-7.0-mini", "gpt-10", "GPT-6.1-Sol", "gpt-5.9"])
+def test_future_gpt_generations_use_responses_api(model):
+    capabilities = model_catalog.get_model_capabilities("OpenAI", model)
+
+    assert model_catalog.model_uses_responses_api("OpenAI", model) is True
+    assert capabilities.token_parameter == "max_output_tokens"
+    assert capabilities.supports_json_schema is True
+    assert model_catalog.should_send_temperature("OpenAI", model) is False
+
+
+@pytest.mark.parametrize("provider", ["OpenAI Azure", "Custom OpenAI", "Generic OpenAI"])
+@pytest.mark.parametrize("model", ["gpt-6.1-sol", "gpt-6-luna", "o5-mini"])
+def test_future_gpt_generations_use_max_completion_tokens_on_chat_apis(provider, model):
+    assert model_catalog.model_uses_responses_api(provider, model) is False
+    assert model_catalog.chat_token_parameter(provider, model) == "max_completion_tokens"
+    assert model_catalog.should_send_temperature(provider, model) is False
+
+
+@pytest.mark.parametrize(
+    "model,expected",
+    [
+        ("gpt-5", True),
+        ("gpt-5.4-mini", True),
+        ("gpt-6.1-sol", True),
+        ("gpt-60", True),
+        ("o1", True),
+        ("o1-mini", True),
+        ("o3-pro", True),
+        ("o5", True),
+        ("gpt-4o-mini", False),
+        ("gpt-4.1", False),
+        ("gpt-3.5-turbo", False),
+        ("gpt-oss-120b", False),
+        ("ollama", False),
+        ("omni-model", False),
+        ("", False),
+        (None, False),
+    ],
+)
+def test_openai_reasoning_family_detection(model, expected):
+    assert model_catalog.is_openai_reasoning_family(model) is expected
+
+
+def test_unknown_direct_openai_model_avoids_deprecated_max_tokens():
+    assert model_catalog.model_uses_responses_api("OpenAI", "some-future-model") is False
+    assert model_catalog.chat_token_parameter("OpenAI", "some-future-model") == "max_completion_tokens"
+    assert model_catalog.should_send_temperature("OpenAI", "some-future-model") is True
+
+
+@pytest.mark.parametrize("provider", ["OpenAI Azure", "Custom OpenAI", "Generic OpenAI", "OpenRouter"])
+def test_unknown_models_on_other_providers_keep_max_tokens(provider):
+    assert model_catalog.chat_token_parameter(provider, "my-custom-deployment") == "max_tokens"

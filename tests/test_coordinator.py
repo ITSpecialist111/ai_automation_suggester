@@ -520,3 +520,26 @@ def test_raw_response_log_is_skipped_without_debug_logging(monkeypatch, caplog):
     coordinator._log_provider_response("OpenAI", "gpt-5.4-mini", "response text")
 
     assert "response text" not in caplog.text
+
+
+@pytest.mark.parametrize("model", ["gpt-6.1-sol", "gpt-6-luna"])
+def test_openai_gpt6_models_never_send_max_tokens(monkeypatch, model):
+    coordinator, _, _ = make_coordinator(
+        monkeypatch,
+        states={},
+        options={"provider": "OpenAI", "openai_api_key": "secret", "openai_model": model},
+    )
+    request = {}
+
+    async def post_json(endpoint, *, headers=None, body=None, provider_label=None):
+        request.update(endpoint=endpoint, body=body)
+        return {"status": "completed", "output_text": "ok"}
+
+    coordinator._post_json = post_json
+
+    assert asyncio.run(coordinator._openai("hello")) == "ok"
+    assert request["endpoint"] == "https://api.openai.com/v1/responses"
+    assert request["body"]["model"] == model
+    assert "max_tokens" not in request["body"]
+    assert "temperature" not in request["body"]
+    assert request["body"]["max_output_tokens"] > 0
