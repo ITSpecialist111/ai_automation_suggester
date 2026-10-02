@@ -7,6 +7,7 @@ and warn users about stale defaults, preview models, and deprecated IDs.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 STATUS_STABLE = "stable"
@@ -485,7 +486,7 @@ def get_model_capabilities(provider: str, model: str | None) -> ModelCapabilitie
                 return item
 
     if provider in {"OpenAI", "OpenAI Azure", "Custom OpenAI", "Generic OpenAI"}:
-        if selected.startswith(("gpt-5", "o3", "o4")):
+        if is_openai_reasoning_family(selected):
             return ModelCapabilities(
                 selected,
                 endpoint_family="responses" if provider == "OpenAI" else "chat",
@@ -502,8 +503,35 @@ def get_model_capabilities(provider: str, model: str | None) -> ModelCapabilitie
                 supports_structured_output=True,
                 supports_json_schema=True,
             )
+        if provider == "OpenAI":
+            # OpenAI deprecated max_tokens and newer models reject it, while
+            # max_completion_tokens is accepted by every current chat model.
+            return ModelCapabilities(
+                selected,
+                token_parameter="max_completion_tokens",
+                status=STATUS_CUSTOM,
+            )
 
     return ModelCapabilities(selected, status=STATUS_CUSTOM)
+
+
+_OPENAI_GPT_MAJOR_RE = re.compile(r"^gpt-(\d+)(?:[.\-]|$)")
+_OPENAI_O_SERIES_RE = re.compile(r"^o\d+(?:[.\-]|$)")
+
+
+def is_openai_reasoning_family(model: str | None) -> bool:
+    """Return True for OpenAI GPT-5-or-later and o-series model names.
+
+    These models reject ``max_tokens`` and custom temperatures. Matching by
+    version number keeps new generations such as ``gpt-6.1-sol`` working
+    without a catalog update (issue #192).
+    """
+
+    name = (model or "").strip().lower()
+    if _OPENAI_O_SERIES_RE.match(name):
+        return True
+    match = _OPENAI_GPT_MAJOR_RE.match(name)
+    return bool(match) and int(match.group(1)) >= 5
 
 
 def model_uses_responses_api(provider: str, model: str | None) -> bool:

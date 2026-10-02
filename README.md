@@ -198,7 +198,7 @@ Model APIs change quickly, so the integration keeps a compatibility catalog and 
 
 | Provider | New default for new configs | Compatibility notes |
 |----------|-----------------------------|---------------------|
-| OpenAI | `gpt-5.4-mini` | GPT-5-style models use the Responses API, `max_output_tokens`, and reasoning effort. Temperature is not sent to models known to reject it. `gpt-5.5` and `gpt-5.5-pro` are supported when available on your account. |
+| OpenAI | `gpt-5.4-mini` | GPT-5 and later models (including GPT-6, such as `gpt-6.1-sol`) and `o`-series models use the Responses API, `max_output_tokens`, and reasoning effort. Temperature is not sent to models known to reject it. Other models use Chat Completions with `max_completion_tokens`. `gpt-5.5` and `gpt-5.5-pro` are supported when available on your account. |
 | Azure OpenAI | `gpt-5.4-mini` deployment name | Azure uses deployment names. Configure the deployment ID, endpoint, and API version that match your Azure resource. |
 | Anthropic | `claude-sonnet-4-6` | Supports current Claude Sonnet/Opus model IDs such as `claude-sonnet-4-6` and `claude-opus-4-7`. |
 | Google Gemini | `gemini-3.5-flash` | Stable replacement for Gemini 2.5 Flash, which is unavailable to new users. Custom model IDs are still allowed. |

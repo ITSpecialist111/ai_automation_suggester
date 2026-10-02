@@ -10,10 +10,8 @@
   "issue_tracker": "https://github.com/ITSpecialist111/ai_automation_suggester/issues",
   "requirements": [
     "anthropic>=0.8.0",
-    "aiohttp>=3.8.0",
     "litellm>=1.67.0",
-    "pyyaml>=6.0",
     "voluptuous>=0.13.1"
   ],
-  "version": "1.6.1"
+  "version": "1.6.2"
 }
