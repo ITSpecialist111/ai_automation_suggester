@@ -75,10 +75,30 @@ def test_openrouter_free_router_supports_structured_output():
 def test_minimax_catalog_contains_target_models():
     catalog = model_catalog.get_provider_catalog("MiniMax")
 
-    assert catalog.default_model == "MiniMax-M3"
-    assert [item.model for item in catalog.models] == ["MiniMax-M3", "MiniMax-M2.7"]
+    assert catalog.default_model == DEFAULT_MODELS["MiniMax"] == "MiniMax-M3.1-Flash"
+    assert [item.model for item in catalog.models] == ["MiniMax-M3.1-Flash", "MiniMax-M3"]
+    flash = model_catalog.get_model_capabilities("MiniMax", None)
+    assert flash.model == "MiniMax-M3.1-Flash"
+    assert flash.context_window == 1_000_000
+    assert flash.max_output_tokens == 524_288
+    assert flash.supports_reasoning is True
     assert model_catalog.get_model_capabilities("MiniMax", "MiniMax-M3").context_window == 1_000_000
-    assert model_catalog.get_model_capabilities("MiniMax", "MiniMax-M2.7").context_window == 204_800
+
+
+def test_minimax_saved_legacy_metadata_is_preserved():
+    legacy = model_catalog.get_model_capabilities("MiniMax", "MiniMax-M2.7")
+
+    assert legacy.model == "MiniMax-M2.7"
+    assert legacy.context_window == 204_800
+    assert legacy.supports_reasoning is True
+    assert legacy.token_parameter == "max_tokens"
+
+
+def test_minimax_custom_model_is_preserved():
+    capabilities = model_catalog.get_model_capabilities("MiniMax", "custom-deployment")
+
+    assert capabilities.model == "custom-deployment"
+    assert capabilities.status == model_catalog.STATUS_CUSTOM
 
 
 def test_google_json_schema_strips_additional_properties():

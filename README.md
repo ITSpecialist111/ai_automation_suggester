@@ -207,7 +207,7 @@ Model APIs change quickly, so the integration keeps a compatibility catalog and 
 | Perplexity AI | `sonar` | Supports Sonar, Sonar Pro, reasoning, and research-style model IDs where your account has access. |
 | OpenRouter | `openai/gpt-5.4-mini` | OpenRouter remains dynamic. Use provider-prefixed IDs from OpenRouter's model catalog. `openrouter/free` (the Free Models Router) receives the structured-output schema, so OpenRouter only routes it to free models that support structured outputs. |
 | Requesty | `openai/gpt-4o-mini` | OpenAI-compatible router (`https://router.requesty.ai`) providing 300+ models through a single API key. Use provider-prefixed model IDs. |
-| MiniMax | `MiniMax-M3` | OpenAI-compatible provider with global (`https://api.minimax.io/v1`) and China (`https://api.minimaxi.com/v1`) regions. `MiniMax-M2.7` is also in the catalog. Use a MiniMax API key for the selected region. |
+| MiniMax | `MiniMax-M3.1-Flash` | OpenAI-compatible provider with global (`https://api.minimax.io/v1`) and China (`https://api.minimaxi.com/v1`) regions. The active catalog offers `MiniMax-M3.1-Flash` first and `MiniMax-M3` as an alternative. Saved legacy and custom model IDs remain valid. Use a MiniMax API key for the selected region. |
 | LiteLLM | `openai/gpt-4o-mini` | Uses the LiteLLM Python SDK to reach 100+ backends (OpenAI, Bedrock, Azure, Vertex, Groq, and more). Model IDs follow the LiteLLM naming scheme. |
 | LocalAI/Ollama/custom OpenAI-compatible | User configured | Custom model names remain valid and are treated conservatively. |
 

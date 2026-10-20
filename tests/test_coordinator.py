@@ -8,7 +8,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
+import aiohttp
 import pytest
+from aiohttp import web
+from aiohttp.test_utils import TestServer
 
 from custom_components.ai_automation_suggester import coordinator as coordinator_module
 
@@ -543,3 +546,67 @@ def test_openai_gpt6_models_never_send_max_tokens(monkeypatch, model):
     assert "max_tokens" not in request["body"]
     assert "temperature" not in request["body"]
     assert request["body"]["max_output_tokens"] > 0
+
+
+@pytest.mark.parametrize("base_url", [None, "https://api.minimaxi.com/v1/"])
+@pytest.mark.parametrize("request_options", [{}, {"minimax_temperature": 0.4, "max_output_tokens": 4096}])
+@pytest.mark.parametrize(
+    "saved_model,option_model,expected_model",
+    [
+        (None, None, "MiniMax-M3.1-Flash"),
+        ("MiniMax-M3.1-Flash", None, "MiniMax-M3.1-Flash"),
+        ("MiniMax-M3", None, "MiniMax-M3"),
+        ("MiniMax-M2.7", None, "MiniMax-M2.7"),
+        ("custom-deployment", None, "custom-deployment"),
+        ("MiniMax-M3.1-Flash", "MiniMax-M3", "MiniMax-M3"),
+        ("MiniMax-M3.1-Flash", "MiniMax-M2.7", "MiniMax-M2.7"),
+        ("MiniMax-M3.1-Flash", "custom-deployment", "custom-deployment"),
+    ],
+)
+def test_minimax_dispatch_serializes_saved_or_default_model(
+    monkeypatch, base_url, request_options, saved_model, option_model, expected_model
+):
+    coordinator, _, _ = make_coordinator(monkeypatch, states={})
+    coordinator.config_entry.data = {"provider": "MiniMax", "minimax_api_key": "test-key"}
+    if saved_model is not None:
+        coordinator.config_entry.data["minimax_model"] = saved_model
+    if option_model is not None:
+        coordinator.config_entry.options["minimax_model"] = option_model
+    if base_url is not None:
+        coordinator.config_entry.options["minimax_base_url"] = base_url
+    coordinator.config_entry.options.update(request_options)
+    requests = []
+    expected_endpoint = f"{(base_url or 'https://api.minimax.io/v1').rstrip('/')}/chat/completions"
+
+    async def exercise():
+        async def respond(request):
+            requests.append(await request.json())
+            assert request.headers["Authorization"] == "Bearer test-key"
+            assert request.content_type == "application/json"
+            return web.json_response({"choices": [{"message": {"content": "ok"}}]})
+
+        app = web.Application()
+        app.router.add_post("/v1/chat/completions", respond)
+        async with TestServer(app) as server, aiohttp.ClientSession() as session:
+            original_request = session._request
+
+            async def local_request(method, url, **kwargs):
+                # Keep real aiohttp serialization; no provider traffic leaves the test.
+                assert method == "POST"
+                assert url == expected_endpoint
+                return await original_request(method, server.make_url("/v1/chat/completions"), **kwargs)
+
+            monkeypatch.setattr(session, "_request", local_request)
+            coordinator.session = session
+            assert await coordinator._dispatch("Suggest an automation.") == "ok"
+
+    asyncio.run(exercise())
+
+    # Omitted thinking/effort use the API's adaptive/max defaults for Flash.
+    # In particular, no disabled thinking, service_tier or reasoning_split is sent.
+    assert requests == [{
+        "model": expected_model,
+        "messages": [{"role": "user", "content": "Suggest an automation."}],
+        "temperature": request_options.get("minimax_temperature", 0.7),
+        "max_tokens": request_options.get("max_output_tokens", 500),
+    }]
