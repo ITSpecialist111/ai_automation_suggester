@@ -128,6 +128,12 @@ CONF_MINIMAX_MODEL = "minimax_model"
 CONF_MINIMAX_BASE_URL = "minimax_base_url"
 CONF_MINIMAX_TEMPERATURE = "minimax_temperature"
 
+# Cheaper Inference
+CONF_CHEAPERINFERENCE_API_KEY = "cheaperinference_api_key"
+CONF_CHEAPERINFERENCE_MODEL = "cheaperinference_model"
+CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS = "cheaperinference_reasoning_max_tokens"
+CONF_CHEAPERINFERENCE_TEMPERATURE = "cheaperinference_temperature"
+
 # Generic OpenAI
 CONF_GENERIC_OPENAI_ENDPOINT = "generic_openai_api_endpoint"
 CONF_GENERIC_OPENAI_API_KEY = "generic_openai_api_key"
@@ -159,6 +165,7 @@ DEFAULT_MODELS = {
     "OpenRouter": "openai/gpt-5.4-mini",
     "Requesty": "openai/gpt-4o-mini",
     "MiniMax": "MiniMax-M3.1-Flash",
+    "Cheaper Inference": "gpt-5.4-mini",
     "Generic OpenAI": "gpt-4o-mini",
     "LiteLLM": "openai/gpt-4o-mini",
 }
@@ -198,6 +205,7 @@ MINIMAX_BASE_URLS = [
     "https://api.minimax.io/v1",
     "https://api.minimaxi.com/v1",
 ]
+ENDPOINT_CHEAPERINFERENCE = "https://api.cheaperinference.com/v1/chat/completions"
 
 
 # ─────────────────────────────────────────────────────────────

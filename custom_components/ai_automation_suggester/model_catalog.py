@@ -453,6 +453,50 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
         True,
         "https://api.minimax.io/v1/models",
     ),
+    "Cheaper Inference": ProviderCatalog(
+        "Cheaper Inference",
+        "gpt-5.4-mini",
+        (
+            ModelCapabilities(
+                "gpt-5.4-mini",
+                "GPT-5.4 Mini via Cheaper Inference",
+                context_window=400_000,
+                max_output_tokens=128_000,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "gpt-5.4",
+                "GPT-5.4 via Cheaper Inference",
+                context_window=1_000_000,
+                max_output_tokens=128_000,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "claude-sonnet-5",
+                "Claude Sonnet 5 via Cheaper Inference",
+                context_window=1_000_000,
+                max_output_tokens=128_000,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "deepseek-v4-flash",
+                "DeepSeek V4 Flash via Cheaper Inference",
+                context_window=1_000_000,
+                max_output_tokens=384_000,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+        ),
+        True,
+        "https://api.cheaperinference.com/v1/models",
+    ),
 }
 
 

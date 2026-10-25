@@ -23,6 +23,7 @@ from homeassistant.helpers.update_coordinator import (
 
 from .const import (
     CONF_ANTHROPIC_MODEL,
+    CONF_CHEAPERINFERENCE_MODEL,
     CONF_CUSTOM_OPENAI_MODEL,
     CONF_GENERIC_OPENAI_MODEL,
     CONF_GOOGLE_MODEL,
@@ -74,6 +75,7 @@ PROVIDER_TO_MODEL_KEY_MAP: dict[str, str] = {
     "OpenRouter": CONF_OPENROUTER_MODEL,
     "Requesty": CONF_REQUESTY_MODEL,
     "MiniMax": CONF_MINIMAX_MODEL,
+    "Cheaper Inference": CONF_CHEAPERINFERENCE_MODEL,
     "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
     "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
     "LiteLLM": CONF_LITELLM_MODEL,
