@@ -434,18 +434,19 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
     ),
     "MiniMax": ProviderCatalog(
         "MiniMax",
-        "MiniMax-M3",
+        "MiniMax-M3.1-Flash",
         (
+            ModelCapabilities(
+                "MiniMax-M3.1-Flash",
+                "MiniMax M3.1 Flash",
+                context_window=1_000_000,
+                max_output_tokens=524_288,
+                supports_reasoning=True,
+            ),
             ModelCapabilities(
                 "MiniMax-M3",
                 "MiniMax M3",
                 context_window=1_000_000,
-                supports_reasoning=True,
-            ),
-            ModelCapabilities(
-                "MiniMax-M2.7",
-                "MiniMax M2.7",
-                context_window=204_800,
                 supports_reasoning=True,
             ),
         ),
@@ -453,6 +454,17 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
         "https://api.minimax.io/v1/models",
     ),
 }
+
+
+# Keep metadata for saved models without recommending them in the active catalog.
+LEGACY_MINIMAX_MODELS = (
+    ModelCapabilities(
+        "MiniMax-M2.7",
+        "MiniMax M2.7",
+        context_window=204_800,
+        supports_reasoning=True,
+    ),
+)
 
 
 def get_provider_catalog(provider: str) -> ProviderCatalog | None:
@@ -478,10 +490,11 @@ def get_model_capabilities(provider: str, model: str | None) -> ModelCapabilitie
     selected = model or get_default_model(provider)
     catalog = get_provider_catalog(provider)
     if catalog:
-        for item in catalog.models:
+        models = catalog.models + LEGACY_MINIMAX_MODELS if provider == "MiniMax" else catalog.models
+        for item in models:
             if item.model == selected:
                 return item
-        for item in catalog.models:
+        for item in models:
             if selected.startswith(item.model.rstrip("*")):
                 return item
 

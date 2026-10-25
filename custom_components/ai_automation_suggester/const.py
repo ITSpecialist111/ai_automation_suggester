@@ -158,7 +158,7 @@ DEFAULT_MODELS = {
     "Perplexity AI": "sonar",
     "OpenRouter": "openai/gpt-5.4-mini",
     "Requesty": "openai/gpt-4o-mini",
-    "MiniMax": "MiniMax-M3",
+    "MiniMax": "MiniMax-M3.1-Flash",
     "Generic OpenAI": "gpt-4o-mini",
     "LiteLLM": "openai/gpt-4o-mini",
 }
