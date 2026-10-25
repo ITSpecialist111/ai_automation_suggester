@@ -32,7 +32,6 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import (
     CONF_ANTHROPIC_API_KEY,
     CONF_ANTHROPIC_MODEL,
-    CONF_ANTHROPIC_TEMPERATURE,
     CONF_CHEAPERINFERENCE_API_KEY,
     CONF_CHEAPERINFERENCE_MODEL,
     CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS,
@@ -1165,7 +1164,6 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "model": model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": self._trim_prompt(prompt)}]}],
             "max_tokens": out_budget,
-            "temperature": float(self._opt(CONF_ANTHROPIC_TEMPERATURE, DEFAULT_TEMPERATURE)),
         }
         response = await self._post_json(
             ENDPOINT_ANTHROPIC,
