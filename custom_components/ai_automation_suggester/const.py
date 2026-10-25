@@ -154,7 +154,7 @@ CONF_LITELLM_API_BASE = "litellm_api_base"
 DEFAULT_MODELS = {
     "OpenAI": "gpt-5.4-mini",
     "OpenAI Azure": "gpt-5.4-mini",
-    "Anthropic": "claude-sonnet-4-6",
+    "Anthropic": "claude-sonnet-5-5",
     "Google": "gemini-3.5-flash",
     "Groq": "openai/gpt-oss-120b",
     "LocalAI": "llama3",

@@ -15,7 +15,6 @@ from homeassistant.helpers.selector import TextSelector, TextSelectorConfig
 from .const import (
     CONF_ANTHROPIC_API_KEY,
     CONF_ANTHROPIC_MODEL,
-    CONF_ANTHROPIC_TEMPERATURE,
     CONF_CHEAPERINFERENCE_API_KEY,
     CONF_CHEAPERINFERENCE_MODEL,
     CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS,
@@ -438,7 +437,6 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema = {
             vol.Required(CONF_ANTHROPIC_API_KEY): TextSelector(TextSelectorConfig(type="password")),
             vol.Optional(CONF_ANTHROPIC_MODEL, default=DEFAULT_MODELS["Anthropic"]): str,
-            vol.Optional(CONF_ANTHROPIC_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0)),
         }
         self._add_token_fields(schema)
         return await self._provider_form(
@@ -864,7 +862,6 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
         elif provider == "Anthropic":
             schema[vol.Optional(CONF_ANTHROPIC_API_KEY, default=self._get_option(CONF_ANTHROPIC_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_ANTHROPIC_MODEL, default=self._get_option(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"]))] = str
-            schema[vol.Optional(CONF_ANTHROPIC_TEMPERATURE, default=self._get_option(CONF_ANTHROPIC_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
         elif provider == "Google":
             schema[vol.Optional(CONF_GOOGLE_API_KEY, default=self._get_option(CONF_GOOGLE_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_GOOGLE_MODEL, default=self._get_option(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"]))] = str

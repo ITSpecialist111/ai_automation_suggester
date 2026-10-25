@@ -1468,8 +1468,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "model": model,
             "messages": [{"role": "user", "content": self._trim_prompt(prompt)}],
             "max_tokens": out_budget,
-            "temperature": float(self._opt(CONF_LITELLM_TEMPERATURE, DEFAULT_TEMPERATURE)),
         }
+        if should_send_temperature("LiteLLM", model):
+            kwargs["temperature"] = float(self._opt(CONF_LITELLM_TEMPERATURE, DEFAULT_TEMPERATURE))
         api_key = self._opt(CONF_LITELLM_API_KEY)
         if api_key:
             kwargs["api_key"] = api_key

@@ -23,7 +23,6 @@
         "data": {
           "anthropic_api_key": "Anthropic API Anahtarı",
           "anthropic_model": "Anthropic Modeli",
-          "anthropic_temperature": "Sıcaklık",
           "max_input_tokens": "Maksimum Girdi Token",
           "max_output_tokens": "Maksimum Çıktı Token"
         }
@@ -160,7 +159,6 @@
           "openai_temperature": "Sıcaklık (OpenAI)",
           "anthropic_api_key": "Anthropic API Anahtarı",
           "anthropic_model": "Anthropic Modeli",
-          "anthropic_temperature": "Sıcaklık (Anthropic)",
           "google_api_key": "Google API Anahtarı",
           "google_model": "Google Modeli",
           "google_temperature": "Sıcaklık (Google)",

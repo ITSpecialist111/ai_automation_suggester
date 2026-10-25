@@ -23,7 +23,6 @@
         "data": {
           "anthropic_api_key": "Anthropic API klíč",
           "anthropic_model": "Model Anthropic",
-          "anthropic_temperature": "Teplota",
           "max_input_tokens": "Maximální počet vstupních tokenů",
           "max_output_tokens": "Maximální počet výstupních tokenů"
         }
@@ -162,7 +161,6 @@
           "openai_temperature": "Teplota (OpenAI)",
           "anthropic_api_key": "Anthropic API klíč",
           "anthropic_model": "Model Anthropic",
-          "anthropic_temperature": "Teplota (Anthropic)",
           "google_api_key": "Google API klíč",
           "google_model": "Model Google",
           "google_temperature": "Teplota (Google)",

@@ -23,7 +23,6 @@
         "data": {
           "anthropic_api_key": "Anthropic API 密钥",
           "anthropic_model": "Anthropic 模型",
-          "anthropic_temperature": "温度",
           "max_input_tokens": "最大输入令牌",
           "max_output_tokens": "最大输出令牌"
         }
@@ -160,7 +159,6 @@
           "openai_temperature": "温度 (OpenAI)",
           "anthropic_api_key": "Anthropic API 密钥",
           "anthropic_model": "Anthropic 模型",
-          "anthropic_temperature": "温度 (Anthropic)",
           "google_api_key": "Google API 密钥",
           "google_model": "Google 模型",
           "google_temperature": "温度 (Google)",
