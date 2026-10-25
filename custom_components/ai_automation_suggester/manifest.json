@@ -13,5 +13,5 @@
     "litellm>=1.67.0",
     "voluptuous>=0.13.1"
   ],
-  "version": "1.6.2"
+  "version": "1.7.0"
 }

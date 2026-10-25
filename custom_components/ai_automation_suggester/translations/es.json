@@ -23,7 +23,6 @@
         "data": {
           "anthropic_api_key": "Clave API de Anthropic",
           "anthropic_model": "Modelo de Anthropic",
-          "anthropic_temperature": "Temperatura",
           "max_input_tokens": "Máximo de tokens de entrada",
           "max_output_tokens": "Máximo de tokens de salida"
         }
@@ -160,7 +159,6 @@
           "openai_temperature": "Temperatura (OpenAI)",
           "anthropic_api_key": "Clave API de Anthropic",
           "anthropic_model": "Modelo de Anthropic",
-          "anthropic_temperature": "Temperatura (Anthropic)",
           "google_api_key": "Clave API de Google",
           "google_model": "Modelo de Google",
           "google_temperature": "Temperatura (Google)",

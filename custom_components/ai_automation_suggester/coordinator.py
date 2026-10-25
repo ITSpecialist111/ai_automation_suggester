@@ -32,7 +32,10 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import (
     CONF_ANTHROPIC_API_KEY,
     CONF_ANTHROPIC_MODEL,
-    CONF_ANTHROPIC_TEMPERATURE,
+    CONF_CHEAPERINFERENCE_API_KEY,
+    CONF_CHEAPERINFERENCE_MODEL,
+    CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS,
+    CONF_CHEAPERINFERENCE_TEMPERATURE,
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_MODEL,
@@ -109,6 +112,7 @@ from .const import (
     DEFAULT_TEMPERATURE,
     DOMAIN,
     ENDPOINT_ANTHROPIC,
+    ENDPOINT_CHEAPERINFERENCE,
     ENDPOINT_GROQ,
     ENDPOINT_LOCALAI,
     ENDPOINT_MISTRAL,
@@ -283,6 +287,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "OpenRouter": CONF_OPENROUTER_MODEL,
             "Requesty": CONF_REQUESTY_MODEL,
             "MiniMax": CONF_MINIMAX_MODEL,
+            "Cheaper Inference": CONF_CHEAPERINFERENCE_MODEL,
             "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
             "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
             "LiteLLM": CONF_LITELLM_MODEL,
@@ -919,6 +924,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "OpenRouter": self._openrouter,
             "Requesty": self._requesty,
             "MiniMax": self._minimax,
+            "Cheaper Inference": self._cheaperinference,
             "OpenAI Azure": self._openai_azure,
             "Generic OpenAI": self._generic_openai,
             "LiteLLM": self._litellm,
@@ -1158,7 +1164,6 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "model": model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": self._trim_prompt(prompt)}]}],
             "max_tokens": out_budget,
-            "temperature": float(self._opt(CONF_ANTHROPIC_TEMPERATURE, DEFAULT_TEMPERATURE)),
         }
         response = await self._post_json(
             ENDPOINT_ANTHROPIC,
@@ -1413,6 +1418,30 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
         )
         return self._extract_chat_content(response, "Requesty") if response else None
 
+    async def _cheaperinference(self, prompt: str) -> str | None:
+        api_key = self._opt(CONF_CHEAPERINFERENCE_API_KEY)
+        if not api_key:
+            raise ValueError("Cheaper Inference API key not configured")
+        model = self._current_model("Cheaper Inference")
+        extra: dict[str, Any] = {}
+        reasoning_max_tokens = int(self._opt(CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS, 0))
+        if reasoning_max_tokens > 0:
+            extra["reasoning"] = {"max_tokens": reasoning_max_tokens}
+        body = self._openai_compatible_body(
+            provider="Cheaper Inference",
+            model=model,
+            prompt=self._trim_prompt(prompt),
+            temperature=float(self._opt(CONF_CHEAPERINFERENCE_TEMPERATURE, DEFAULT_TEMPERATURE)),
+            extra=extra,
+        )
+        response = await self._post_json(
+            ENDPOINT_CHEAPERINFERENCE,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            body=body,
+            provider_label="Cheaper Inference",
+        )
+        return self._extract_chat_content(response, "Cheaper Inference") if response else None
+
     async def _minimax(self, prompt: str) -> str | None:
         api_key = self._opt(CONF_MINIMAX_API_KEY)
         if not api_key:
@@ -1439,8 +1468,9 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "model": model,
             "messages": [{"role": "user", "content": self._trim_prompt(prompt)}],
             "max_tokens": out_budget,
-            "temperature": float(self._opt(CONF_LITELLM_TEMPERATURE, DEFAULT_TEMPERATURE)),
         }
+        if should_send_temperature("LiteLLM", model):
+            kwargs["temperature"] = float(self._opt(CONF_LITELLM_TEMPERATURE, DEFAULT_TEMPERATURE))
         api_key = self._opt(CONF_LITELLM_API_KEY)
         if api_key:
             kwargs["api_key"] = api_key

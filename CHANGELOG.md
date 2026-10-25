@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.7.0 - 2026-10-25
+
+### Fixed
+
+- Removed temperature from direct Anthropic requests and removed the obsolete setup/options field. Saved temperature values no longer affect requests (PR #199).
+- Omit temperature for Claude 4.7-and-later and OpenAI GPT-5-and-later / `o`-series model names through OpenRouter, Requesty, Cheaper Inference, LiteLLM, and custom OpenAI-compatible APIs, including new model IDs absent from the static catalog. Other routed models retain their configured temperature. This addresses the Anthropic failures reported on #195 without changing the pinned Anthropic API version.
+
+### Added
+
+- Cheaper Inference provider with credential validation, setup/options, model sensors, custom model IDs, structured-output support, and optional reasoning token budget (PR #198, issue #197).
+- Current Claude Sonnet/Opus/Haiku 5.5 and Fable 5.1 catalog entries. New Anthropic configurations default to Sonnet 5.5; saved model selections are preserved.
+- Regression coverage for fixed-sampling models, setup/options, LiteLLM calls, and real local HTTP generation smoke tests, including error propagation without automatic retries.
+
+### Changed
+
+- New MiniMax configurations default to `MiniMax-M3.1-Flash`. Existing M3, M2.7, and custom model selections remain unchanged, with legacy M2.7 metadata retained (PR #196).
+
 ## 1.6.2 - 2026-10-02
 
 ### Fixed

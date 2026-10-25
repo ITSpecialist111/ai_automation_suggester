@@ -8,7 +8,7 @@ and warn users about stale defaults, preview models, and deprecated IDs.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 STATUS_STABLE = "stable"
 STATUS_PREVIEW = "preview"
@@ -161,13 +161,52 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
     ),
     "Anthropic": ProviderCatalog(
         "Anthropic",
-        "claude-sonnet-4-6",
+        "claude-sonnet-5-5",
         (
+            ModelCapabilities(
+                "claude-sonnet-5-5",
+                "Claude Sonnet 5.5",
+                context_window=1_000_000,
+                max_output_tokens=128_000,
+                token_parameter="max_tokens",
+                supports_reasoning=True,
+                omit_temperature=True,
+                notes=("Best balance of speed, cost, and intelligence.",),
+            ),
+            ModelCapabilities(
+                "claude-opus-5-5",
+                "Claude Opus 5.5",
+                context_window=1_000_000,
+                max_output_tokens=128_000,
+                token_parameter="max_tokens",
+                supports_reasoning=True,
+                omit_temperature=True,
+                notes=("Adaptive thinking is always on; expect higher latency and cost.",),
+            ),
+            ModelCapabilities(
+                "claude-haiku-5-5",
+                "Claude Haiku 5.5",
+                context_window=1_000_000,
+                max_output_tokens=128_000,
+                token_parameter="max_tokens",
+                omit_temperature=True,
+            ),
+            ModelCapabilities(
+                "claude-fable-5-1",
+                "Claude Fable 5.1",
+                context_window=1_000_000,
+                max_output_tokens=128_000,
+                token_parameter="max_tokens",
+                supports_reasoning=True,
+                omit_temperature=True,
+                notes=("Highest-intelligence Claude option; expect higher latency and cost.",),
+            ),
             ModelCapabilities(
                 "claude-opus-4-7",
                 "Claude Opus 4.7",
                 token_parameter="max_tokens",
                 supports_reasoning=True,
+                omit_temperature=True,
                 notes=("Use adaptive thinking; manual budget_tokens is not accepted.",),
             ),
             ModelCapabilities(
@@ -182,7 +221,7 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
                 "claude-3-7-sonnet-latest",
                 "Claude 3.7 Sonnet Latest",
                 status=STATUS_DEPRECATED,
-                notes=("Prefer Claude Sonnet 4.6 for new configurations.",),
+                notes=("Prefer Claude Sonnet 5.5 for new configurations.",),
             ),
         ),
         True,
@@ -384,6 +423,7 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
                 supports_structured_output=True,
                 supports_json_schema=True,
                 supports_reasoning=True,
+                omit_temperature=True,
             ),
             ModelCapabilities(
                 "anthropic/claude-sonnet-4.6",
@@ -434,25 +474,81 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
     ),
     "MiniMax": ProviderCatalog(
         "MiniMax",
-        "MiniMax-M3",
+        "MiniMax-M3.1-Flash",
         (
+            ModelCapabilities(
+                "MiniMax-M3.1-Flash",
+                "MiniMax M3.1 Flash",
+                context_window=1_000_000,
+                max_output_tokens=524_288,
+                supports_reasoning=True,
+            ),
             ModelCapabilities(
                 "MiniMax-M3",
                 "MiniMax M3",
                 context_window=1_000_000,
                 supports_reasoning=True,
             ),
-            ModelCapabilities(
-                "MiniMax-M2.7",
-                "MiniMax M2.7",
-                context_window=204_800,
-                supports_reasoning=True,
-            ),
         ),
         True,
         "https://api.minimax.io/v1/models",
     ),
+    "Cheaper Inference": ProviderCatalog(
+        "Cheaper Inference",
+        "gpt-5.4-mini",
+        (
+            ModelCapabilities(
+                "gpt-5.4-mini",
+                "GPT-5.4 Mini via Cheaper Inference",
+                context_window=400_000,
+                max_output_tokens=128_000,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "gpt-5.4",
+                "GPT-5.4 via Cheaper Inference",
+                context_window=1_000_000,
+                max_output_tokens=128_000,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "claude-sonnet-5",
+                "Claude Sonnet 5 via Cheaper Inference",
+                context_window=1_000_000,
+                max_output_tokens=128_000,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "deepseek-v4-flash",
+                "DeepSeek V4 Flash via Cheaper Inference",
+                context_window=1_000_000,
+                max_output_tokens=384_000,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+        ),
+        True,
+        "https://api.cheaperinference.com/v1/models",
+    ),
 }
+
+
+# Keep metadata for saved models without recommending them in the active catalog.
+LEGACY_MINIMAX_MODELS = (
+    ModelCapabilities(
+        "MiniMax-M2.7",
+        "MiniMax M2.7",
+        context_window=204_800,
+        supports_reasoning=True,
+    ),
+)
 
 
 def get_provider_catalog(provider: str) -> ProviderCatalog | None:
@@ -475,13 +571,30 @@ def get_model_capabilities(provider: str, model: str | None) -> ModelCapabilitie
     models with conservative OpenAI-compatible defaults.
     """
 
+    capabilities = _lookup_model_capabilities(provider, model)
+    selected = model or get_default_model(provider)
+    openai_name = selected.removeprefix("openai/")
+    if (
+        provider == "Anthropic"
+        or is_fixed_sampling_claude(selected)
+        or (
+            provider in {"OpenAI", "OpenAI Azure", "Custom OpenAI", "Generic OpenAI", "OpenRouter", "Requesty", "Cheaper Inference", "LiteLLM"}
+            and is_openai_reasoning_family(openai_name)
+        )
+    ):
+        capabilities = replace(capabilities, omit_temperature=True)
+    return capabilities
+
+
+def _lookup_model_capabilities(provider: str, model: str | None) -> ModelCapabilities:
     selected = model or get_default_model(provider)
     catalog = get_provider_catalog(provider)
     if catalog:
-        for item in catalog.models:
+        models = catalog.models + LEGACY_MINIMAX_MODELS if provider == "MiniMax" else catalog.models
+        for item in models:
             if item.model == selected:
                 return item
-        for item in catalog.models:
+        for item in models:
             if selected.startswith(item.model.rstrip("*")):
                 return item
 
@@ -532,6 +645,37 @@ def is_openai_reasoning_family(model: str | None) -> bool:
         return True
     match = _OPENAI_GPT_MAJOR_RE.match(name)
     return bool(match) and int(match.group(1)) >= 5
+
+
+# Matches direct, router-prefixed, and Bedrock-style Claude IDs such as
+# ``claude-opus-4-7``, ``anthropic/claude-opus-4.7``, ``claude-3-7-sonnet``,
+# and ``us.anthropic.claude-sonnet-5-v1:0``. The minor version is at most two
+# digits so date suffixes like ``claude-opus-4-20250514`` are not misread.
+_CLAUDE_VERSION_RE = re.compile(
+    r"(?:^|[/.:])claude-(?:[a-z]+-)?(\d+)(?:[.\-](\d{1,2})(?!\d))?"
+)
+_CLAUDE_FIXED_SAMPLING_FROM = (4, 7)
+
+
+def claude_model_version(model: str | None) -> tuple[int, int] | None:
+    """Return the (major, minor) version of a Claude model ID, if recognizable."""
+
+    match = _CLAUDE_VERSION_RE.search((model or "").strip().lower())
+    if not match:
+        return None
+    return int(match.group(1)), int(match.group(2) or 0)
+
+
+def is_fixed_sampling_claude(model: str | None) -> bool:
+    """Return True for Claude 4.7-or-later models.
+
+    These models accept only the default sampling settings and return a 400
+    error when a custom ``temperature`` is sent, on every API version and
+    through routers such as OpenRouter.
+    """
+
+    version = claude_model_version(model)
+    return version is not None and version >= _CLAUDE_FIXED_SAMPLING_FROM
 
 
 def model_uses_responses_api(provider: str, model: str | None) -> bool:

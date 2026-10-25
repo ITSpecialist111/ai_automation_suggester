@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
+import aiohttp
 import pytest
+from aiohttp import ClientSession, web
+from aiohttp.test_utils import TestServer
 
 from custom_components.ai_automation_suggester import coordinator as coordinator_module
 
@@ -543,3 +548,200 @@ def test_openai_gpt6_models_never_send_max_tokens(monkeypatch, model):
     assert "max_tokens" not in request["body"]
     assert "temperature" not in request["body"]
     assert request["body"]["max_output_tokens"] > 0
+
+
+@pytest.mark.parametrize("model,send_temperature", [
+    ("openai/gpt-6.1-sol", False),
+    ("anthropic/claude-sonnet-5-5", False),
+    ("openai/gpt-4o-mini", True),
+])
+def test_litellm_temperature_follows_model_capabilities(monkeypatch, model, send_temperature):
+    coordinator, _, _ = make_coordinator(
+        monkeypatch, states={}, options={"litellm_model": model, "litellm_temperature": 0.3}
+    )
+    request = {}
+
+    async def acompletion(**kwargs):
+        request.update(kwargs)
+        return SimpleNamespace(
+            choices=[SimpleNamespace(finish_reason="stop", message=SimpleNamespace(content="ok"))],
+            usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1, total_tokens=2),
+        )
+
+    monkeypatch.setitem(sys.modules, "litellm", SimpleNamespace(acompletion=acompletion))
+    assert asyncio.run(coordinator._litellm("hello")) == "ok"
+    assert ("temperature" in request) is send_temperature
+    if send_temperature:
+        assert request["temperature"] == 0.3
+
+
+@pytest.mark.parametrize("provider,key,model,send_temperature", [
+    ("Anthropic", "anthropic", "claude-opus-5-5", False),
+    ("Anthropic", "anthropic", "claude-sonnet-4-6", False),
+    ("OpenRouter", "openrouter", "openai/gpt-6.1-sol", False),
+    ("OpenRouter", "openrouter", "anthropic/claude-opus-4.7", False),
+    ("OpenRouter", "openrouter", "openai/gpt-4o-mini", True),
+    ("Requesty", "requesty", "openai/gpt-6.1-sol", False),
+    ("Cheaper Inference", "cheaperinference", "gpt-5.4-mini", False),
+    ("Cheaper Inference", "cheaperinference", "claude-sonnet-5", False),
+    ("MiniMax", "minimax", "MiniMax-M3.1-Flash", True),
+    ("MiniMax", "minimax", "MiniMax-M2.7", True),
+])
+def test_http_provider_smoke_generates_and_stores_suggestion(monkeypatch, provider, key, model, send_temperature):
+    """Exercise real HTTP transport and generation with HA helpers stubbed."""
+    coordinator, _, _ = make_coordinator(
+        monkeypatch,
+        states={"light.hall": make_state("light.hall", "off")},
+        options={
+            "provider": provider,
+            f"{key}_api_key": "smoke-test-key",
+            f"{key}_model": model,
+            f"{key}_temperature": 0.3,
+        },
+    )
+    requests = []
+    notifications = []
+    monkeypatch.setattr(
+        coordinator_module.persistent_notification,
+        "async_create",
+        lambda hass, **kwargs: notifications.append(kwargs),
+        raising=False,
+    )
+    yaml_code = "alias: Hall light\ntrigger: []\naction:\n  - service: light.turn_on\n    target:\n      entity_id: light.hall\n"
+    suggestion = json.dumps({"suggestions": [{
+        "title": "Hall light", "description": "Turn on the hall light.",
+        "yaml": yaml_code, "entities_used": ["light.hall"],
+    }]})
+
+    async def run():
+        async def handler(request):
+            body = await request.json()
+            requests.append(body)
+            if not send_temperature and "temperature" in body:
+                return web.json_response({"error": "temperature is not supported"}, status=400)
+            if key == "anthropic":
+                return web.json_response({"content": [{"type": "text", "text": suggestion}], "stop_reason": "end_turn"})
+            return web.json_response({"choices": [{"message": {"content": suggestion}, "finish_reason": "stop"}]})
+
+        app = web.Application()
+        app.router.add_post("/chat/completions", handler)
+        runner = web.AppRunner(app)
+        await runner.setup()
+        try:
+            await web.TCPSite(runner, "127.0.0.1", 0).start()
+            base = f"http://127.0.0.1:{runner.addresses[0][1]}"
+            if key == "minimax":
+                coordinator.entry.options["minimax_base_url"] = base
+            else:
+                monkeypatch.setattr(coordinator_module, f"ENDPOINT_{key.upper()}", f"{base}/chat/completions")
+            async with ClientSession() as session:
+                coordinator.session = session
+                await coordinator.async_generate_suggestions(all_entities=True, entity_limit=50)
+                history = await coordinator_module.async_get_suggestion_store(coordinator.hass).async_list()
+        finally:
+            await runner.cleanup()
+        assert len(requests) == 1
+        assert requests[0]["model"] == model
+        assert ("temperature" in requests[0]) is send_temperature
+        assert requests[0]["max_tokens"] > 0
+        assert coordinator.data["request_succeeded"] is True
+        assert coordinator.data["last_error"] is None
+        assert coordinator.data["yaml_block"] == yaml_code.strip()
+        assert history[0]["title"] == "Hall light"
+        assert history[0]["model"] == model
+        assert coordinator.data["entities_processed"] == ["light.hall"]
+        assert len(notifications) == 1
+
+    asyncio.run(run())
+
+
+def test_http_provider_failure_is_reported_without_retrying(monkeypatch):
+    coordinator, _, _ = make_coordinator(
+        monkeypatch,
+        states={"light.hall": make_state("light.hall", "off")},
+        options={"provider": "Anthropic", "anthropic_api_key": "smoke-test-key"},
+    )
+    calls = []
+
+    async def run():
+        async def handler(request):
+            calls.append(await request.json())
+            return web.json_response({"error": {"message": "model unavailable"}}, status=400)
+
+        app = web.Application()
+        app.router.add_post("/messages", handler)
+        async with TestServer(app) as server, ClientSession() as session:
+            monkeypatch.setattr(coordinator_module, "ENDPOINT_ANTHROPIC", str(server.make_url("/messages")))
+            coordinator.session = session
+            with pytest.raises(ValueError, match="Anthropic error 400"):
+                await coordinator.async_generate_suggestions(all_entities=True)
+        assert len(calls) == 1
+        assert coordinator.data["request_succeeded"] is False
+        assert "model unavailable" in coordinator.data["last_error"]
+        assert not coordinator.previous_entities
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("base_url", [None, "https://api.minimaxi.com/v1/"])
+@pytest.mark.parametrize("request_options", [{}, {"minimax_temperature": 0.4, "max_output_tokens": 4096}])
+@pytest.mark.parametrize(
+    "saved_model,option_model,expected_model",
+    [
+        (None, None, "MiniMax-M3.1-Flash"),
+        ("MiniMax-M3.1-Flash", None, "MiniMax-M3.1-Flash"),
+        ("MiniMax-M3", None, "MiniMax-M3"),
+        ("MiniMax-M2.7", None, "MiniMax-M2.7"),
+        ("custom-deployment", None, "custom-deployment"),
+        ("MiniMax-M3.1-Flash", "MiniMax-M3", "MiniMax-M3"),
+        ("MiniMax-M3.1-Flash", "MiniMax-M2.7", "MiniMax-M2.7"),
+        ("MiniMax-M3.1-Flash", "custom-deployment", "custom-deployment"),
+    ],
+)
+def test_minimax_dispatch_serializes_saved_or_default_model(
+    monkeypatch, base_url, request_options, saved_model, option_model, expected_model
+):
+    coordinator, _, _ = make_coordinator(monkeypatch, states={})
+    coordinator.config_entry.data = {"provider": "MiniMax", "minimax_api_key": "test-key"}
+    if saved_model is not None:
+        coordinator.config_entry.data["minimax_model"] = saved_model
+    if option_model is not None:
+        coordinator.config_entry.options["minimax_model"] = option_model
+    if base_url is not None:
+        coordinator.config_entry.options["minimax_base_url"] = base_url
+    coordinator.config_entry.options.update(request_options)
+    requests = []
+    expected_endpoint = f"{(base_url or 'https://api.minimax.io/v1').rstrip('/')}/chat/completions"
+
+    async def exercise():
+        async def respond(request):
+            requests.append(await request.json())
+            assert request.headers["Authorization"] == "Bearer test-key"
+            assert request.content_type == "application/json"
+            return web.json_response({"choices": [{"message": {"content": "ok"}}]})
+
+        app = web.Application()
+        app.router.add_post("/v1/chat/completions", respond)
+        async with TestServer(app) as server, aiohttp.ClientSession() as session:
+            original_request = session._request
+
+            async def local_request(method, url, **kwargs):
+                # Keep real aiohttp serialization; no provider traffic leaves the test.
+                assert method == "POST"
+                assert url == expected_endpoint
+                return await original_request(method, server.make_url("/v1/chat/completions"), **kwargs)
+
+            monkeypatch.setattr(session, "_request", local_request)
+            coordinator.session = session
+            assert await coordinator._dispatch("Suggest an automation.") == "ok"
+
+    asyncio.run(exercise())
+
+    # Omitted thinking/effort use the API's adaptive/max defaults for Flash.
+    # In particular, no disabled thinking, service_tier or reasoning_split is sent.
+    assert requests == [{
+        "model": expected_model,
+        "messages": [{"role": "user", "content": "Suggest an automation."}],
+        "temperature": request_options.get("minimax_temperature", 0.7),
+        "max_tokens": request_options.get("max_output_tokens", 500),
+    }]

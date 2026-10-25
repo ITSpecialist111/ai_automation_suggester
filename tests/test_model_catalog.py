@@ -75,10 +75,30 @@ def test_openrouter_free_router_supports_structured_output():
 def test_minimax_catalog_contains_target_models():
     catalog = model_catalog.get_provider_catalog("MiniMax")
 
-    assert catalog.default_model == "MiniMax-M3"
-    assert [item.model for item in catalog.models] == ["MiniMax-M3", "MiniMax-M2.7"]
+    assert catalog.default_model == DEFAULT_MODELS["MiniMax"] == "MiniMax-M3.1-Flash"
+    assert [item.model for item in catalog.models] == ["MiniMax-M3.1-Flash", "MiniMax-M3"]
+    flash = model_catalog.get_model_capabilities("MiniMax", None)
+    assert flash.model == "MiniMax-M3.1-Flash"
+    assert flash.context_window == 1_000_000
+    assert flash.max_output_tokens == 524_288
+    assert flash.supports_reasoning is True
     assert model_catalog.get_model_capabilities("MiniMax", "MiniMax-M3").context_window == 1_000_000
-    assert model_catalog.get_model_capabilities("MiniMax", "MiniMax-M2.7").context_window == 204_800
+
+
+def test_minimax_saved_legacy_metadata_is_preserved():
+    legacy = model_catalog.get_model_capabilities("MiniMax", "MiniMax-M2.7")
+
+    assert legacy.model == "MiniMax-M2.7"
+    assert legacy.context_window == 204_800
+    assert legacy.supports_reasoning is True
+    assert legacy.token_parameter == "max_tokens"
+
+
+def test_minimax_custom_model_is_preserved():
+    capabilities = model_catalog.get_model_capabilities("MiniMax", "custom-deployment")
+
+    assert capabilities.model == "custom-deployment"
+    assert capabilities.status == model_catalog.STATUS_CUSTOM
 
 
 def test_google_json_schema_strips_additional_properties():
@@ -152,3 +172,42 @@ def test_unknown_direct_openai_model_avoids_deprecated_max_tokens():
 @pytest.mark.parametrize("provider", ["OpenAI Azure", "Custom OpenAI", "Generic OpenAI", "OpenRouter"])
 def test_unknown_models_on_other_providers_keep_max_tokens(provider):
     assert model_catalog.chat_token_parameter(provider, "my-custom-deployment") == "max_tokens"
+
+
+@pytest.mark.parametrize("provider", ["OpenRouter", "Requesty", "Cheaper Inference", "LiteLLM", "Generic OpenAI"])
+@pytest.mark.parametrize(
+    "model",
+    ["gpt-5.4-mini", "openai/gpt-6.1-sol", "openai/o5-mini", "anthropic/claude-opus-4.7", "claude-sonnet-5-5"],
+)
+def test_fixed_sampling_models_omit_temperature_through_gateways(provider, model):
+    assert model_catalog.should_send_temperature(provider, model) is False
+
+
+@pytest.mark.parametrize("model", ["claude-sonnet-4-6", "claude-opus-4-7", "claude-haiku-5-5", "custom-claude"])
+def test_direct_anthropic_never_sends_temperature(model):
+    assert model_catalog.should_send_temperature("Anthropic", model) is False
+
+
+@pytest.mark.parametrize(
+    "model,expected",
+    [
+        ("claude-opus-4-7", True),
+        ("anthropic/claude-opus-4.7", True),
+        ("us.anthropic.claude-sonnet-5-v1:0", True),
+        ("claude-fable-5-1", True),
+        ("claude-opus-4-20250514", False),
+        ("claude-3-7-sonnet-latest", False),
+        ("anthropic/claude-sonnet-4.6", False),
+        ("my-claude-proxy", False),
+        ("", False),
+        (None, False),
+    ],
+)
+def test_claude_fixed_sampling_detection(model, expected):
+    assert model_catalog.is_fixed_sampling_claude(model) is expected
+
+
+@pytest.mark.parametrize("provider", ["OpenRouter", "Requesty", "Cheaper Inference", "LiteLLM", "Generic OpenAI"])
+@pytest.mark.parametrize("model", ["openai/gpt-4o-mini", "anthropic/claude-sonnet-4.6", "my-local-model", "gpt-oss-120b"])
+def test_other_models_keep_configured_temperature(provider, model):
+    assert model_catalog.should_send_temperature(provider, model) is True

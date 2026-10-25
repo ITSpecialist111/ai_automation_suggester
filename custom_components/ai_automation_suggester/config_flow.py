@@ -15,7 +15,10 @@ from homeassistant.helpers.selector import TextSelector, TextSelectorConfig
 from .const import (
     CONF_ANTHROPIC_API_KEY,
     CONF_ANTHROPIC_MODEL,
-    CONF_ANTHROPIC_TEMPERATURE,
+    CONF_CHEAPERINFERENCE_API_KEY,
+    CONF_CHEAPERINFERENCE_MODEL,
+    CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS,
+    CONF_CHEAPERINFERENCE_TEMPERATURE,
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_MODEL,
@@ -258,6 +261,18 @@ class ProviderValidator:
         except Exception as err:
             return sanitize_provider_error(err)
 
+    async def validate_cheaperinference(self, api_key: str, model: str) -> str | None:
+        hdr = {"content-type": "application/json"}
+        if api_key:
+            hdr["Authorization"] = f"Bearer {api_key}"
+        try:
+            async with self.session.get(
+                "https://api.cheaperinference.com/v1/models", headers=hdr, timeout=self.timeout
+            ) as response:
+                return await self._response_error(response)
+        except Exception as err:
+            return sanitize_provider_error(err)
+
     async def validate_minimax(self, api_key: str, base_url: str) -> str | None:
         hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         try:
@@ -313,6 +328,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "OpenRouter": self.async_step_openrouter,
                 "Requesty": self.async_step_requesty,
                 "MiniMax": self.async_step_minimax,
+                "Cheaper Inference": self.async_step_cheaperinference,
                 "OpenAI Azure": self.async_step_openai_azure,
                 "Generic OpenAI": self.async_step_generic_openai,
                 "LiteLLM": self.async_step_litellm,
@@ -339,6 +355,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "Perplexity AI",
                             "Requesty",
                             "MiniMax",
+                            "Cheaper Inference",
                         ]
                     )
                 }
@@ -420,7 +437,6 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema = {
             vol.Required(CONF_ANTHROPIC_API_KEY): TextSelector(TextSelectorConfig(type="password")),
             vol.Optional(CONF_ANTHROPIC_MODEL, default=DEFAULT_MODELS["Anthropic"]): str,
-            vol.Optional(CONF_ANTHROPIC_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0)),
         }
         self._add_token_fields(schema)
         return await self._provider_form(
@@ -679,6 +695,36 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input,
         )
 
+    async def async_step_cheaperinference(self, user_input=None):
+        async def _v(ui):
+            return await self.validator.validate_cheaperinference(
+                ui[CONF_CHEAPERINFERENCE_API_KEY],
+                ui.get(CONF_CHEAPERINFERENCE_MODEL, DEFAULT_MODELS["Cheaper Inference"]),
+            )
+
+        schema = {
+            vol.Required(CONF_CHEAPERINFERENCE_API_KEY): TextSelector(TextSelectorConfig(type="password")),
+            vol.Optional(
+                CONF_CHEAPERINFERENCE_MODEL, default=DEFAULT_MODELS["Cheaper Inference"]
+            ): str,
+            vol.Optional(CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS, default=0): vol.All(
+                vol.Coerce(int), vol.Range(min=0)
+            ),
+            vol.Optional(
+                CONF_CHEAPERINFERENCE_TEMPERATURE, default=DEFAULT_TEMPERATURE
+            ): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0)),
+        }
+        self._add_token_fields(schema)
+        return await self._provider_form(
+            "cheaperinference",
+            vol.Schema(schema),
+            _v,
+            "AI Automation Suggester (Cheaper Inference)",
+            {},
+            {},
+            user_input,
+        )
+
     async def async_step_openai_azure(self, user_input=None):
         async def _v(ui):
             if not ui.get(CONF_OPENAI_AZURE_API_KEY) or not ui.get(CONF_OPENAI_AZURE_DEPLOYMENT_ID) or not ui.get(CONF_OPENAI_AZURE_API_VERSION):
@@ -816,7 +862,6 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
         elif provider == "Anthropic":
             schema[vol.Optional(CONF_ANTHROPIC_API_KEY, default=self._get_option(CONF_ANTHROPIC_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_ANTHROPIC_MODEL, default=self._get_option(CONF_ANTHROPIC_MODEL, DEFAULT_MODELS["Anthropic"]))] = str
-            schema[vol.Optional(CONF_ANTHROPIC_TEMPERATURE, default=self._get_option(CONF_ANTHROPIC_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
         elif provider == "Google":
             schema[vol.Optional(CONF_GOOGLE_API_KEY, default=self._get_option(CONF_GOOGLE_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_GOOGLE_MODEL, default=self._get_option(CONF_GOOGLE_MODEL, DEFAULT_MODELS["Google"]))] = str
@@ -868,6 +913,11 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_MINIMAX_MODEL, default=self._get_option(CONF_MINIMAX_MODEL, DEFAULT_MODELS["MiniMax"]))] = str
             schema[vol.Optional(CONF_MINIMAX_BASE_URL, default=self._get_option(CONF_MINIMAX_BASE_URL, MINIMAX_BASE_URLS[0]))] = vol.In(MINIMAX_BASE_URLS)
             schema[vol.Optional(CONF_MINIMAX_TEMPERATURE, default=self._get_option(CONF_MINIMAX_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+        elif provider == "Cheaper Inference":
+            schema[vol.Optional(CONF_CHEAPERINFERENCE_API_KEY, default=self._get_option(CONF_CHEAPERINFERENCE_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_CHEAPERINFERENCE_MODEL, default=self._get_option(CONF_CHEAPERINFERENCE_MODEL, DEFAULT_MODELS["Cheaper Inference"]))] = str
+            schema[vol.Optional(CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS, default=self._get_option(CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS, 0))] = vol.All(vol.Coerce(int), vol.Range(min=0))
+            schema[vol.Optional(CONF_CHEAPERINFERENCE_TEMPERATURE, default=self._get_option(CONF_CHEAPERINFERENCE_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
         elif provider == "OpenAI Azure":
             schema[vol.Optional(CONF_OPENAI_AZURE_API_KEY, default=self._get_option(CONF_OPENAI_AZURE_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_OPENAI_AZURE_ENDPOINT, default=self._get_option(CONF_OPENAI_AZURE_ENDPOINT))] = str

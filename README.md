@@ -200,18 +200,21 @@ Model APIs change quickly, so the integration keeps a compatibility catalog and 
 |----------|-----------------------------|---------------------|
 | OpenAI | `gpt-5.4-mini` | GPT-5 and later models (including GPT-6, such as `gpt-6.1-sol`) and `o`-series models use the Responses API, `max_output_tokens`, and reasoning effort. Temperature is not sent to models known to reject it. Other models use Chat Completions with `max_completion_tokens`. `gpt-5.5` and `gpt-5.5-pro` are supported when available on your account. |
 | Azure OpenAI | `gpt-5.4-mini` deployment name | Azure uses deployment names. Configure the deployment ID, endpoint, and API version that match your Azure resource. |
-| Anthropic | `claude-sonnet-4-6` | Supports current Claude Sonnet/Opus model IDs such as `claude-sonnet-4-6` and `claude-opus-4-7`. |
+| Anthropic | `claude-sonnet-5-5` | Catalog includes Sonnet/Opus/Haiku 5.5 and Fable 5.1. Saved legacy and custom model IDs are preserved. Temperature is no longer sent; the obsolete setup/options control has been removed. |
 | Google Gemini | `gemini-3.5-flash` | Stable replacement for Gemini 2.5 Flash, which is unavailable to new users. Custom model IDs are still allowed. |
 | Groq | `openai/gpt-oss-120b` | Replaces `llama-3.3-70b-versatile`, retired for free/developer accounts on 2026-08-16. `openai/gpt-oss-20b` is another production option. `qwen/qwen3.6-27b` is a preview alternative. Enterprise Llama access may remain. |
 | Mistral AI | `mistral-small-latest` | Supports current `*-latest` aliases and custom published IDs. |
 | Perplexity AI | `sonar` | Supports Sonar, Sonar Pro, reasoning, and research-style model IDs where your account has access. |
 | OpenRouter | `openai/gpt-5.4-mini` | OpenRouter remains dynamic. Use provider-prefixed IDs from OpenRouter's model catalog. `openrouter/free` (the Free Models Router) receives the structured-output schema, so OpenRouter only routes it to free models that support structured outputs. |
 | Requesty | `openai/gpt-4o-mini` | OpenAI-compatible router (`https://router.requesty.ai`) providing 300+ models through a single API key. Use provider-prefixed model IDs. |
-| MiniMax | `MiniMax-M3` | OpenAI-compatible provider with global (`https://api.minimax.io/v1`) and China (`https://api.minimaxi.com/v1`) regions. `MiniMax-M2.7` is also in the catalog. Use a MiniMax API key for the selected region. |
+| Cheaper Inference | `gpt-5.4-mini` | OpenAI-compatible gateway (`https://api.cheaperinference.com/v1`) with API-key authentication, custom model IDs, and an optional reasoning token budget. |
+| MiniMax | `MiniMax-M3.1-Flash` | OpenAI-compatible provider with global (`https://api.minimax.io/v1`) and China (`https://api.minimaxi.com/v1`) regions. The active catalog offers `MiniMax-M3.1-Flash` first and `MiniMax-M3` as an alternative. Saved legacy and custom model IDs remain valid. Use a MiniMax API key for the selected region. |
 | LiteLLM | `openai/gpt-4o-mini` | Uses the LiteLLM Python SDK to reach 100+ backends (OpenAI, Bedrock, Azure, Vertex, Groq, and more). Model IDs follow the LiteLLM naming scheme. |
 | LocalAI/Ollama/custom OpenAI-compatible | User configured | Custom model names remain valid and are treated conservatively. |
 
 For maximum stability, prefer stable model IDs over preview or `latest` aliases unless you intentionally want fast-moving behavior.
+
+Claude 4.7-and-later and OpenAI GPT-5-and-later / `o`-series model names omit temperature through OpenRouter, Requesty, Cheaper Inference, LiteLLM, and custom OpenAI-compatible APIs too. Other routed models retain their configured temperature. The direct Anthropic provider omits temperature for every model, including saved legacy configurations: [Anthropic API version 2026-10-21 removes sampling parameters](https://platform.claude.com/docs/en/api/versioning), while newer Claude models already reject non-default sampling on older API versions. The integration still pins its direct HTTP requests to `2023-06-01`; this release does not migrate the API version.
 
 Upgrading does not replace saved model selections. If an existing Google or Groq entry returns a model-not-found error, open its integration options and select a current model above. Availability depends on your provider account. See [Google's model catalog](https://ai.google.dev/gemini-api/docs/models) and [Groq's deprecation notices](https://console.groq.com/docs/deprecations).
 
