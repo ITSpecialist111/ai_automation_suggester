@@ -93,3 +93,17 @@ def test_cheaperinference_setup_and_options_preserve_custom_models():
     result = asyncio.run(flow.async_step_init(form["data_schema"]({})))
     assert result["data"]["cheaperinference_model"] == "custom-model"
     assert result["data"]["cheaperinference_reasoning_max_tokens"] == 256
+
+
+def test_opper_setup_and_options_preserve_custom_models():
+    setup = asyncio.run(AIAutomationConfigFlow().async_step_user({"provider": "Opper"}))
+    assert setup["data_schema"]({"opper_api_key": "test-key"})["opper_model"] == "claude-sonnet-4-6"
+    entry = SimpleNamespace(
+        data={"provider": "Opper", "opper_api_key": "test-key"},
+        options={"opper_model": "anthropic/claude-sonnet-4-6", "opper_temperature": 0.4},
+    )
+    flow = AIAutomationOptionsFlowHandler(entry)
+    form = asyncio.run(flow.async_step_init())
+    result = asyncio.run(flow.async_step_init(form["data_schema"]({})))
+    assert result["data"]["opper_model"] == "anthropic/claude-sonnet-4-6"
+    assert result["data"]["opper_temperature"] == 0.4

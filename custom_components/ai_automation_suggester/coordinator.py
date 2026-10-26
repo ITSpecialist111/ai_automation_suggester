@@ -95,6 +95,9 @@ from .const import (
     CONF_OPENROUTER_MODEL,
     CONF_OPENROUTER_REASONING_MAX_TOKENS,
     CONF_OPENROUTER_TEMPERATURE,
+    CONF_OPPER_API_KEY,
+    CONF_OPPER_MODEL,
+    CONF_OPPER_TEMPERATURE,
     CONF_PERPLEXITY_API_KEY,
     CONF_PERPLEXITY_MODEL,
     CONF_PERPLEXITY_TEMPERATURE,
@@ -118,6 +121,7 @@ from .const import (
     ENDPOINT_MISTRAL,
     ENDPOINT_OPENAI,
     ENDPOINT_OPENROUTER,
+    ENDPOINT_OPPER,
     ENDPOINT_PERPLEXITY,
     ENDPOINT_REQUESTY,
     MINIMAX_BASE_URLS,
@@ -288,6 +292,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "Requesty": CONF_REQUESTY_MODEL,
             "MiniMax": CONF_MINIMAX_MODEL,
             "Cheaper Inference": CONF_CHEAPERINFERENCE_MODEL,
+            "Opper": CONF_OPPER_MODEL,
             "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
             "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
             "LiteLLM": CONF_LITELLM_MODEL,
@@ -925,6 +930,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "Requesty": self._requesty,
             "MiniMax": self._minimax,
             "Cheaper Inference": self._cheaperinference,
+            "Opper": self._opper,
             "OpenAI Azure": self._openai_azure,
             "Generic OpenAI": self._generic_openai,
             "LiteLLM": self._litellm,
@@ -1441,6 +1447,25 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             provider_label="Cheaper Inference",
         )
         return self._extract_chat_content(response, "Cheaper Inference") if response else None
+
+    async def _opper(self, prompt: str) -> str | None:
+        api_key = self._opt(CONF_OPPER_API_KEY)
+        if not api_key:
+            raise ValueError("Opper API key not configured")
+        model = self._current_model("Opper")
+        body = self._openai_compatible_body(
+            provider="Opper",
+            model=model,
+            prompt=self._trim_prompt(prompt),
+            temperature=float(self._opt(CONF_OPPER_TEMPERATURE, DEFAULT_TEMPERATURE)),
+        )
+        response = await self._post_json(
+            ENDPOINT_OPPER,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            body=body,
+            provider_label="Opper",
+        )
+        return self._extract_chat_content(response, "Opper") if response else None
 
     async def _minimax(self, prompt: str) -> str | None:
         api_key = self._opt(CONF_MINIMAX_API_KEY)

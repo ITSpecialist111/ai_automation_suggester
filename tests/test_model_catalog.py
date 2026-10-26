@@ -34,7 +34,10 @@ def test_deprecated_google_model_warns():
     assert any("deprecated" in warning.lower() for warning in warnings)
 
 
-@pytest.mark.parametrize("provider,expected", [("Google", "gemini-3.5-flash"), ("Groq", "openai/gpt-oss-120b")])
+@pytest.mark.parametrize(
+    "provider,expected",
+    [("Google", "gemini-3.5-flash"), ("Groq", "openai/gpt-oss-120b"), ("Opper", "claude-sonnet-4-6")],
+)
 def test_provider_defaults_use_supported_models(provider, expected):
     assert DEFAULT_MODELS[provider] == expected
     assert model_catalog.get_provider_catalog(provider).default_model == expected
@@ -174,7 +177,7 @@ def test_unknown_models_on_other_providers_keep_max_tokens(provider):
     assert model_catalog.chat_token_parameter(provider, "my-custom-deployment") == "max_tokens"
 
 
-@pytest.mark.parametrize("provider", ["OpenRouter", "Requesty", "Cheaper Inference", "LiteLLM", "Generic OpenAI"])
+@pytest.mark.parametrize("provider", ["OpenRouter", "Requesty", "Cheaper Inference", "Opper", "LiteLLM", "Generic OpenAI"])
 @pytest.mark.parametrize(
     "model",
     ["gpt-5.4-mini", "openai/gpt-6.1-sol", "openai/o5-mini", "anthropic/claude-opus-4.7", "claude-sonnet-5-5"],
@@ -207,7 +210,7 @@ def test_claude_fixed_sampling_detection(model, expected):
     assert model_catalog.is_fixed_sampling_claude(model) is expected
 
 
-@pytest.mark.parametrize("provider", ["OpenRouter", "Requesty", "Cheaper Inference", "LiteLLM", "Generic OpenAI"])
+@pytest.mark.parametrize("provider", ["OpenRouter", "Requesty", "Cheaper Inference", "Opper", "LiteLLM", "Generic OpenAI"])
 @pytest.mark.parametrize("model", ["openai/gpt-4o-mini", "anthropic/claude-sonnet-4.6", "my-local-model", "gpt-oss-120b"])
 def test_other_models_keep_configured_temperature(provider, model):
     assert model_catalog.should_send_temperature(provider, model) is True

@@ -79,6 +79,9 @@ from .const import (
     CONF_OPENROUTER_MODEL,
     CONF_OPENROUTER_REASONING_MAX_TOKENS,
     CONF_OPENROUTER_TEMPERATURE,
+    CONF_OPPER_API_KEY,
+    CONF_OPPER_MODEL,
+    CONF_OPPER_TEMPERATURE,
     CONF_PERPLEXITY_API_KEY,
     CONF_PERPLEXITY_MODEL,
     CONF_PERPLEXITY_TEMPERATURE,
@@ -273,6 +276,18 @@ class ProviderValidator:
         except Exception as err:
             return sanitize_provider_error(err)
 
+    async def validate_opper(self, api_key: str, model: str) -> str | None:
+        hdr = {"content-type": "application/json"}
+        if api_key:
+            hdr["Authorization"] = f"Bearer {api_key}"
+        try:
+            async with self.session.get(
+                "https://api.opper.ai/v3/compat/models", headers=hdr, timeout=self.timeout
+            ) as response:
+                return await self._response_error(response)
+        except Exception as err:
+            return sanitize_provider_error(err)
+
     async def validate_minimax(self, api_key: str, base_url: str) -> str | None:
         hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         try:
@@ -329,6 +344,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "Requesty": self.async_step_requesty,
                 "MiniMax": self.async_step_minimax,
                 "Cheaper Inference": self.async_step_cheaperinference,
+                "Opper": self.async_step_opper,
                 "OpenAI Azure": self.async_step_openai_azure,
                 "Generic OpenAI": self.async_step_generic_openai,
                 "LiteLLM": self.async_step_litellm,
@@ -356,6 +372,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "Requesty",
                             "MiniMax",
                             "Cheaper Inference",
+                            "Opper",
                         ]
                     )
                 }
@@ -725,6 +742,33 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input,
         )
 
+    async def async_step_opper(self, user_input=None):
+        async def _v(ui):
+            return await self.validator.validate_opper(
+                ui[CONF_OPPER_API_KEY],
+                ui.get(CONF_OPPER_MODEL, DEFAULT_MODELS["Opper"]),
+            )
+
+        schema = {
+            vol.Required(CONF_OPPER_API_KEY): TextSelector(TextSelectorConfig(type="password")),
+            vol.Optional(
+                CONF_OPPER_MODEL, default=DEFAULT_MODELS["Opper"]
+            ): str,
+            vol.Optional(
+                CONF_OPPER_TEMPERATURE, default=DEFAULT_TEMPERATURE
+            ): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0)),
+        }
+        self._add_token_fields(schema)
+        return await self._provider_form(
+            "opper",
+            vol.Schema(schema),
+            _v,
+            "AI Automation Suggester (Opper)",
+            {},
+            {},
+            user_input,
+        )
+
     async def async_step_openai_azure(self, user_input=None):
         async def _v(ui):
             if not ui.get(CONF_OPENAI_AZURE_API_KEY) or not ui.get(CONF_OPENAI_AZURE_DEPLOYMENT_ID) or not ui.get(CONF_OPENAI_AZURE_API_VERSION):
@@ -918,6 +962,10 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_CHEAPERINFERENCE_MODEL, default=self._get_option(CONF_CHEAPERINFERENCE_MODEL, DEFAULT_MODELS["Cheaper Inference"]))] = str
             schema[vol.Optional(CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS, default=self._get_option(CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS, 0))] = vol.All(vol.Coerce(int), vol.Range(min=0))
             schema[vol.Optional(CONF_CHEAPERINFERENCE_TEMPERATURE, default=self._get_option(CONF_CHEAPERINFERENCE_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+        elif provider == "Opper":
+            schema[vol.Optional(CONF_OPPER_API_KEY, default=self._get_option(CONF_OPPER_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_OPPER_MODEL, default=self._get_option(CONF_OPPER_MODEL, DEFAULT_MODELS["Opper"]))] = str
+            schema[vol.Optional(CONF_OPPER_TEMPERATURE, default=self._get_option(CONF_OPPER_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
         elif provider == "OpenAI Azure":
             schema[vol.Optional(CONF_OPENAI_AZURE_API_KEY, default=self._get_option(CONF_OPENAI_AZURE_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_OPENAI_AZURE_ENDPOINT, default=self._get_option(CONF_OPENAI_AZURE_ENDPOINT))] = str
