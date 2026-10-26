@@ -537,6 +537,41 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
         True,
         "https://api.cheaperinference.com/v1/models",
     ),
+    "Opper": ProviderCatalog(
+        "Opper",
+        "claude-sonnet-4-6",
+        (
+            ModelCapabilities(
+                "claude-sonnet-4-6",
+                "Claude Sonnet 4.6 via Opper",
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "gpt-5.4-mini",
+                "GPT-5.4 Mini via Opper",
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "gpt-5.5",
+                "GPT-5.5 via Opper",
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "gemini-3.8-flash",
+                "Gemini 3.8 Flash via Opper",
+                supports_structured_output=True,
+                supports_json_schema=True,
+            ),
+        ),
+        True,
+        "https://api.opper.ai/v3/compat/models",
+    ),
 }
 
 
@@ -578,7 +613,7 @@ def get_model_capabilities(provider: str, model: str | None) -> ModelCapabilitie
         provider == "Anthropic"
         or is_fixed_sampling_claude(selected)
         or (
-            provider in {"OpenAI", "OpenAI Azure", "Custom OpenAI", "Generic OpenAI", "OpenRouter", "Requesty", "Cheaper Inference", "LiteLLM"}
+            provider in {"OpenAI", "OpenAI Azure", "Custom OpenAI", "Generic OpenAI", "OpenRouter", "Requesty", "Cheaper Inference", "Opper", "LiteLLM"}
             and is_openai_reasoning_family(openai_name)
         )
     ):

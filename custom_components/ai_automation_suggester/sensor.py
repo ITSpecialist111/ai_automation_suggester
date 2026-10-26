@@ -39,6 +39,7 @@ from .const import (
     # Model configuration keys (used to display current model)
     CONF_OPENAI_MODEL,
     CONF_OPENROUTER_MODEL,
+    CONF_OPPER_MODEL,
     CONF_PERPLEXITY_MODEL,
     CONF_PROVIDER,
     CONF_REQUESTY_MODEL,
@@ -76,6 +77,7 @@ PROVIDER_TO_MODEL_KEY_MAP: dict[str, str] = {
     "Requesty": CONF_REQUESTY_MODEL,
     "MiniMax": CONF_MINIMAX_MODEL,
     "Cheaper Inference": CONF_CHEAPERINFERENCE_MODEL,
+    "Opper": CONF_OPPER_MODEL,
     "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
     "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
     "LiteLLM": CONF_LITELLM_MODEL,

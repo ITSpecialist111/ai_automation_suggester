@@ -134,6 +134,11 @@ CONF_CHEAPERINFERENCE_MODEL = "cheaperinference_model"
 CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS = "cheaperinference_reasoning_max_tokens"
 CONF_CHEAPERINFERENCE_TEMPERATURE = "cheaperinference_temperature"
 
+# Opper
+CONF_OPPER_API_KEY = "opper_api_key"
+CONF_OPPER_MODEL = "opper_model"
+CONF_OPPER_TEMPERATURE = "opper_temperature"
+
 # Generic OpenAI
 CONF_GENERIC_OPENAI_ENDPOINT = "generic_openai_api_endpoint"
 CONF_GENERIC_OPENAI_API_KEY = "generic_openai_api_key"
@@ -166,6 +171,7 @@ DEFAULT_MODELS = {
     "Requesty": "openai/gpt-4o-mini",
     "MiniMax": "MiniMax-M3.1-Flash",
     "Cheaper Inference": "gpt-5.4-mini",
+    "Opper": "claude-sonnet-4-6",
     "Generic OpenAI": "gpt-4o-mini",
     "LiteLLM": "openai/gpt-4o-mini",
 }
@@ -206,6 +212,7 @@ MINIMAX_BASE_URLS = [
     "https://api.minimaxi.com/v1",
 ]
 ENDPOINT_CHEAPERINFERENCE = "https://api.cheaperinference.com/v1/chat/completions"
+ENDPOINT_OPPER = "https://api.opper.ai/v3/compat/chat/completions"
 
 
 # ─────────────────────────────────────────────────────────────

@@ -154,6 +154,20 @@ def test_cheaperinference_length_finish_reason_adds_warning():
     assert any("truncated" in warning for warning in parsed[0]["warnings"])
 
 
+def test_opper_length_finish_reason_adds_warning():
+    parsed = suggestions.parse_suggestion_response(
+        "No YAML this time",
+        provider="Opper",
+        model="claude-sonnet-4-6",
+        created_at=datetime(2026, 5, 3, 12, 0, 0),
+        entities_processed=[],
+        response_metadata={"finish_reason": "length"},
+    )
+
+    assert parsed[0]["provider"] == "Opper"
+    assert any("truncated" in warning for warning in parsed[0]["warnings"])
+
+
 def test_parse_malformed_json_yaml_blocks_from_provider():
     raw = '''
 {

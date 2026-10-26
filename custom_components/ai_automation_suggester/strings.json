@@ -149,6 +149,16 @@
           "max_output_tokens": "Max Output Tokens"
         }
       },
+      "opper": {
+        "title": "Configure Opper",
+        "data": {
+          "opper_api_key": "Opper API Key",
+          "opper_model": "Opper Model",
+          "opper_temperature": "Temperature",
+          "max_input_tokens": "Max Input Tokens",
+          "max_output_tokens": "Max Output Tokens"
+        }
+      },
       "openai_azure": {
         "title": "Configure OpenAI Azure",
         "data": {
@@ -250,6 +260,9 @@
           "cheaperinference_model": "Cheaper Inference Model",
           "cheaperinference_reasoning_max_tokens": "Cheaper Inference Reasoning Max Tokens",
           "cheaperinference_temperature": "Temperature (Cheaper Inference)",
+          "opper_api_key": "Opper API Key",
+          "opper_model": "Opper Model",
+          "opper_temperature": "Temperature (Opper)",
           "openai_azure_api_key": "Azure OpenAI API Key",
           "openai_azure_deployment_id": "Azure Deployment ID",
           "openai_azure_endpoint": "Azure Endpoint",
