@@ -93,3 +93,18 @@ def test_cheaperinference_setup_and_options_preserve_custom_models():
     result = asyncio.run(flow.async_step_init(form["data_schema"]({})))
     assert result["data"]["cheaperinference_model"] == "custom-model"
     assert result["data"]["cheaperinference_reasoning_max_tokens"] == 256
+
+
+def test_runcrate_setup_and_options_preserve_custom_models():
+    setup = asyncio.run(AIAutomationConfigFlow().async_step_user({"provider": "Runcrate"}))
+    defaults = setup["data_schema"]({"runcrate_api_key": "test-key"})
+    assert defaults["runcrate_model"] == "deepseek-ai/DeepSeek-V4.1-Flash"
+    entry = SimpleNamespace(
+        data={"provider": "Runcrate", "runcrate_api_key": "test-key"},
+        options={"runcrate_model": "zai-org/GLM-5.3-Flash", "runcrate_temperature": 0.4},
+    )
+    flow = AIAutomationOptionsFlowHandler(entry)
+    form = asyncio.run(flow.async_step_init())
+    result = asyncio.run(flow.async_step_init(form["data_schema"]({})))
+    assert result["data"]["runcrate_model"] == "zai-org/GLM-5.3-Flash"
+    assert result["data"]["runcrate_temperature"] == 0.4

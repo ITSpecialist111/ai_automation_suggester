@@ -134,6 +134,11 @@ CONF_CHEAPERINFERENCE_MODEL = "cheaperinference_model"
 CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS = "cheaperinference_reasoning_max_tokens"
 CONF_CHEAPERINFERENCE_TEMPERATURE = "cheaperinference_temperature"
 
+# Runcrate
+CONF_RUNCRATE_API_KEY = "runcrate_api_key"
+CONF_RUNCRATE_MODEL = "runcrate_model"
+CONF_RUNCRATE_TEMPERATURE = "runcrate_temperature"
+
 # Generic OpenAI
 CONF_GENERIC_OPENAI_ENDPOINT = "generic_openai_api_endpoint"
 CONF_GENERIC_OPENAI_API_KEY = "generic_openai_api_key"
@@ -166,6 +171,7 @@ DEFAULT_MODELS = {
     "Requesty": "openai/gpt-4o-mini",
     "MiniMax": "MiniMax-M3.1-Flash",
     "Cheaper Inference": "gpt-5.4-mini",
+    "Runcrate": "deepseek-ai/DeepSeek-V4.1-Flash",
     "Generic OpenAI": "gpt-4o-mini",
     "LiteLLM": "openai/gpt-4o-mini",
 }
@@ -206,6 +212,7 @@ MINIMAX_BASE_URLS = [
     "https://api.minimaxi.com/v1",
 ]
 ENDPOINT_CHEAPERINFERENCE = "https://api.cheaperinference.com/v1/chat/completions"
+ENDPOINT_RUNCRATE = "https://api.runcrate.ai/v1/chat/completions"
 
 
 # ─────────────────────────────────────────────────────────────
