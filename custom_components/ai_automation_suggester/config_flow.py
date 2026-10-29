@@ -88,6 +88,9 @@ from .const import (
     CONF_REQUESTY_MODEL,
     CONF_REQUESTY_REASONING_MAX_TOKENS,
     CONF_REQUESTY_TEMPERATURE,
+    CONF_RUNCRATE_API_KEY,
+    CONF_RUNCRATE_MODEL,
+    CONF_RUNCRATE_TEMPERATURE,
     CONFIG_VERSION,
     DEFAULT_HISTORY_RETENTION,
     DEFAULT_MAX_INPUT_TOKENS,
@@ -273,6 +276,16 @@ class ProviderValidator:
         except Exception as err:
             return sanitize_provider_error(err)
 
+    async def validate_runcrate(self, api_key: str) -> str | None:
+        hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        try:
+            async with self.session.get(
+                "https://api.runcrate.ai/v1/models", headers=hdr, timeout=self.timeout
+            ) as response:
+                return await self._response_error(response)
+        except Exception as err:
+            return sanitize_provider_error(err)
+
     async def validate_minimax(self, api_key: str, base_url: str) -> str | None:
         hdr = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         try:
@@ -329,6 +342,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "Requesty": self.async_step_requesty,
                 "MiniMax": self.async_step_minimax,
                 "Cheaper Inference": self.async_step_cheaperinference,
+                "Runcrate": self.async_step_runcrate,
                 "OpenAI Azure": self.async_step_openai_azure,
                 "Generic OpenAI": self.async_step_generic_openai,
                 "LiteLLM": self.async_step_litellm,
@@ -356,6 +370,7 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "Requesty",
                             "MiniMax",
                             "Cheaper Inference",
+                            "Runcrate",
                         ]
                     )
                 }
@@ -725,6 +740,28 @@ class AIAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input,
         )
 
+    async def async_step_runcrate(self, user_input=None):
+        async def _v(ui):
+            return await self.validator.validate_runcrate(ui[CONF_RUNCRATE_API_KEY])
+
+        schema = {
+            vol.Required(CONF_RUNCRATE_API_KEY): TextSelector(TextSelectorConfig(type="password")),
+            vol.Optional(CONF_RUNCRATE_MODEL, default=DEFAULT_MODELS["Runcrate"]): str,
+            vol.Optional(CONF_RUNCRATE_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(
+                vol.Coerce(float), vol.Range(min=0.0, max=2.0)
+            ),
+        }
+        self._add_token_fields(schema)
+        return await self._provider_form(
+            "runcrate",
+            vol.Schema(schema),
+            _v,
+            "AI Automation Suggester (Runcrate)",
+            {},
+            {},
+            user_input,
+        )
+
     async def async_step_openai_azure(self, user_input=None):
         async def _v(ui):
             if not ui.get(CONF_OPENAI_AZURE_API_KEY) or not ui.get(CONF_OPENAI_AZURE_DEPLOYMENT_ID) or not ui.get(CONF_OPENAI_AZURE_API_VERSION):
@@ -918,6 +955,10 @@ class AIAutomationOptionsFlowHandler(config_entries.OptionsFlow):
             schema[vol.Optional(CONF_CHEAPERINFERENCE_MODEL, default=self._get_option(CONF_CHEAPERINFERENCE_MODEL, DEFAULT_MODELS["Cheaper Inference"]))] = str
             schema[vol.Optional(CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS, default=self._get_option(CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS, 0))] = vol.All(vol.Coerce(int), vol.Range(min=0))
             schema[vol.Optional(CONF_CHEAPERINFERENCE_TEMPERATURE, default=self._get_option(CONF_CHEAPERINFERENCE_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
+        elif provider == "Runcrate":
+            schema[vol.Optional(CONF_RUNCRATE_API_KEY, default=self._get_option(CONF_RUNCRATE_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
+            schema[vol.Optional(CONF_RUNCRATE_MODEL, default=self._get_option(CONF_RUNCRATE_MODEL, DEFAULT_MODELS["Runcrate"]))] = str
+            schema[vol.Optional(CONF_RUNCRATE_TEMPERATURE, default=self._get_option(CONF_RUNCRATE_TEMPERATURE, DEFAULT_TEMPERATURE))] = vol.All(vol.Coerce(float), vol.Range(min=0.0, max=2.0))
         elif provider == "OpenAI Azure":
             schema[vol.Optional(CONF_OPENAI_AZURE_API_KEY, default=self._get_option(CONF_OPENAI_AZURE_API_KEY))] = TextSelector(TextSelectorConfig(type="password"))
             schema[vol.Optional(CONF_OPENAI_AZURE_ENDPOINT, default=self._get_option(CONF_OPENAI_AZURE_ENDPOINT))] = str

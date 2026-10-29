@@ -104,6 +104,9 @@ from .const import (
     CONF_REQUESTY_MODEL,
     CONF_REQUESTY_REASONING_MAX_TOKENS,
     CONF_REQUESTY_TEMPERATURE,
+    CONF_RUNCRATE_API_KEY,
+    CONF_RUNCRATE_MODEL,
+    CONF_RUNCRATE_TEMPERATURE,
     DEFAULT_HISTORY_RETENTION,
     DEFAULT_MAX_TOKENS,
     DEFAULT_MODELS,
@@ -120,6 +123,7 @@ from .const import (
     ENDPOINT_OPENROUTER,
     ENDPOINT_PERPLEXITY,
     ENDPOINT_REQUESTY,
+    ENDPOINT_RUNCRATE,
     MINIMAX_BASE_URLS,
     VERSION_ANTHROPIC,
 )
@@ -288,6 +292,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "Requesty": CONF_REQUESTY_MODEL,
             "MiniMax": CONF_MINIMAX_MODEL,
             "Cheaper Inference": CONF_CHEAPERINFERENCE_MODEL,
+            "Runcrate": CONF_RUNCRATE_MODEL,
             "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
             "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
             "LiteLLM": CONF_LITELLM_MODEL,
@@ -925,6 +930,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "Requesty": self._requesty,
             "MiniMax": self._minimax,
             "Cheaper Inference": self._cheaperinference,
+            "Runcrate": self._runcrate,
             "OpenAI Azure": self._openai_azure,
             "Generic OpenAI": self._generic_openai,
             "LiteLLM": self._litellm,
@@ -1441,6 +1447,25 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             provider_label="Cheaper Inference",
         )
         return self._extract_chat_content(response, "Cheaper Inference") if response else None
+
+    async def _runcrate(self, prompt: str) -> str | None:
+        api_key = self._opt(CONF_RUNCRATE_API_KEY)
+        if not api_key:
+            raise ValueError("Runcrate API key not configured")
+        model = self._current_model("Runcrate")
+        body = self._openai_compatible_body(
+            provider="Runcrate",
+            model=model,
+            prompt=self._trim_prompt(prompt),
+            temperature=float(self._opt(CONF_RUNCRATE_TEMPERATURE, DEFAULT_TEMPERATURE)),
+        )
+        response = await self._post_json(
+            ENDPOINT_RUNCRATE,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            body=body,
+            provider_label="Runcrate",
+        )
+        return self._extract_chat_content(response, "Runcrate") if response else None
 
     async def _minimax(self, prompt: str) -> str | None:
         api_key = self._opt(CONF_MINIMAX_API_KEY)
