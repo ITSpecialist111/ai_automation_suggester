@@ -537,6 +537,41 @@ PROVIDER_CATALOGS: dict[str, ProviderCatalog] = {
         True,
         "https://api.cheaperinference.com/v1/models",
     ),
+    "Atlas Cloud": ProviderCatalog(
+        "Atlas Cloud",
+        "deepseek-ai/deepseek-v4-flash",
+        (
+            ModelCapabilities(
+                "deepseek-ai/deepseek-v4-flash",
+                "DeepSeek V4 Flash via Atlas Cloud",
+                context_window=1_048_576,
+                max_output_tokens=393_216,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "deepseek-ai/deepseek-v4-pro",
+                "DeepSeek V4 Pro via Atlas Cloud",
+                context_window=1_048_576,
+                max_output_tokens=393_216,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+            ModelCapabilities(
+                "zai-org/glm-5.2",
+                "GLM 5.2 via Atlas Cloud",
+                context_window=1_048_576,
+                max_output_tokens=131_072,
+                supports_structured_output=True,
+                supports_json_schema=True,
+                supports_reasoning=True,
+            ),
+        ),
+        True,
+        "https://api.atlascloud.ai/v1/models",
+    ),
 }
 
 
@@ -578,7 +613,7 @@ def get_model_capabilities(provider: str, model: str | None) -> ModelCapabilitie
         provider == "Anthropic"
         or is_fixed_sampling_claude(selected)
         or (
-            provider in {"OpenAI", "OpenAI Azure", "Custom OpenAI", "Generic OpenAI", "OpenRouter", "Requesty", "Cheaper Inference", "LiteLLM"}
+            provider in {"OpenAI", "OpenAI Azure", "Custom OpenAI", "Generic OpenAI", "OpenRouter", "Requesty", "Cheaper Inference", "Atlas Cloud", "LiteLLM"}
             and is_openai_reasoning_family(openai_name)
         )
     ):

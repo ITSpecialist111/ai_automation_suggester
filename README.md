@@ -46,7 +46,7 @@ The integration follows a simple, effective process:
 |------|---------------|---------|
 | **1&nbsp;· Snapshot** | Collects data about your home. | On manual trigger or schedule, the integration gathers information on your entities (including attributes), devices, areas, **and** existing automations. You can control the scope using filters and limits. |
 | **2&nbsp;· Prompt Building** | Structures the data for the AI. | This snapshot is embedded into a detailed system prompt describing your specific Home Assistant setup. You can enhance this with a *custom prompt* to steer suggestions towards specific goals (e.g., "focus on presence lighting"). |
-| **3&nbsp;· Provider Call** | Sends the prompt to the AI. | The crafted prompt is sent to your configured AI provider (OpenAI, Azure OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, OpenRouter, Requesty, MiniMax, LiteLLM, or another OpenAI-compatible endpoint). |
+| **3&nbsp;· Provider Call** | Sends the prompt to the AI. | The crafted prompt is sent to your configured AI provider (OpenAI, Azure OpenAI, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, OpenRouter, Requesty, Cheaper Inference, Atlas Cloud, MiniMax, LiteLLM, or another OpenAI-compatible endpoint). |
 | **4&nbsp;· Parsing** | Processes the AI's response. | The integration asks capable providers for structured JSON, falls back to fenced YAML parsing, validates returned YAML, and records warnings for missing or possibly truncated output. |
 | **5&nbsp;· Surface** | Delivers and stores the suggestions. | Suggestions appear as Home Assistant persistent notifications, sensor attributes, and stored history that can be used by the bundled dashboard card or your own cards. |
 
@@ -95,7 +95,7 @@ Leveraging the AI Automation Suggester provides several key benefits:
 
 ## 📦 Features
 
-* **Multi-Provider Support:** Connect to OpenAI, OpenAI Azure, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, OpenRouter, Requesty, MiniMax, or LiteLLM (100+ backends) with full configuration options:
+* **Multi-Provider Support:** Connect to OpenAI, OpenAI Azure, Anthropic, Google, Groq, LocalAI, Ollama, Mistral, Perplexity, OpenRouter, Requesty, Cheaper Inference, Atlas Cloud, MiniMax, or LiteLLM (100+ backends) with full configuration options:
     * Temperature control for all providers (0.0 - 2.0)
     * Model selection with provider-specific defaults
     * Secure API key storage
@@ -118,7 +118,7 @@ Leveraging the AI Automation Suggester provides several key benefits:
 
 * **Home Assistant:** Version 2024.1 or later.
 * **AI Provider Setup:** You will need access to an AI model.
-    * For cloud providers (OpenAI, Anthropic, Google, Groq, Mistral, Perplexity, OpenRouter, Requesty, MiniMax), you will need API keys.
+    * For cloud providers (OpenAI, Anthropic, Google, Groq, Mistral, Perplexity, OpenRouter, Requesty, Cheaper Inference, Atlas Cloud, MiniMax), you will need API keys.
     * For local models (LocalAI, Ollama), ensure the local servers are running and accessible from Home Assistant.
 
 ---
@@ -208,13 +208,14 @@ Model APIs change quickly, so the integration keeps a compatibility catalog and 
 | OpenRouter | `openai/gpt-5.4-mini` | OpenRouter remains dynamic. Use provider-prefixed IDs from OpenRouter's model catalog. `openrouter/free` (the Free Models Router) receives the structured-output schema, so OpenRouter only routes it to free models that support structured outputs. |
 | Requesty | `openai/gpt-4o-mini` | OpenAI-compatible router (`https://router.requesty.ai`) providing 300+ models through a single API key. Use provider-prefixed model IDs. |
 | Cheaper Inference | `gpt-5.4-mini` | OpenAI-compatible gateway (`https://api.cheaperinference.com/v1`) with API-key authentication, custom model IDs, and an optional reasoning token budget. |
+| Atlas Cloud | `deepseek-ai/deepseek-v4-flash` | OpenAI-compatible gateway (`https://api.atlascloud.ai/v1`) with API-key authentication (create one at [console.atlascloud.ai](https://console.atlascloud.ai/api-keys)) and custom model IDs (models outside the catalog are sent without the structured-output schema). Use the model IDs listed by `GET /v1/models`, for example `deepseek-ai/deepseek-v4-pro` or `zai-org/glm-5.2`. |
 | MiniMax | `MiniMax-M3.1-Flash` | OpenAI-compatible provider with global (`https://api.minimax.io/v1`) and China (`https://api.minimaxi.com/v1`) regions. The active catalog offers `MiniMax-M3.1-Flash` first and `MiniMax-M3` as an alternative. Saved legacy and custom model IDs remain valid. Use a MiniMax API key for the selected region. |
 | LiteLLM | `openai/gpt-4o-mini` | Uses the LiteLLM Python SDK to reach 100+ backends (OpenAI, Bedrock, Azure, Vertex, Groq, and more). Model IDs follow the LiteLLM naming scheme. |
 | LocalAI/Ollama/custom OpenAI-compatible | User configured | Custom model names remain valid and are treated conservatively. |
 
 For maximum stability, prefer stable model IDs over preview or `latest` aliases unless you intentionally want fast-moving behavior.
 
-Claude 4.7-and-later and OpenAI GPT-5-and-later / `o`-series model names omit temperature through OpenRouter, Requesty, Cheaper Inference, LiteLLM, and custom OpenAI-compatible APIs too. Other routed models retain their configured temperature. The direct Anthropic provider omits temperature for every model, including saved legacy configurations: [Anthropic API version 2026-10-21 removes sampling parameters](https://platform.claude.com/docs/en/api/versioning), while newer Claude models already reject non-default sampling on older API versions. The integration still pins its direct HTTP requests to `2023-06-01`; this release does not migrate the API version.
+Claude 4.7-and-later and OpenAI GPT-5-and-later / `o`-series model names omit temperature through OpenRouter, Requesty, Cheaper Inference, Atlas Cloud, LiteLLM, and custom OpenAI-compatible APIs too. Other routed models retain their configured temperature. The direct Anthropic provider omits temperature for every model, including saved legacy configurations: [Anthropic API version 2026-10-21 removes sampling parameters](https://platform.claude.com/docs/en/api/versioning), while newer Claude models already reject non-default sampling on older API versions. The integration still pins its direct HTTP requests to `2023-06-01`; this release does not migrate the API version.
 
 Upgrading does not replace saved model selections. If an existing Google or Groq entry returns a model-not-found error, open its integration options and select a current model above. Availability depends on your provider account. See [Google's model catalog](https://ai.google.dev/gemini-api/docs/models) and [Groq's deprecation notices](https://console.groq.com/docs/deprecations).
 

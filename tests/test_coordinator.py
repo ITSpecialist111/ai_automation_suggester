@@ -584,6 +584,8 @@ def test_litellm_temperature_follows_model_capabilities(monkeypatch, model, send
     ("Requesty", "requesty", "openai/gpt-6.1-sol", False),
     ("Cheaper Inference", "cheaperinference", "gpt-5.4-mini", False),
     ("Cheaper Inference", "cheaperinference", "claude-sonnet-5", False),
+    ("Atlas Cloud", "atlascloud", "deepseek-ai/deepseek-v4-flash", True),
+    ("Atlas Cloud", "atlascloud", "qwen/qwen3.5-397b-a17b", True),
     ("MiniMax", "minimax", "MiniMax-M3.1-Flash", True),
     ("MiniMax", "minimax", "MiniMax-M2.7", True),
 ])

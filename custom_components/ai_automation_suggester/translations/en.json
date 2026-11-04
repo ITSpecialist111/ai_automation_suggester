@@ -138,6 +138,16 @@
           "max_output_tokens": "Max Output Tokens"
         }
       },
+      "atlascloud": {
+        "title": "Configure Atlas Cloud",
+        "data": {
+          "atlascloud_api_key": "Atlas Cloud API Key",
+          "atlascloud_model": "Atlas Cloud Model",
+          "atlascloud_temperature": "Temperature",
+          "max_input_tokens": "Max Input Tokens",
+          "max_output_tokens": "Max Output Tokens"
+        }
+      },
       "cheaperinference": {
         "title": "Configure Cheaper Inference",
         "data": {
@@ -250,6 +260,9 @@
           "cheaperinference_model": "Cheaper Inference Model",
           "cheaperinference_reasoning_max_tokens": "Cheaper Inference Reasoning Max Tokens",
           "cheaperinference_temperature": "Temperature (Cheaper Inference)",
+          "atlascloud_api_key": "Atlas Cloud API Key",
+          "atlascloud_model": "Atlas Cloud Model",
+          "atlascloud_temperature": "Temperature (Atlas Cloud)",
           "openai_azure_api_key": "Azure OpenAI API Key",
           "openai_azure_deployment_id": "Azure Deployment ID",
           "openai_azure_endpoint": "Azure Endpoint",
