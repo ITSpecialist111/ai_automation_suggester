@@ -128,6 +128,11 @@ CONF_MINIMAX_MODEL = "minimax_model"
 CONF_MINIMAX_BASE_URL = "minimax_base_url"
 CONF_MINIMAX_TEMPERATURE = "minimax_temperature"
 
+# Atlas Cloud
+CONF_ATLASCLOUD_API_KEY = "atlascloud_api_key"
+CONF_ATLASCLOUD_MODEL = "atlascloud_model"
+CONF_ATLASCLOUD_TEMPERATURE = "atlascloud_temperature"
+
 # Cheaper Inference
 CONF_CHEAPERINFERENCE_API_KEY = "cheaperinference_api_key"
 CONF_CHEAPERINFERENCE_MODEL = "cheaperinference_model"
@@ -166,6 +171,7 @@ DEFAULT_MODELS = {
     "Requesty": "openai/gpt-4o-mini",
     "MiniMax": "MiniMax-M3.1-Flash",
     "Cheaper Inference": "gpt-5.4-mini",
+    "Atlas Cloud": "deepseek-ai/deepseek-v4-flash",
     "Generic OpenAI": "gpt-4o-mini",
     "LiteLLM": "openai/gpt-4o-mini",
 }
@@ -206,6 +212,7 @@ MINIMAX_BASE_URLS = [
     "https://api.minimaxi.com/v1",
 ]
 ENDPOINT_CHEAPERINFERENCE = "https://api.cheaperinference.com/v1/chat/completions"
+ENDPOINT_ATLASCLOUD = "https://api.atlascloud.ai/v1/chat/completions"
 
 
 # ─────────────────────────────────────────────────────────────

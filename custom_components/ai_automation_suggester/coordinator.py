@@ -32,6 +32,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import (
     CONF_ANTHROPIC_API_KEY,
     CONF_ANTHROPIC_MODEL,
+    CONF_ATLASCLOUD_API_KEY,
+    CONF_ATLASCLOUD_MODEL,
+    CONF_ATLASCLOUD_TEMPERATURE,
     CONF_CHEAPERINFERENCE_API_KEY,
     CONF_CHEAPERINFERENCE_MODEL,
     CONF_CHEAPERINFERENCE_REASONING_MAX_TOKENS,
@@ -112,6 +115,7 @@ from .const import (
     DEFAULT_TEMPERATURE,
     DOMAIN,
     ENDPOINT_ANTHROPIC,
+    ENDPOINT_ATLASCLOUD,
     ENDPOINT_CHEAPERINFERENCE,
     ENDPOINT_GROQ,
     ENDPOINT_LOCALAI,
@@ -288,6 +292,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "Requesty": CONF_REQUESTY_MODEL,
             "MiniMax": CONF_MINIMAX_MODEL,
             "Cheaper Inference": CONF_CHEAPERINFERENCE_MODEL,
+            "Atlas Cloud": CONF_ATLASCLOUD_MODEL,
             "OpenAI Azure": CONF_OPENAI_AZURE_DEPLOYMENT_ID,
             "Generic OpenAI": CONF_GENERIC_OPENAI_MODEL,
             "LiteLLM": CONF_LITELLM_MODEL,
@@ -925,6 +930,7 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             "Requesty": self._requesty,
             "MiniMax": self._minimax,
             "Cheaper Inference": self._cheaperinference,
+            "Atlas Cloud": self._atlascloud,
             "OpenAI Azure": self._openai_azure,
             "Generic OpenAI": self._generic_openai,
             "LiteLLM": self._litellm,
@@ -1441,6 +1447,25 @@ class AIAutomationCoordinator(DataUpdateCoordinator):
             provider_label="Cheaper Inference",
         )
         return self._extract_chat_content(response, "Cheaper Inference") if response else None
+
+    async def _atlascloud(self, prompt: str) -> str | None:
+        api_key = self._opt(CONF_ATLASCLOUD_API_KEY)
+        if not api_key:
+            raise ValueError("Atlas Cloud API key not configured")
+        model = self._current_model("Atlas Cloud")
+        body = self._openai_compatible_body(
+            provider="Atlas Cloud",
+            model=model,
+            prompt=self._trim_prompt(prompt),
+            temperature=float(self._opt(CONF_ATLASCLOUD_TEMPERATURE, DEFAULT_TEMPERATURE)),
+        )
+        response = await self._post_json(
+            ENDPOINT_ATLASCLOUD,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            body=body,
+            provider_label="Atlas Cloud",
+        )
+        return self._extract_chat_content(response, "Atlas Cloud") if response else None
 
     async def _minimax(self, prompt: str) -> str | None:
         api_key = self._opt(CONF_MINIMAX_API_KEY)

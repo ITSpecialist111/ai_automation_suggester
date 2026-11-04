@@ -93,3 +93,16 @@ def test_cheaperinference_setup_and_options_preserve_custom_models():
     result = asyncio.run(flow.async_step_init(form["data_schema"]({})))
     assert result["data"]["cheaperinference_model"] == "custom-model"
     assert result["data"]["cheaperinference_reasoning_max_tokens"] == 256
+
+
+def test_atlascloud_setup_and_options_preserve_custom_models():
+    setup = asyncio.run(AIAutomationConfigFlow().async_step_user({"provider": "Atlas Cloud"}))
+    assert setup["data_schema"]({"atlascloud_api_key": "test-key"})["atlascloud_model"] == "deepseek-ai/deepseek-v4-flash"
+    entry = SimpleNamespace(
+        data={"provider": "Atlas Cloud", "atlascloud_api_key": "test-key"},
+        options={"atlascloud_model": "zai-org/glm-5.2"},
+    )
+    flow = AIAutomationOptionsFlowHandler(entry)
+    form = asyncio.run(flow.async_step_init())
+    result = asyncio.run(flow.async_step_init(form["data_schema"]({})))
+    assert result["data"]["atlascloud_model"] == "zai-org/glm-5.2"
